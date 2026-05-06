@@ -9,7 +9,7 @@ import { supabase } from '@/lib/supabase';
 const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
 const styles = ['Competitive', 'Co-op', 'Casual'];
 const platforms = ['PC', 'PlayStation', 'Xbox', 'Switch'];
-const langs = ['English', 'Dutch', 'French'];
+const langs = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
 const slots = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
 
 export default function OnboardingPage() {
@@ -19,9 +19,11 @@ export default function OnboardingPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const toggleMulti = (key: 'games' | 'availability', value: string) => {
-    const current = profile[key];
-    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+  const toggleMulti = (key: 'games' | 'availability' | 'language', value: string) => {
+    const current = profile[key] as string[];
+    const next = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
     setProfile({ [key]: next } as any);
   };
 
@@ -33,10 +35,7 @@ export default function OnboardingPage() {
   };
 
   const handleGameInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      addGame();
-    }
+    if (e.key === 'Enter') { e.preventDefault(); addGame(); }
   };
 
   const removeCustomGame = (game: string) => {
@@ -50,15 +49,13 @@ export default function OnboardingPage() {
     if (profile.games.length === 0) return 'Please select at least one game.';
     if (!profile.platform) return 'Please select your main platform.';
     if (!profile.style) return 'Please select your play style.';
+    if (profile.language.length === 0) return 'Please select at least one language.';
     return null;
   };
 
   const handleSubmit = async () => {
     const validationError = validate();
-    if (validationError) {
-      setError(validationError);
-      return;
-    }
+    if (validationError) { setError(validationError); return; }
 
     setLoading(true);
     setError(null);
@@ -85,10 +82,7 @@ export default function OnboardingPage() {
 
     setLoading(false);
 
-    if (error) {
-      setError('Something went wrong. Please try again.');
-      return;
-    }
+    if (error) { setError('Something went wrong. Please try again.'); return; }
 
     setProfile({ profileId: data.id });
     router.push('/matches');
@@ -125,15 +119,6 @@ export default function OnboardingPage() {
             />
             <select
               className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              value={profile.language}
-              onChange={(e) => setProfile({ language: e.target.value })}
-            >
-              {langs.map((l) => (
-                <option key={l} value={l}>{l}</option>
-              ))}
-            </select>
-            <select
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
               value={profile.platform}
               onChange={(e) => setProfile({ platform: e.target.value })}
             >
@@ -155,10 +140,30 @@ export default function OnboardingPage() {
           </div>
         </Card>
 
+        {/* Langues multi-selection */}
+        <Card className="p-6">
+          <h2 className="text-xl font-bold">Languages <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
+          <div className="mt-4 flex flex-wrap gap-3">
+            {langs.map((l) => (
+              <button
+                key={l}
+                type="button"
+                onClick={() => toggleMulti('language', l)}
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  profile.language.includes(l)
+                    ? 'border-accent bg-accent text-black'
+                    : 'border-border bg-panel2 text-text'
+                }`}
+              >
+                {l}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* Jeux */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Games <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
-
-          {/* Jeux prédéfinis */}
           <div className="mt-4 flex flex-wrap gap-3">
             {PRESET_GAMES.map((g) => (
               <button
@@ -175,33 +180,19 @@ export default function OnboardingPage() {
               </button>
             ))}
           </div>
-
-          {/* Jeux ajoutés manuellement */}
           {customGames.length > 0 && (
             <div className="mt-4">
-              <p className="mb-2 text-xs text-muted uppercase tracking-widest">Added by you</p>
+              <p className="mb-2 text-xs uppercase tracking-widest text-muted">Added by you</p>
               <div className="flex flex-wrap gap-3">
                 {customGames.map((g) => (
-                  <span
-                    key={g}
-                    className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black"
-                  >
+                  <span key={g} className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black">
                     {g}
-                    <button
-                      type="button"
-                      onClick={() => removeCustomGame(g)}
-                      className="ml-1 font-bold leading-none hover:opacity-70"
-                      aria-label={`Remove ${g}`}
-                    >
-                      ×
-                    </button>
+                    <button type="button" onClick={() => removeCustomGame(g)} className="ml-1 font-bold leading-none hover:opacity-70" aria-label={`Remove ${g}`}>×</button>
                   </span>
                 ))}
               </div>
             </div>
           )}
-
-          {/* Champ d'ajout */}
           <div className="mt-4 flex gap-3">
             <input
               className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
@@ -210,16 +201,11 @@ export default function OnboardingPage() {
               onChange={(e) => setGameInput(e.target.value)}
               onKeyDown={handleGameInputKeyDown}
             />
-            <button
-              type="button"
-              className="rounded-xl border border-border px-4 py-3"
-              onClick={addGame}
-            >
-              Add
-            </button>
+            <button type="button" className="rounded-xl border border-border px-4 py-3" onClick={addGame}>Add</button>
           </div>
         </Card>
 
+        {/* Disponibilites */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Availability</h2>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -239,27 +225,17 @@ export default function OnboardingPage() {
             ))}
           </div>
           <label className="mt-4 flex items-center gap-3 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={profile.openIRL}
-              onChange={(e) => setProfile({ openIRL: e.target.checked })}
-            />
+            <input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} />
             Open to in-person later
           </label>
           <label className="mt-2 flex items-center gap-3 text-sm text-muted">
-            <input
-              type="checkbox"
-              checked={profile.consent}
-              onChange={(e) => setProfile({ consent: e.target.checked })}
-            />
+            <input type="checkbox" checked={profile.consent} onChange={(e) => setProfile({ consent: e.target.checked })} />
             I agree to be recontacted
           </label>
         </Card>
 
         {error && (
-          <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-            {error}
-          </p>
+          <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
         )}
 
         <div className="flex justify-end">

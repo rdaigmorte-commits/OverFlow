@@ -4,84 +4,109 @@ import { Card } from '@/components/Card';
 import { demoMatches } from '@/lib/match';
 import { supabase } from '@/lib/supabase';
 
-type GameStat = {
-  game: string;
-  occurrences: number;
-};
+type Stat = { occurrences: number };
+type LabelStat = Stat & { [key: string]: any };
+
+function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
+  const pct = Math.round((value / Math.max(max, 1)) * 100);
+  return (
+    <div>
+      <div className="flex justify-between text-sm mb-1">
+        <span className="font-semibold text-text">{label}</span>
+        <span className="text-muted">{value} player{value > 1 ? 's' : ''}</span>
+      </div>
+      <div className="h-2 w-full rounded-full bg-panel2 border border-border overflow-hidden">
+        <div className="h-full rounded-full bg-accent transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
+function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; labelKey: string }) {
+  const max = rows.length > 0 ? rows[0].occurrences : 1;
+  return (
+    <Card className="p-5">
+      <h2 className="text-xl font-bold">{title}</h2>
+      <div className="mt-5 space-y-4">
+        {rows.length === 0
+          ? <p className="text-sm text-muted">No data yet.</p>
+          : rows.map((r) => <StatBar key={r[labelKey]} label={r[labelKey]} value={Number(r.occurrences)} max={max} />)
+        }
+      </div>
+    </Card>
+  );
+}
 
 export default function AdminPage() {
-  const [gameStats, setGameStats] = useState<GameStat[]>([]);
-  const [loadingGames, setLoadingGames] = useState(true);
+  const [globals, setGlobals] = useState({ total_profiles: 0, open_irl: 0, consent: 0, new_this_week: 0 });
+  const [games, setGames] = useState<any[]>([]);
+  const [platforms, setPlatforms] = useState<any[]>([]);
+  const [styles, setStyles] = useState<any[]>([]);
+  const [languages, setLanguages] = useState<any[]>([]);
+  const [availability, setAvailability] = useState<any[]>([]);
+  const [ages, setAges] = useState<any[]>([]);
+  const [cities, setCities] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchGameStats() {
-      const { data, error } = await supabase.rpc('get_game_stats');
-      if (!error && data) {
-        setGameStats(data);
-      }
-      setLoadingGames(false);
+    async function fetchAll() {
+      const [g, gm, pl, st, la, av, ag, ci] = await Promise.all([
+        supabase.rpc('get_global_stats'),
+        supabase.rpc('get_game_stats'),
+        supabase.rpc('get_platform_stats'),
+        supabase.rpc('get_style_stats'),
+        supabase.rpc('get_language_stats'),
+        supabase.rpc('get_availability_stats'),
+        supabase.rpc('get_age_stats'),
+        supabase.rpc('get_city_stats'),
+      ]);
+      if (g.data) setGlobals(g.data);
+      if (gm.data) setGames(gm.data);
+      if (pl.data) setPlatforms(pl.data);
+      if (st.data) setStyles(st.data);
+      if (la.data) setLanguages(la.data);
+      if (av.data) setAvailability(av.data);
+      if (ag.data) setAges(ag.data);
+      if (ci.data) setCities(ci.data);
+      setLoading(false);
     }
-    fetchGameStats();
+    fetchAll();
   }, []);
-
-  const maxOccurrences = gameStats.length > 0 ? gameStats[0].occurrences : 1;
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10">
       <h1 className="text-4xl font-black">Admin overview</h1>
-      <p className="mt-3 text-muted">Internal view for segmentation and traction analysis.</p>
+      <p className="mt-3 text-muted">Live dashboard — all data from Supabase.</p>
 
-      {/* KPI cards */}
-      <div className="mt-8 grid gap-5 md:grid-cols-3">
-        <Card className="p-5">
-          <div className="text-sm text-muted">Qualified profiles</div>
-          <div className="mt-2 text-3xl font-black">38</div>
-        </Card>
-        <Card className="p-5">
-          <div className="text-sm text-muted">IRL interested</div>
-          <div className="mt-2 text-3xl font-black">21</div>
-        </Card>
-        <Card className="p-5">
-          <div className="text-sm text-muted">Potential matches</div>
-          <div className="mt-2 text-3xl font-black">12</div>
-        </Card>
+      {/* Bloc 1 - Traction */}
+      <div className="mt-8 grid gap-5 md:grid-cols-4">
+        <Card className="p-5"><div className="text-sm text-muted">Total profiles</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.total_profiles}</div></Card>
+        <Card className="p-5"><div className="text-sm text-muted">Open to IRL</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.open_irl}</div></Card>
+        <Card className="p-5"><div className="text-sm text-muted">Consent given</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.consent}</div></Card>
+        <Card className="p-5"><div className="text-sm text-muted">New this week</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.new_this_week}</div></Card>
       </div>
 
-      {/* Game popularity */}
-      <Card className="mt-8 p-5">
-        <h2 className="text-xl font-bold">Game popularity</h2>
-        <p className="mt-1 text-sm text-muted">Live — based on declared profiles in the database.</p>
-        <div className="mt-5 space-y-4">
-          {loadingGames && (
-            <p className="text-sm text-muted">Loading game stats...</p>
-          )}
-          {!loadingGames && gameStats.length === 0 && (
-            <p className="text-sm text-muted">No game data yet. Wait for the first profiles to be submitted.</p>
-          )}
-          {!loadingGames && gameStats.map((g) => {
-            const pct = Math.round((g.occurrences / maxOccurrences) * 100);
-            return (
-              <div key={g.game}>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="font-semibold text-text">{g.game}</span>
-                  <span className="text-muted">{g.occurrences} player{g.occurrences > 1 ? 's' : ''}</span>
-                </div>
-                <div className="h-2 w-full rounded-full bg-panel2 border border-border overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-accent transition-all duration-500"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </Card>
+      {/* Bloc 2 - Profil communauté */}
+      <h2 className="mt-10 text-2xl font-black">Community profile</h2>
+      <div className="mt-4 grid gap-5 md:grid-cols-2">
+        <StatsBlock title="🎮 Games" rows={games} labelKey="game" />
+        <StatsBlock title="🖥️ Platforms" rows={platforms} labelKey="platform" />
+        <StatsBlock title="⚡ Play style" rows={styles} labelKey="style" />
+        <StatsBlock title="🗣️ Languages" rows={languages} labelKey="language" />
+        <StatsBlock title="🕒 Availability" rows={availability} labelKey="slot" />
+      </div>
 
-      {/* Top matches */}
-      <Card className="mt-8 p-5">
-        <h2 className="text-xl font-bold">Top matches</h2>
-        <div className="mt-4 space-y-3">
+      {/* Bloc 3 - Démographie */}
+      <h2 className="mt-10 text-2xl font-black">Demographics</h2>
+      <div className="mt-4 grid gap-5 md:grid-cols-2">
+        <StatsBlock title="👤 Age groups" rows={ages} labelKey="age_group" />
+        <StatsBlock title="📍 Cities" rows={cities} labelKey="city" />
+      </div>
+
+      {/* Top matches demo */}
+      <h2 className="mt-10 text-2xl font-black">Top matches <span className="text-sm font-normal text-muted">(demo data)</span></h2>
+      <Card className="mt-4 p-5">
+        <div className="space-y-3">
           {demoMatches.map(m => (
             <div key={m.name} className="rounded-xl border border-border bg-panel2 p-4 flex justify-between">
               <span>{m.name} • {m.game}</span>

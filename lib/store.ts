@@ -5,7 +5,7 @@ type Profile = {
   name: string;
   age: string;
   city: string;
-  language: string;
+  language: string[];
   platform: string;
   games: string[];
   style: string;
@@ -25,7 +25,7 @@ const initialProfile: Profile = {
   name: '',
   age: '',
   city: 'Utrecht',
-  language: 'English',
+  language: [],
   platform: '',
   games: [],
   style: '',
