@@ -22,6 +22,20 @@ export type Match = {
   fitReason: string;
 };
 
+export type DemoMatch = {
+  name: string;
+  game: string;
+  compatibility: number;
+};
+
+export const demoMatches: DemoMatch[] = [
+  { name: 'Sander V.', game: 'Valorant', compatibility: 95 },
+  { name: 'Julia K.', game: 'Rocket League', compatibility: 88 },
+  { name: 'Thijs M.', game: 'CS2', compatibility: 82 },
+  { name: 'Noor A.', game: 'Smash Bros', compatibility: 74 },
+  { name: 'Daan R.', game: 'League of Legends', compatibility: 68 },
+];
+
 export function computeMatches(current: Profile, others: Profile[]): Match[] {
   return others
     .filter((p) => p.id !== current.id)
