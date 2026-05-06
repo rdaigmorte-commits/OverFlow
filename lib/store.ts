@@ -12,6 +12,8 @@ type Profile = {
   availability: string[];
   openIRL: boolean;
   consent: boolean;
+  email: string;
+  discord: string;
 };
 
 type State = {
@@ -32,6 +34,8 @@ const initialProfile: Profile = {
   availability: [],
   openIRL: false,
   consent: false,
+  email: '',
+  discord: '',
 };
 
 export const useOverflowStore = create<State>((set) => ({
