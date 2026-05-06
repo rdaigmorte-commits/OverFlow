@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
+import { supabase } from '@/lib/supabase';
 
 const games = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
 const styles = ['Competitive', 'Co-op', 'Casual'];
@@ -15,6 +16,8 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { profile, setProfile } = useOverflowStore();
   const [gameInput, setGameInput] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const toggleMulti = (key: 'games' | 'availability', value: string) => {
     const current = profile[key];
@@ -27,6 +30,29 @@ export default function OnboardingPage() {
     if (!value) return;
     if (!profile.games.includes(value)) setProfile({ games: [...profile.games, value] });
     setGameInput('');
+  };
+
+  const handleSubmit = async () => {
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.from('profiles').insert({
+      name: profile.name,
+      age: profile.age,
+      city: profile.city,
+      language: profile.language,
+      platform: profile.platform,
+      games: profile.games,
+      style: profile.style,
+      availability: profile.availability,
+      open_irl: profile.openIRL,
+      consent: profile.consent,
+    });
+    setLoading(false);
+    if (error) {
+      setError('Something went wrong. Please try again.');
+      return;
+    }
+    router.push('/matches');
   };
 
   return (
@@ -82,7 +108,13 @@ export default function OnboardingPage() {
           <label className="mt-2 flex items-center gap-3 text-sm text-muted"><input type="checkbox" checked={profile.consent} onChange={(e) => setProfile({ consent: e.target.checked })} /> I agree to be recontacted</label>
         </Card>
 
-        <div className="flex justify-end"><Button onClick={() => router.push('/matches')}>See matches</Button></div>
+        {error && <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>}
+
+        <div className="flex justify-end">
+          <Button onClick={handleSubmit} disabled={loading}>
+            {loading ? 'Saving...' : 'See matches'}
+          </Button>
+        </div>
       </div>
     </main>
   );

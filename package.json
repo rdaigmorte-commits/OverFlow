@@ -15,7 +15,8 @@
     "zustand": "^4.5.4",
     "zod": "^3.23.8",
     "react-hook-form": "^7.52.2",
-    "@hookform/resolvers": "^3.9.0"
+    "@hookform/resolvers": "^3.9.0",
+    "@supabase/supabase-js": "^2.44.4"
   },
   "devDependencies": {
     "typescript": "^5.5.4",
