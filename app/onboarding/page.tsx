@@ -6,7 +6,7 @@ import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 
-const games = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
+const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
 const styles = ['Competitive', 'Co-op', 'Casual'];
 const platforms = ['PC', 'PlayStation', 'Xbox', 'Switch'];
 const langs = ['English', 'Dutch', 'French'];
@@ -31,6 +31,19 @@ export default function OnboardingPage() {
     if (!profile.games.includes(value)) setProfile({ games: [...profile.games, value] });
     setGameInput('');
   };
+
+  const handleGameInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      addGame();
+    }
+  };
+
+  const removeCustomGame = (game: string) => {
+    setProfile({ games: profile.games.filter((g) => g !== game) });
+  };
+
+  const customGames = profile.games.filter((g) => !PRESET_GAMES.includes(g));
 
   const validate = (): string | null => {
     if (!profile.name.trim()) return 'Please enter your name or nickname.';
@@ -117,7 +130,7 @@ export default function OnboardingPage() {
             >
               {langs.map((l) => (
                 <option key={l} value={l}>{l}</option>
-            ))}
+              ))}
             </select>
             <select
               className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
@@ -144,24 +157,58 @@ export default function OnboardingPage() {
 
         <Card className="p-6">
           <h2 className="text-xl font-bold">Games <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
+
+          {/* Jeux prédéfinis */}
           <div className="mt-4 flex flex-wrap gap-3">
-            {games.map((g) => (
+            {PRESET_GAMES.map((g) => (
               <button
                 key={g}
                 type="button"
                 onClick={() => toggleMulti('games', g)}
-                className={`rounded-full border px-4 py-2 text-sm ${profile.games.includes(g) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  profile.games.includes(g)
+                    ? 'border-accent bg-accent text-black'
+                    : 'border-border bg-panel2 text-text'
+                }`}
               >
                 {g}
               </button>
             ))}
           </div>
+
+          {/* Jeux ajoutés manuellement */}
+          {customGames.length > 0 && (
+            <div className="mt-4">
+              <p className="mb-2 text-xs text-muted uppercase tracking-widest">Added by you</p>
+              <div className="flex flex-wrap gap-3">
+                {customGames.map((g) => (
+                  <span
+                    key={g}
+                    className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black"
+                  >
+                    {g}
+                    <button
+                      type="button"
+                      onClick={() => removeCustomGame(g)}
+                      className="ml-1 font-bold leading-none hover:opacity-70"
+                      aria-label={`Remove ${g}`}
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Champ d'ajout */}
           <div className="mt-4 flex gap-3">
             <input
               className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
               placeholder="Add another game"
               value={gameInput}
               onChange={(e) => setGameInput(e.target.value)}
+              onKeyDown={handleGameInputKeyDown}
             />
             <button
               type="button"
@@ -181,7 +228,11 @@ export default function OnboardingPage() {
                 key={s}
                 type="button"
                 onClick={() => toggleMulti('availability', s)}
-                className={`rounded-full border px-4 py-2 text-sm ${profile.availability.includes(s) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}
+                className={`rounded-full border px-4 py-2 text-sm ${
+                  profile.availability.includes(s)
+                    ? 'border-accent bg-accent text-black'
+                    : 'border-border bg-panel2 text-text'
+                }`}
               >
                 {s}
               </button>
