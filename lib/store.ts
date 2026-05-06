@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 type Profile = {
+  profileId: string | null;
   name: string;
   age: string;
   city: string;
@@ -20,7 +21,17 @@ type State = {
 };
 
 const initialProfile: Profile = {
-  name: '', age: '', city: 'Utrecht', language: 'English', platform: '', games: [], style: '', availability: [], openIRL: false, consent: false,
+  profileId: null,
+  name: '',
+  age: '',
+  city: 'Utrecht',
+  language: 'English',
+  platform: '',
+  games: [],
+  style: '',
+  availability: [],
+  openIRL: false,
+  consent: false,
 };
 
 export const useOverflowStore = create<State>((set) => ({

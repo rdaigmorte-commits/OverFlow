@@ -35,7 +35,9 @@ export default function OnboardingPage() {
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
-    const { error } = await supabase.from('profiles').insert({
+
+    const payload = {
+      id: profile.profileId ?? undefined,
       name: profile.name,
       age: profile.age,
       city: profile.city,
@@ -46,12 +48,22 @@ export default function OnboardingPage() {
       availability: profile.availability,
       open_irl: profile.openIRL,
       consent: profile.consent,
-    });
+    };
+
+    const { data, error } = await supabase
+      .from('profiles')
+      .upsert(payload, { onConflict: 'id' })
+      .select()
+      .single();
+
     setLoading(false);
+
     if (error) {
       setError('Something went wrong. Please try again.');
       return;
     }
+
+    setProfile({ profileId: data.id });
     router.push('/matches');
   };
 
@@ -63,19 +75,52 @@ export default function OnboardingPage() {
       <div className="mt-8 grid gap-6">
         <Card className="p-6">
           <div className="grid gap-4 md:grid-cols-2">
-            <input className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" placeholder="Name / nickname" value={profile.name} onChange={(e) => setProfile({ name: e.target.value })} />
-            <input className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" placeholder="Age" value={profile.age} onChange={(e) => setProfile({ age: e.target.value })} />
-            <input className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" placeholder="City" value={profile.city} onChange={(e) => setProfile({ city: e.target.value })} />
-            <select className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" value={profile.language} onChange={(e) => setProfile({ language: e.target.value })}>
-              {langs.map((l) => <option key={l} value={l}>{l}</option>)}
+            <input
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="Name / nickname"
+              value={profile.name}
+              onChange={(e) => setProfile({ name: e.target.value })}
+            />
+            <input
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="Age"
+              value={profile.age}
+              onChange={(e) => setProfile({ age: e.target.value })}
+            />
+            <input
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="City"
+              value={profile.city}
+              onChange={(e) => setProfile({ city: e.target.value })}
+            />
+            <select
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              value={profile.language}
+              onChange={(e) => setProfile({ language: e.target.value })}
+            >
+              {langs.map((l) => (
+                <option key={l} value={l}>{l}</option>
+              ))}
             </select>
-            <select className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" value={profile.platform} onChange={(e) => setProfile({ platform: e.target.value })}>
+            <select
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              value={profile.platform}
+              onChange={(e) => setProfile({ platform: e.target.value })}
+            >
               <option value="">Platform</option>
-              {platforms.map((p) => <option key={p} value={p}>{p}</option>)}
+              {platforms.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
             </select>
-            <select className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" value={profile.style} onChange={(e) => setProfile({ style: e.target.value })}>
+            <select
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              value={profile.style}
+              onChange={(e) => setProfile({ style: e.target.value })}
+            >
               <option value="">Play style</option>
-              {styles.map((s) => <option key={s} value={s}>{s}</option>)}
+              {styles.map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
             </select>
           </div>
         </Card>
@@ -84,14 +129,30 @@ export default function OnboardingPage() {
           <h2 className="text-xl font-bold">Games</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             {games.map((g) => (
-              <button key={g} onClick={() => toggleMulti('games', g)} className={`rounded-full border px-4 py-2 text-sm ${profile.games.includes(g) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}>
+              <button
+                key={g}
+                type="button"
+                onClick={() => toggleMulti('games', g)}
+                className={`rounded-full border px-4 py-2 text-sm ${profile.games.includes(g) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}
+              >
                 {g}
               </button>
             ))}
           </div>
           <div className="mt-4 flex gap-3">
-            <input className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 outline-none" placeholder="Add another game" value={gameInput} onChange={(e) => setGameInput(e.target.value)} />
-            <button className="rounded-xl border border-border px-4 py-3" onClick={addGame}>Add</button>
+            <input
+              className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="Add another game"
+              value={gameInput}
+              onChange={(e) => setGameInput(e.target.value)}
+            />
+            <button
+              type="button"
+              className="rounded-xl border border-border px-4 py-3"
+              onClick={addGame}
+            >
+              Add
+            </button>
           </div>
         </Card>
 
@@ -99,16 +160,39 @@ export default function OnboardingPage() {
           <h2 className="text-xl font-bold">Availability</h2>
           <div className="mt-4 flex flex-wrap gap-3">
             {slots.map((s) => (
-              <button key={s} onClick={() => toggleMulti('availability', s)} className={`rounded-full border px-4 py-2 text-sm ${profile.availability.includes(s) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}>
+              <button
+                key={s}
+                type="button"
+                onClick={() => toggleMulti('availability', s)}
+                className={`rounded-full border px-4 py-2 text-sm ${profile.availability.includes(s) ? 'border-accent bg-accent text-black' : 'border-border bg-panel2 text-text'}`}
+              >
                 {s}
               </button>
             ))}
           </div>
-          <label className="mt-4 flex items-center gap-3 text-sm text-muted"><input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} /> Open to in-person later</label>
-          <label className="mt-2 flex items-center gap-3 text-sm text-muted"><input type="checkbox" checked={profile.consent} onChange={(e) => setProfile({ consent: e.target.checked })} /> I agree to be recontacted</label>
+          <label className="mt-4 flex items-center gap-3 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={profile.openIRL}
+              onChange={(e) => setProfile({ openIRL: e.target.checked })}
+            />
+            Open to in-person later
+          </label>
+          <label className="mt-2 flex items-center gap-3 text-sm text-muted">
+            <input
+              type="checkbox"
+              checked={profile.consent}
+              onChange={(e) => setProfile({ consent: e.target.checked })}
+            />
+            I agree to be recontacted
+          </label>
         </Card>
 
-        {error && <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>}
+        {error && (
+          <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {error}
+          </p>
+        )}
 
         <div className="flex justify-end">
           <Button onClick={handleSubmit} disabled={loading}>
