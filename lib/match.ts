@@ -89,3 +89,7 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
     .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score);
 }
+
+// Alias pour compatibilité avec matches/page.tsx
+export type Match = MatchResult;
+export const computeMatches = matchProfiles;
