@@ -16,11 +16,17 @@ export default function MatchesPage() {
   const { profile } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
 
   useEffect(() => {
     async function fetchMatches() {
       const { data, error } = await supabase.from('profiles').select('*');
-      if (error || !data) { setLoading(false); return; }
+
+      if (error || !data) {
+        setFetchError(true);
+        setLoading(false);
+        return;
+      }
 
       const current = {
         id: profile.profileId ?? '',
@@ -55,7 +61,20 @@ export default function MatchesPage() {
           <p className="text-muted">Finding your matches...</p>
         )}
 
-        {!loading && matches.length === 0 && (
+        {!loading && fetchError && (
+          <Card className="p-8 text-center">
+            <div className="text-2xl font-bold">Something went wrong</div>
+            <p className="mt-3 text-muted">We couldn&apos;t load your matches. Please try refreshing the page.</p>
+            <button
+              onClick={() => { setFetchError(false); setLoading(true); }}
+              className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
+            >
+              Try again
+            </button>
+          </Card>
+        )}
+
+        {!loading && !fetchError && matches.length === 0 && (
           <Card className="p-8 text-center">
             <div className="text-2xl font-bold">No matches yet</div>
             <p className="mt-3 text-muted">You&apos;re one of the first! Share OverFlow with your gaming friends in Utrecht so we can find you the best matches.</p>
@@ -63,7 +82,7 @@ export default function MatchesPage() {
           </Card>
         )}
 
-        {!loading && matches.map((m) => (
+        {!loading && !fetchError && matches.map((m) => (
           <Card key={m.id} className="p-5">
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
