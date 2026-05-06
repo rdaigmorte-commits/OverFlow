@@ -46,6 +46,18 @@ export default function MatchesPage() {
     fetchMatches();
   }, [profile.profileId]);
 
+  // US-032 : construire le résumé du profil depuis le store Zustand
+  const profileSummaryLines = [
+    profile.games.length > 0 && { label: 'Games', value: profile.games.join(', ') },
+    profile.platform && { label: 'Platform', value: profile.platform },
+    profile.style && { label: 'Style', value: profile.style },
+    profile.availability.length > 0 && { label: 'Available', value: profile.availability.join(', ') },
+    profile.city && { label: 'City', value: profile.city },
+    profile.openIRL && { label: 'Open to in-person events', value: 'Yes' },
+  ].filter(Boolean) as { label: string; value: string }[];
+
+  const hasProfileData = profileSummaryLines.length > 0;
+
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
       <div className="flex items-center justify-between">
@@ -74,12 +86,52 @@ export default function MatchesPage() {
           </Card>
         )}
 
+        {/* État vide — US-032 / 033 / 034 */}
         {!loading && !fetchError && matches.length === 0 && (
-          <Card className="p-8 text-center">
-            <div className="text-2xl font-bold">No matches yet</div>
-            <p className="mt-3 text-muted">You&apos;re one of the first! Share OverFlow with your gaming friends in Utrecht so we can find you the best matches.</p>
-            <Link href="/onboarding" className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black">Edit my profile</Link>
-          </Card>
+          <div className="grid gap-5">
+
+            {/* US-033 — Statut Early Tester */}
+            <Card className="p-6">
+              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div>
+                  <span className="inline-flex rounded-full border border-accent bg-accent px-4 py-1 text-xs font-bold text-black">Early OverFlow Tester · Utrecht</span>
+                  <p className="mt-3 text-muted text-sm">You&apos;ll be prioritised for the first match suggestions and test sessions when enough compatible players are available.</p>
+                </div>
+              </div>
+            </Card>
+
+            {/* US-032 — Résumé du profil */}
+            {hasProfileData && (
+              <Card className="p-6">
+                <h2 className="text-lg font-bold">Your saved profile</h2>
+                <p className="mt-1 text-sm text-muted">Here&apos;s what we&apos;ve recorded. <Link href="/onboarding" className="underline">Edit</Link> anytime.</p>
+                <ul className="mt-4 grid gap-2">
+                  {profileSummaryLines.map((line) => (
+                    <li key={line.label} className="flex gap-3 text-sm">
+                      <span className="w-36 shrink-0 text-muted">{line.label}</span>
+                      <span className="text-text font-medium">{line.value}</span>
+                    </li>
+                  ))}
+                </ul>
+              </Card>
+            )}
+
+            {/* US-034 — What happens next */}
+            <Card className="p-6">
+              <h2 className="text-lg font-bold">What happens next?</h2>
+              <ul className="mt-4 grid gap-3 text-sm text-muted">
+                <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you by email when a small compatible group forms.</li>
+                <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
+                <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
+              </ul>
+              {!profile.email && (
+                <div className="mt-5 rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
+                  ⚠️ Add your email in your profile to get notified. <Link href="/onboarding" className="underline text-text">Update profile</Link>
+                </div>
+              )}
+            </Card>
+
+          </div>
         )}
 
         {!loading && !fetchError && matches.map((m) => (
