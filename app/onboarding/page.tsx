@@ -32,7 +32,21 @@ export default function OnboardingPage() {
     setGameInput('');
   };
 
+  const validate = (): string | null => {
+    if (!profile.name.trim()) return 'Please enter your name or nickname.';
+    if (profile.games.length === 0) return 'Please select at least one game.';
+    if (!profile.platform) return 'Please select your main platform.';
+    if (!profile.style) return 'Please select your play style.';
+    return null;
+  };
+
   const handleSubmit = async () => {
+    const validationError = validate();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
     setLoading(true);
     setError(null);
 
@@ -77,13 +91,16 @@ export default function OnboardingPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <input
               className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Name / nickname"
+              placeholder="Name / nickname *"
               value={profile.name}
               onChange={(e) => setProfile({ name: e.target.value })}
             />
             <input
               className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
               placeholder="Age"
+              type="number"
+              min={10}
+              max={99}
               value={profile.age}
               onChange={(e) => setProfile({ age: e.target.value })}
             />
@@ -100,14 +117,14 @@ export default function OnboardingPage() {
             >
               {langs.map((l) => (
                 <option key={l} value={l}>{l}</option>
-              ))}
+            ))}
             </select>
             <select
               className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
               value={profile.platform}
               onChange={(e) => setProfile({ platform: e.target.value })}
             >
-              <option value="">Platform</option>
+              <option value="">Platform *</option>
               {platforms.map((p) => (
                 <option key={p} value={p}>{p}</option>
               ))}
@@ -117,7 +134,7 @@ export default function OnboardingPage() {
               value={profile.style}
               onChange={(e) => setProfile({ style: e.target.value })}
             >
-              <option value="">Play style</option>
+              <option value="">Play style *</option>
               {styles.map((s) => (
                 <option key={s} value={s}>{s}</option>
               ))}
@@ -126,7 +143,7 @@ export default function OnboardingPage() {
         </Card>
 
         <Card className="p-6">
-          <h2 className="text-xl font-bold">Games</h2>
+          <h2 className="text-xl font-bold">Games <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
           <div className="mt-4 flex flex-wrap gap-3">
             {games.map((g) => (
               <button

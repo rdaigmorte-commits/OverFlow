@@ -23,7 +23,7 @@ export default function MatchesPage() {
       if (error || !data) { setLoading(false); return; }
 
       const current = {
-        id: '',
+        id: profile.profileId ?? '',
         name: profile.name,
         games: profile.games,
         platform: profile.platform,
@@ -38,7 +38,7 @@ export default function MatchesPage() {
       setLoading(false);
     }
     fetchMatches();
-  }, []);
+  }, [profile.profileId]);
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
