@@ -3,87 +3,89 @@ export type Profile = {
   name: string;
   games: string[];
   platform: string;
+  style: string;
   language: string;
   availability: string[];
-  style: string;
-  city: string;
+  city?: string;
 };
 
-export type Match = {
-  id: string;
-  name: string;
-  games: string[];
-  platform: string;
-  language: string;
-  availability: string[];
-  style: string;
+export type MatchResult = {
+  profile: Profile;
   score: number;
   fitLabel: string;
   fitReason: string;
 };
 
-export type DemoMatch = {
-  name: string;
-  game: string;
-  compatibility: number;
-};
+/**
+ * Barème officiel (Option B — décision produit du 06/05/2026)
+ *
+ * Critère                    | Points
+ * ─────────────────────────────────────
+ * Au moins 1 jeu en commun   |  +40
+ * Même plateforme             |  +20
+ * Même style de jeu           |  +20
+ * Langue en commun            |  +10
+ * Au moins 1 créneau commun   |  +10
+ * ─────────────────────────────────────
+ * Score max                   |  100
+ */
+export function computeScore(a: Profile, b: Profile): number {
+  let score = 0;
 
-export const demoMatches: DemoMatch[] = [
-  { name: 'Sander V.', game: 'Valorant', compatibility: 95 },
-  { name: 'Julia K.', game: 'Rocket League', compatibility: 88 },
-  { name: 'Thijs M.', game: 'CS2', compatibility: 82 },
-  { name: 'Noor A.', game: 'Smash Bros', compatibility: 74 },
-  { name: 'Daan R.', game: 'League of Legends', compatibility: 68 },
-];
+  // Jeux en commun — 40 pts
+  const commonGames = a.games.filter((g) => b.games.includes(g));
+  if (commonGames.length > 0) score += 40;
 
-export function computeMatches(current: Profile, others: Profile[]): Match[] {
+  // Même plateforme — 20 pts
+  if (a.platform && b.platform && a.platform === b.platform) score += 20;
+
+  // Même style — 20 pts
+  if (a.style && b.style && a.style === b.style) score += 20;
+
+  // Langue en commun — 10 pts
+  if (a.language && b.language && a.language === b.language) score += 10;
+
+  // Créneau en commun — 10 pts
+  const commonSlots = a.availability.filter((s) => b.availability.includes(s));
+  if (commonSlots.length > 0) score += 10;
+
+  return score;
+}
+
+export function getFitLabel(score: number): string {
+  if (score >= 60) return 'Strong fit';
+  if (score >= 40) return 'Good fit';
+  return 'Worth reaching out';
+}
+
+export function getFitReason(a: Profile, b: Profile): string {
+  const parts: string[] = [];
+
+  const commonGames = a.games.filter((g) => b.games.includes(g));
+  if (commonGames.length > 0) parts.push(`plays ${commonGames.join(', ')}`);
+  if (a.platform === b.platform) parts.push(`same platform (${a.platform})`);
+  if (a.style === b.style) parts.push(`same playstyle (${a.style})`);
+  if (a.language === b.language) parts.push(`speaks ${a.language}`);
+
+  const commonSlots = a.availability.filter((s) => b.availability.includes(s));
+  if (commonSlots.length > 0) parts.push(`available ${commonSlots[0]}`);
+
+  if (parts.length === 0) return 'Some interests in common';
+  return parts.join(' · ');
+}
+
+export function matchProfiles(current: Profile, others: Profile[]): MatchResult[] {
   return others
     .filter((p) => p.id !== current.id)
     .map((p) => {
-      let score = 0;
-      const reasons: string[] = [];
-
-      // Jeux en commun (+40 max)
-      const sharedGames = current.games.filter((g) => p.games.includes(g));
-      if (sharedGames.length > 0) {
-        score += 40;
-        reasons.push(`Plays ${sharedGames[0]}`);
-      }
-
-      // Même plateforme (+20)
-      if (current.platform && p.platform === current.platform) {
-        score += 20;
-        reasons.push(`Same platform (${p.platform})`);
-      }
-
-      // Même langue (+20)
-      if (current.language && p.language === current.language) {
-        score += 20;
-        reasons.push(`Same language`);
-      }
-
-      // Disponibilité commune (+20)
-      const sharedSlots = current.availability.filter((s) => p.availability.includes(s));
-      if (sharedSlots.length > 0) {
-        score += 20;
-        reasons.push(`Available ${sharedSlots[0]}`);
-      }
-
-      const fitLabel =
-        score >= 60 ? 'Strong fit' : score >= 40 ? 'Good fit' : 'Worth reaching out';
-
+      const score = computeScore(current, p);
       return {
-        id: p.id,
-        name: p.name,
-        games: p.games,
-        platform: p.platform,
-        language: p.language,
-        availability: p.availability,
-        style: p.style,
+        profile: p,
         score,
-        fitLabel,
-        fitReason: reasons.join(' · ') || 'Different profile, could be interesting',
+        fitLabel: getFitLabel(score),
+        fitReason: getFitReason(current, p),
       };
     })
+    .filter((r) => r.score > 0)
     .sort((a, b) => b.score - a.score);
 }
