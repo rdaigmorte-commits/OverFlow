@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { Card } from '@/components/Card';
-import { demoMatches } from '@/lib/match';
 import { supabase } from '@/lib/supabase';
 
 function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -41,6 +40,58 @@ function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; lab
   );
 }
 
+type MatchOpportunities = { strong: number; good: number; possible: number };
+
+function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; loading: boolean }) {
+  const total = data.strong + data.good + data.possible;
+  const max = Math.max(data.strong, data.good, data.possible, 1);
+
+  const tiers = [
+    { label: 'Strong fit (80%+)', value: data.strong, color: 'bg-accent' },
+    { label: 'Good fit (60–79%)', value: data.good, color: 'bg-accent2' },
+    { label: 'Possible (40–59%)', value: data.possible, color: 'bg-border' },
+  ];
+
+  return (
+    <Card className="mt-8 p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">🤝 Match opportunities</h2>
+          <p className="mt-1 text-sm text-muted">Compatible pairs calculated live from all profiles.</p>
+        </div>
+        {!loading && (
+          <div className="text-right">
+            <div className="text-3xl font-black text-accent">{total}</div>
+            <div className="text-xs text-muted">total pairs</div>
+          </div>
+        )}
+      </div>
+      <div className="mt-6 space-y-4">
+        {loading ? (
+          <p className="text-sm text-muted">Calculating...</p>
+        ) : total === 0 ? (
+          <p className="text-sm text-muted">Not enough profiles yet to compute matches.</p>
+        ) : (
+          tiers.map((t) => (
+            <div key={t.label}>
+              <div className="flex justify-between text-sm mb-1">
+                <span className="font-semibold text-text">{t.label}</span>
+                <span className="text-muted">{t.value} pair{t.value !== 1 ? 's' : ''}</span>
+              </div>
+              <div className="h-2 w-full rounded-full bg-panel2 border border-border overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-500 ${t.color}`}
+                  style={{ width: `${Math.round((t.value / max) * 100)}%` }}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+    </Card>
+  );
+}
+
 export default function AdminPage() {
   const [globals, setGlobals] = useState({ total_profiles: 0, open_irl: 0, consent: 0, new_this_week: 0 });
   const [games, setGames] = useState<any[]>([]);
@@ -50,11 +101,12 @@ export default function AdminPage() {
   const [availability, setAvailability] = useState<any[]>([]);
   const [ages, setAges] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
+  const [matchOps, setMatchOps] = useState<MatchOpportunities>({ strong: 0, good: 0, possible: 0 });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAll() {
-      const [g, gm, pl, st, la, av, ag, ci] = await Promise.all([
+      const [g, gm, pl, st, la, av, ag, ci, mo] = await Promise.all([
         supabase.rpc('get_global_stats'),
         supabase.rpc('get_game_stats'),
         supabase.rpc('get_platform_stats'),
@@ -63,6 +115,7 @@ export default function AdminPage() {
         supabase.rpc('get_availability_stats'),
         supabase.rpc('get_age_stats'),
         supabase.rpc('get_city_stats'),
+        supabase.rpc('get_match_opportunities'),
       ]);
       if (g.data) setGlobals(g.data);
       if (gm.data) setGames(gm.data);
@@ -72,6 +125,7 @@ export default function AdminPage() {
       if (av.data) setAvailability(av.data);
       if (ag.data) setAges(ag.data);
       if (ci.data) setCities(ci.data);
+      if (mo.data) setMatchOps(mo.data);
       setLoading(false);
     }
     fetchAll();
@@ -90,6 +144,9 @@ export default function AdminPage() {
         <Card className="p-5"><div className="text-sm text-muted">New this week</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.new_this_week}</div></Card>
       </div>
 
+      {/* Match opportunities */}
+      <MatchOpportunitiesBlock data={matchOps} loading={loading} />
+
       {/* Bloc 2 - Community profile */}
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
@@ -106,19 +163,6 @@ export default function AdminPage() {
         <StatsBlock title="👤 Age groups" rows={ages} labelKey="age_group" />
         <StatsBlock title="📍 Cities" rows={cities} labelKey="city" />
       </div>
-
-      {/* Top matches demo */}
-      <h2 className="mt-10 text-2xl font-black">Top matches <span className="text-sm font-normal text-muted">(demo data)</span></h2>
-      <Card className="mt-4 p-5">
-        <div className="space-y-3">
-          {demoMatches.map((m, i) => (
-            <div key={`match-${i}`} className="rounded-xl border border-border bg-panel2 p-4 flex justify-between">
-              <span>{m.name} • {m.game}</span>
-              <span className="text-accent">{m.compatibility}%</span>
-            </div>
-          ))}
-        </div>
-      </Card>
     </main>
   );
 }
