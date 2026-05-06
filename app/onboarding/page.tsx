@@ -60,8 +60,10 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
-    const payload = {
-      id: profile.profileId ?? undefined,
+    // Si profileId est null (premier enregistrement), on n'inclut pas id
+    // pour laisser Supabase générer un UUID automatiquement.
+    // Si profileId existe (mise à jour), on l'inclut pour le upsert.
+    const basePayload = {
       name: profile.name,
       age: profile.age,
       city: profile.city,
@@ -75,6 +77,10 @@ export default function OnboardingPage() {
       email: profile.email || null,
       discord: profile.discord || null,
     };
+
+    const payload = profile.profileId
+      ? { id: profile.profileId, ...basePayload }
+      : basePayload;
 
     const { data, error } = await supabase
       .from('profiles')
