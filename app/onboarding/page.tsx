@@ -72,6 +72,8 @@ export default function OnboardingPage() {
       availability: profile.availability,
       open_irl: profile.openIRL,
       consent: profile.consent,
+      email: profile.email || null,
+      discord: profile.discord || null,
     };
 
     const { data, error } = await supabase
@@ -232,6 +234,27 @@ export default function OnboardingPage() {
             <input type="checkbox" checked={profile.consent} onChange={(e) => setProfile({ consent: e.target.checked })} />
             I agree to be recontacted
           </label>
+        </Card>
+
+        {/* Contact — US-017 */}
+        <Card className="p-6">
+          <h2 className="text-xl font-bold">Stay in the loop <span className="text-sm font-normal text-muted">(optional but recommended)</span></h2>
+          <p className="mt-2 text-sm text-muted">You&apos;ll be the first to know when a compatible group forms in Utrecht. No spam, only useful match suggestions.</p>
+          <div className="mt-4 grid gap-4">
+            <input
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="Your email"
+              type="email"
+              value={profile.email}
+              onChange={(e) => setProfile({ email: e.target.value })}
+            />
+            <input
+              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
+              placeholder="Discord handle (optional)"
+              value={profile.discord}
+              onChange={(e) => setProfile({ discord: e.target.value })}
+            />
+          </div>
         </Card>
 
         {error && (
