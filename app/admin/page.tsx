@@ -4,9 +4,6 @@ import { Card } from '@/components/Card';
 import { demoMatches } from '@/lib/match';
 import { supabase } from '@/lib/supabase';
 
-type Stat = { occurrences: number };
-type LabelStat = Stat & { [key: string]: any };
-
 function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
   const pct = Math.round((value / Math.max(max, 1)) * 100);
   return (
@@ -30,7 +27,14 @@ function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; lab
       <div className="mt-5 space-y-4">
         {rows.length === 0
           ? <p className="text-sm text-muted">No data yet.</p>
-          : rows.map((r) => <StatBar key={r[labelKey]} label={r[labelKey]} value={Number(r.occurrences)} max={max} />)
+          : rows.map((r, i) => (
+              <StatBar
+                key={`${labelKey}-${i}`}
+                label={r[labelKey] ?? 'Unknown'}
+                value={Number(r.occurrences)}
+                max={max}
+              />
+            ))
         }
       </div>
     </Card>
@@ -86,7 +90,7 @@ export default function AdminPage() {
         <Card className="p-5"><div className="text-sm text-muted">New this week</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.new_this_week}</div></Card>
       </div>
 
-      {/* Bloc 2 - Profil communauté */}
+      {/* Bloc 2 - Community profile */}
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <StatsBlock title="🎮 Games" rows={games} labelKey="game" />
@@ -96,7 +100,7 @@ export default function AdminPage() {
         <StatsBlock title="🕒 Availability" rows={availability} labelKey="slot" />
       </div>
 
-      {/* Bloc 3 - Démographie */}
+      {/* Bloc 3 - Demographics */}
       <h2 className="mt-10 text-2xl font-black">Demographics</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <StatsBlock title="👤 Age groups" rows={ages} labelKey="age_group" />
@@ -107,8 +111,8 @@ export default function AdminPage() {
       <h2 className="mt-10 text-2xl font-black">Top matches <span className="text-sm font-normal text-muted">(demo data)</span></h2>
       <Card className="mt-4 p-5">
         <div className="space-y-3">
-          {demoMatches.map(m => (
-            <div key={m.name} className="rounded-xl border border-border bg-panel2 p-4 flex justify-between">
+          {demoMatches.map((m, i) => (
+            <div key={`match-${i}`} className="rounded-xl border border-border bg-panel2 p-4 flex justify-between">
               <span>{m.name} • {m.game}</span>
               <span className="text-accent">{m.compatibility}%</span>
             </div>
