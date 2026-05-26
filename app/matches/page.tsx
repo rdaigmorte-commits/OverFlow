@@ -31,10 +31,10 @@ export default function MatchesPage() {
       const current = {
         id: profile.profileId ?? '',
         name: profile.name,
-        games: profile.games,
+        games: profile.games ?? [],
         platform: profile.platform,
         language: profile.language,
-        availability: profile.availability,
+        availability: profile.availability ?? [],
         style: profile.style,
         city: profile.city,
       };
@@ -48,10 +48,10 @@ export default function MatchesPage() {
 
   // US-032 : construire le résumé du profil depuis le store Zustand
   const profileSummaryLines = [
-    profile.games.length > 0 && { label: 'Games', value: profile.games.join(', ') },
+    (profile.games ?? []).length > 0 && { label: 'Games', value: (profile.games ?? []).join(', ') },
     profile.platform && { label: 'Platform', value: profile.platform },
     profile.style && { label: 'Style', value: profile.style },
-    profile.availability.length > 0 && { label: 'Available', value: profile.availability.join(', ') },
+    (profile.availability ?? []).length > 0 && { label: 'Available', value: (profile.availability ?? []).join(', ') },
     profile.city && { label: 'City', value: profile.city },
     profile.openIRL && { label: 'Open to in-person events', value: 'Yes' },
   ].filter(Boolean) as { label: string; value: string }[];
@@ -139,7 +139,7 @@ export default function MatchesPage() {
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
               <div>
                 <div className="text-2xl font-bold">{m.name}</div>
-                <div className="mt-1 text-sm text-muted">{m.games.join(', ')} • {m.platform} • {m.language}</div>
+                <div className="mt-1 text-sm text-muted">{(m.games ?? []).join(', ')} • {m.platform} • {m.language}</div>
                 <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${fitStyle(m.fitLabel)}`}>{m.fitLabel}</div>
                 <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
               </div>
