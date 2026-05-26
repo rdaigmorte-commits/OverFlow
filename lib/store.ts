@@ -22,8 +22,20 @@ type State = {
   reset: () => void;
 };
 
+const STORAGE_KEY = 'overflow_profile_id';
+
+// Récupère le profileId sauvegardé dans localStorage (si dispo)
+function getSavedProfileId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    return localStorage.getItem(STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 const initialProfile: Profile = {
-  profileId: null,
+  profileId: getSavedProfileId(),
   name: '',
   age: '',
   city: 'Utrecht',
@@ -40,6 +52,22 @@ const initialProfile: Profile = {
 
 export const useOverflowStore = create<State>((set) => ({
   profile: initialProfile,
-  setProfile: (p) => set((s) => ({ profile: { ...s.profile, ...p } })),
-  reset: () => set({ profile: initialProfile }),
+  setProfile: (p) => set((s) => {
+    const updated = { ...s.profile, ...p };
+    // Persiste le profileId dans localStorage à chaque mise à jour
+    if (updated.profileId && typeof window !== 'undefined') {
+      try {
+        localStorage.setItem(STORAGE_KEY, updated.profileId);
+      } catch {
+        // silencieux si localStorage est bloqué
+      }
+    }
+    return { profile: updated };
+  }),
+  reset: () => {
+    if (typeof window !== 'undefined') {
+      try { localStorage.removeItem(STORAGE_KEY); } catch { /* silencieux */ }
+    }
+    set({ profile: { ...initialProfile, profileId: null } });
+  },
 }));
