@@ -4,7 +4,7 @@ export type Profile = {
   games: string[];
   platform: string;
   style: string;
-  language: string | string[];  // tableau en base, string dans le store
+  language: string | string[];
   availability: string[];
   city?: string;
   email?: string | null;
@@ -16,7 +16,6 @@ export type MatchResult = {
   score: number;
   fitLabel: string;
   fitReason: string;
-  // Champs platés pour faciliter l'affichage
   id: string;
   name: string;
   games: string[];
@@ -24,9 +23,14 @@ export type MatchResult = {
   language: string | string[];
   email?: string | null;
   discord?: string | null;
-  fitLabel: string;
-  fitReason: string;
 };
+
+// Normalise language en tableau quelle que soit la source
+function toLangArray(lang: string | string[] | null | undefined): string[] {
+  if (!lang) return [];
+  if (Array.isArray(lang)) return lang;
+  return [lang];
+}
 
 /**
  * Barème officiel (Option B — décision produit du 06/05/2026)
@@ -41,14 +45,6 @@ export type MatchResult = {
  * ─────────────────────────────────────
  * Score max                   |  100
  */
-
-// Normalise language en tableau quelle que soit la source
-function toLangArray(lang: string | string[] | null | undefined): string[] {
-  if (!lang) return [];
-  if (Array.isArray(lang)) return lang;
-  return [lang];
-}
-
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
@@ -59,7 +55,6 @@ export function computeScore(a: Profile, b: Profile): number {
 
   if (a.style && b.style && a.style === b.style) score += 20;
 
-  // Langue — gère string et string[]
   const aLangs = toLangArray(a.language);
   const bLangs = toLangArray(b.language);
   if (aLangs.some((l) => bLangs.includes(l))) score += 10;
@@ -106,7 +101,6 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         score,
         fitLabel: getFitLabel(score),
         fitReason: getFitReason(current, p),
-        // Champs platés pour l'affichage direct dans la page
         id: p.id,
         name: p.name,
         games: p.games ?? [],
@@ -120,6 +114,5 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
     .sort((a, b) => b.score - a.score);
 }
 
-// Alias pour compatibilité avec matches/page.tsx
 export type Match = MatchResult;
 export const computeMatches = matchProfiles;
