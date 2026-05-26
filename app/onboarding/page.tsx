@@ -100,6 +100,25 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
+    // --- FIX #11 : résolution de l'ID pour éviter les doublons ---
+    // Si le store n'a pas de profileId (ex: rafraîchissement ou nouvelle session),
+    // on cherche si un profil avec le même email existe déjà en base.
+    let resolvedId = profile.profileId;
+
+    if (!resolvedId && profile.email) {
+      const { data: existing } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('email', profile.email)
+        .maybeSingle();
+
+      if (existing?.id) {
+        resolvedId = existing.id;
+        setProfile({ profileId: existing.id });
+      }
+    }
+    // --- FIN FIX #11 ---
+
     const basePayload = {
       name: profile.name,
       age: profile.age,
@@ -115,8 +134,8 @@ export default function OnboardingPage() {
       discord: profile.discord || null,
     };
 
-    const payload = profile.profileId
-      ? { id: profile.profileId, ...basePayload }
+    const payload = resolvedId
+      ? { id: resolvedId, ...basePayload }
       : basePayload;
 
     const { data, error } = await supabase
@@ -141,9 +160,13 @@ export default function OnboardingPage() {
     );
   }
 
+  const isEditing = !!profile.profileId;
+
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-10">
-      <h1 className="text-4xl font-black text-text">Tell us your gaming profile</h1>
+      <h1 className="text-4xl font-black text-text">
+        {isEditing ? 'Update your gaming profile' : 'Tell us your gaming profile'}
+      </h1>
       <p className="mt-3 text-muted">This helps us match you with the right players in Utrecht.</p>
 
       <div className="mt-8 grid gap-6">
@@ -310,7 +333,7 @@ export default function OnboardingPage() {
 
         <div className="flex justify-end">
           <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Saving...' : 'See matches'}
+            {loading ? 'Saving...' : isEditing ? 'Update profile' : 'See matches'}
           </Button>
         </div>
       </div>
