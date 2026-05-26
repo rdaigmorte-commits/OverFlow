@@ -4,14 +4,26 @@ export type Profile = {
   games: string[];
   platform: string;
   style: string;
-  language: string;
+  language: string | string[];  // tableau en base, string dans le store
   availability: string[];
   city?: string;
+  email?: string | null;
+  discord?: string | null;
 };
 
 export type MatchResult = {
   profile: Profile;
   score: number;
+  fitLabel: string;
+  fitReason: string;
+  // Champs platés pour faciliter l'affichage
+  id: string;
+  name: string;
+  games: string[];
+  platform: string;
+  language: string | string[];
+  email?: string | null;
+  discord?: string | null;
   fitLabel: string;
   fitReason: string;
 };
@@ -29,23 +41,29 @@ export type MatchResult = {
  * ─────────────────────────────────────
  * Score max                   |  100
  */
+
+// Normalise language en tableau quelle que soit la source
+function toLangArray(lang: string | string[] | null | undefined): string[] {
+  if (!lang) return [];
+  if (Array.isArray(lang)) return lang;
+  return [lang];
+}
+
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
-  // Jeux en commun — 40 pts
   const commonGames = a.games.filter((g) => b.games.includes(g));
   if (commonGames.length > 0) score += 40;
 
-  // Même plateforme — 20 pts
   if (a.platform && b.platform && a.platform === b.platform) score += 20;
 
-  // Même style — 20 pts
   if (a.style && b.style && a.style === b.style) score += 20;
 
-  // Langue en commun — 10 pts
-  if (a.language && b.language && a.language === b.language) score += 10;
+  // Langue — gère string et string[]
+  const aLangs = toLangArray(a.language);
+  const bLangs = toLangArray(b.language);
+  if (aLangs.some((l) => bLangs.includes(l))) score += 10;
 
-  // Créneau en commun — 10 pts
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
   if (commonSlots.length > 0) score += 10;
 
@@ -65,7 +83,11 @@ export function getFitReason(a: Profile, b: Profile): string {
   if (commonGames.length > 0) parts.push(`plays ${commonGames.join(', ')}`);
   if (a.platform === b.platform) parts.push(`same platform (${a.platform})`);
   if (a.style === b.style) parts.push(`same playstyle (${a.style})`);
-  if (a.language === b.language) parts.push(`speaks ${a.language}`);
+
+  const aLangs = toLangArray(a.language);
+  const bLangs = toLangArray(b.language);
+  const commonLang = aLangs.find((l) => bLangs.includes(l));
+  if (commonLang) parts.push(`speaks ${commonLang}`);
 
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
   if (commonSlots.length > 0) parts.push(`available ${commonSlots[0]}`);
@@ -84,6 +106,14 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         score,
         fitLabel: getFitLabel(score),
         fitReason: getFitReason(current, p),
+        // Champs platés pour l'affichage direct dans la page
+        id: p.id,
+        name: p.name,
+        games: p.games ?? [],
+        platform: p.platform,
+        language: p.language,
+        email: p.email ?? null,
+        discord: p.discord ?? null,
       };
     })
     .filter((r) => r.score > 0)
