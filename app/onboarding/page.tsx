@@ -20,8 +20,6 @@ export default function OnboardingPage() {
   const [hydrating, setHydrating] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Au montage : si un profileId existe (depuis localStorage via le store),
-  // on recharge les données depuis Supabase pour pré-remplir le formulaire.
   useEffect(() => {
     async function hydrateFromSupabase() {
       const profileId = profile.profileId;
@@ -29,13 +27,11 @@ export default function OnboardingPage() {
         setHydrating(false);
         return;
       }
-
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', profileId)
         .single();
-
       if (!error && data) {
         setProfile({
           profileId: data.id,
@@ -100,25 +96,6 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
-    // --- FIX #11 : résolution de l'ID pour éviter les doublons ---
-    // Si le store n'a pas de profileId (ex: rafraîchissement ou nouvelle session),
-    // on cherche si un profil avec le même email existe déjà en base.
-    let resolvedId = profile.profileId;
-
-    if (!resolvedId && profile.email) {
-      const { data: existing } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', profile.email)
-        .maybeSingle();
-
-      if (existing?.id) {
-        resolvedId = existing.id;
-        setProfile({ profileId: existing.id });
-      }
-    }
-    // --- FIN FIX #11 ---
-
     const basePayload = {
       name: profile.name,
       age: profile.age,
@@ -134,15 +111,31 @@ export default function OnboardingPage() {
       discord: profile.discord || null,
     };
 
-    const payload = resolvedId
-      ? { id: resolvedId, ...basePayload }
-      : basePayload;
+    let data: any = null;
+    let error: any = null;
 
-    const { data, error } = await supabase
-      .from('profiles')
-      .upsert(payload, { onConflict: 'id' })
-      .select()
-      .single();
+    if (profile.profileId) {
+      // Cas 1 : on a un ID → upsert classique sur l'id
+      ({ data, error } = await supabase
+        .from('profiles')
+        .upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' })
+        .select()
+        .single());
+    } else if (profile.email) {
+      // Cas 2 : pas d'ID mais un email → upsert sur l'email (évite le 409)
+      ({ data, error } = await supabase
+        .from('profiles')
+        .upsert(basePayload, { onConflict: 'email' })
+        .select()
+        .single());
+    } else {
+      // Cas 3 : pas d'ID ni d'email → insertion simple
+      ({ data, error } = await supabase
+        .from('profiles')
+        .insert(basePayload)
+        .select()
+        .single());
+    }
 
     setLoading(false);
 
