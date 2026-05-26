@@ -12,11 +12,95 @@ function fitStyle(label: string) {
   return 'border-border bg-panel2 text-text';
 }
 
+type ContactInfo = {
+  name: string;
+  email?: string | null;
+  discord?: string | null;
+};
+
+function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () => void }) {
+  const [copiedEmail, setCopiedEmail] = useState(false);
+  const [copiedDiscord, setCopiedDiscord] = useState(false);
+
+  const copy = (value: string, type: 'email' | 'discord') => {
+    navigator.clipboard.writeText(value).then(() => {
+      if (type === 'email') { setCopiedEmail(true); setTimeout(() => setCopiedEmail(false), 2000); }
+      else { setCopiedDiscord(true); setTimeout(() => setCopiedDiscord(false), 2000); }
+    });
+  };
+
+  const hasContact = contact.email || contact.discord;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-bold">Contact {contact.name}</h2>
+          <button onClick={onClose} className="text-muted hover:text-text text-xl leading-none" aria-label="Close">×</button>
+        </div>
+
+        {!hasContact ? (
+          <div className="mt-5">
+            <p className="text-sm text-muted">{contact.name} hasn&apos;t shared any contact info yet.</p>
+            <p className="mt-2 text-sm text-muted">You can still meet them at the next OverFlow IRL event in Utrecht! 🎮</p>
+          </div>
+        ) : (
+          <div className="mt-5 grid gap-3">
+            <p className="text-sm text-muted">Reach out directly to connect and organise a session.</p>
+            {contact.email && (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
+                <div>
+                  <div className="text-xs text-muted uppercase tracking-widest mb-1">Email</div>
+                  <div className="text-sm font-medium text-text">{contact.email}</div>
+                </div>
+                <button
+                  onClick={() => copy(contact.email!, 'email')}
+                  className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2"
+                >
+                  {copiedEmail ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+            )}
+            {contact.discord && (
+              <div className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
+                <div>
+                  <div className="text-xs text-muted uppercase tracking-widest mb-1">Discord</div>
+                  <div className="text-sm font-medium text-text">{contact.discord}</div>
+                </div>
+                <button
+                  onClick={() => copy(contact.discord!, 'discord')}
+                  className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2"
+                >
+                  {copiedDiscord ? '✓ Copied' : 'Copy'}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+        >
+          Close
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function MatchesPage() {
   const { profile } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
+  const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -46,7 +130,6 @@ export default function MatchesPage() {
     fetchMatches();
   }, [profile.profileId]);
 
-  // US-032 : construire le résumé du profil depuis le store Zustand
   const profileSummaryLines = [
     (profile.games ?? []).length > 0 && { label: 'Games', value: (profile.games ?? []).join(', ') },
     profile.platform && { label: 'Platform', value: profile.platform },
@@ -60,6 +143,11 @@ export default function MatchesPage() {
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
+
+      {selectedContact && (
+        <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black">Your best local matches</h1>
@@ -86,11 +174,8 @@ export default function MatchesPage() {
           </Card>
         )}
 
-        {/* État vide — US-032 / 033 / 034 */}
         {!loading && !fetchError && matches.length === 0 && (
           <div className="grid gap-5">
-
-            {/* US-033 — Statut Early Tester */}
             <Card className="p-6">
               <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                 <div>
@@ -100,7 +185,6 @@ export default function MatchesPage() {
               </div>
             </Card>
 
-            {/* US-032 — Résumé du profil */}
             {hasProfileData && (
               <Card className="p-6">
                 <h2 className="text-lg font-bold">Your saved profile</h2>
@@ -116,7 +200,6 @@ export default function MatchesPage() {
               </Card>
             )}
 
-            {/* US-034 — What happens next */}
             <Card className="p-6">
               <h2 className="text-lg font-bold">What happens next?</h2>
               <ul className="mt-4 grid gap-3 text-sm text-muted">
@@ -130,7 +213,6 @@ export default function MatchesPage() {
                 </div>
               )}
             </Card>
-
           </div>
         )}
 
@@ -144,7 +226,12 @@ export default function MatchesPage() {
                 <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
               </div>
               <div className="flex flex-col gap-2">
-                <button className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black">Request match</button>
+                <button
+                  onClick={() => setSelectedContact({ name: m.name, email: m.email, discord: m.discord })}
+                  className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
+                >
+                  Request match
+                </button>
                 <button className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text">Why this match?</button>
               </div>
             </div>
