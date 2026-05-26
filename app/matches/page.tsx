@@ -96,47 +96,92 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
 }
 
 export default function MatchesPage() {
-  const { profile } = useOverflowStore();
+  const { profile, setProfile } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
+  const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
 
   useEffect(() => {
     async function fetchMatches() {
-      const { data, error } = await supabase.from('profiles').select('*');
+      // 1. Récupère le profileId depuis le store (lui-même initialisé depuis localStorage)
+      const profileId = profile.profileId;
 
-      if (error || !data) {
+      // 2. Si on a un profileId, on recharge le profil depuis Supabase
+      //    pour ne pas dépendre du store Zustand qui se vide au refresh
+      let hydratedProfile = profile;
+
+      if (profileId) {
+        const { data: me, error: meError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', profileId)
+          .single();
+
+        if (!meError && me) {
+          // Hydrate le store avec les vraies données Supabase
+          const updated = {
+            profileId: me.id,
+            name: me.name ?? '',
+            age: me.age ?? '',
+            city: me.city ?? 'Utrecht',
+            language: Array.isArray(me.language) ? me.language : (me.language ? [me.language] : []),
+            platform: me.platform ?? '',
+            games: Array.isArray(me.games) ? me.games : [],
+            style: me.style ?? '',
+            availability: Array.isArray(me.availability) ? me.availability : [],
+            openIRL: me.open_irl ?? false,
+            consent: me.consent ?? false,
+            email: me.email ?? '',
+            discord: me.discord ?? '',
+          };
+          setProfile(updated);
+          hydratedProfile = updated as typeof profile;
+        }
+      }
+
+      // 3. Charge tous les profils pour le matching
+      const { data: allProfiles, error: allError } = await supabase
+        .from('profiles')
+        .select('*');
+
+      if (allError || !allProfiles) {
         setFetchError(true);
         setLoading(false);
         return;
       }
 
+      // 4. Construit l'objet profil courant pour computeMatches
       const current = {
-        id: profile.profileId ?? '',
-        name: profile.name,
-        games: profile.games ?? [],
-        platform: profile.platform,
-        language: profile.language,
-        availability: profile.availability ?? [],
-        style: profile.style,
-        city: profile.city,
+        id: hydratedProfile.profileId ?? '',
+        name: hydratedProfile.name,
+        games: hydratedProfile.games ?? [],
+        platform: hydratedProfile.platform,
+        language: hydratedProfile.language,
+        availability: hydratedProfile.availability ?? [],
+        style: hydratedProfile.style,
+        city: hydratedProfile.city,
       };
 
-      const results = computeMatches(current, data);
+      setCurrentProfile(hydratedProfile as typeof profile);
+      const results = computeMatches(current, allProfiles);
       setMatches(results);
       setLoading(false);
     }
     fetchMatches();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.profileId]);
 
+  const displayProfile = currentProfile ?? profile;
+
   const profileSummaryLines = [
-    (profile.games ?? []).length > 0 && { label: 'Games', value: (profile.games ?? []).join(', ') },
-    profile.platform && { label: 'Platform', value: profile.platform },
-    profile.style && { label: 'Style', value: profile.style },
-    (profile.availability ?? []).length > 0 && { label: 'Available', value: (profile.availability ?? []).join(', ') },
-    profile.city && { label: 'City', value: profile.city },
-    profile.openIRL && { label: 'Open to in-person events', value: 'Yes' },
+    (displayProfile.games ?? []).length > 0 && { label: 'Games', value: (displayProfile.games ?? []).join(', ') },
+    displayProfile.platform && { label: 'Platform', value: displayProfile.platform },
+    displayProfile.style && { label: 'Style', value: displayProfile.style },
+    (displayProfile.availability ?? []).length > 0 && { label: 'Available', value: (displayProfile.availability ?? []).join(', ') },
+    displayProfile.city && { label: 'City', value: displayProfile.city },
+    displayProfile.openIRL && { label: 'Open to in-person events', value: 'Yes' },
   ].filter(Boolean) as { label: string; value: string }[];
 
   const hasProfileData = profileSummaryLines.length > 0;
@@ -207,7 +252,7 @@ export default function MatchesPage() {
                 <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
                 <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
               </ul>
-              {!profile.email && (
+              {!displayProfile.email && (
                 <div className="mt-5 rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
                   ⚠️ Add your email in your profile to get notified. <Link href="/onboarding" className="underline text-text">Update profile</Link>
                 </div>

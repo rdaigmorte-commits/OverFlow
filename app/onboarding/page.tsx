@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -17,7 +17,47 @@ export default function OnboardingPage() {
   const { profile, setProfile } = useOverflowStore();
   const [gameInput, setGameInput] = useState('');
   const [loading, setLoading] = useState(false);
+  const [hydrating, setHydrating] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Au montage : si un profileId existe (depuis localStorage via le store),
+  // on recharge les données depuis Supabase pour pré-remplir le formulaire.
+  useEffect(() => {
+    async function hydrateFromSupabase() {
+      const profileId = profile.profileId;
+      if (!profileId) {
+        setHydrating(false);
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
+
+      if (!error && data) {
+        setProfile({
+          profileId: data.id,
+          name: data.name ?? '',
+          age: data.age ?? '',
+          city: data.city ?? 'Utrecht',
+          language: Array.isArray(data.language) ? data.language : (data.language ? [data.language] : []),
+          platform: data.platform ?? '',
+          games: Array.isArray(data.games) ? data.games : [],
+          style: data.style ?? '',
+          availability: Array.isArray(data.availability) ? data.availability : [],
+          openIRL: data.open_irl ?? false,
+          consent: data.consent ?? false,
+          email: data.email ?? '',
+          discord: data.discord ?? '',
+        });
+      }
+      setHydrating(false);
+    }
+    hydrateFromSupabase();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const toggleMulti = (key: 'games' | 'availability' | 'language', value: string) => {
     const current = profile[key] as string[];
@@ -60,9 +100,6 @@ export default function OnboardingPage() {
     setLoading(true);
     setError(null);
 
-    // Si profileId est null (premier enregistrement), on n'inclut pas id
-    // pour laisser Supabase générer un UUID automatiquement.
-    // Si profileId existe (mise à jour), on l'inclut pour le upsert.
     const basePayload = {
       name: profile.name,
       age: profile.age,
@@ -95,6 +132,14 @@ export default function OnboardingPage() {
     setProfile({ profileId: data.id });
     router.push('/matches');
   };
+
+  if (hydrating) {
+    return (
+      <main className="mx-auto min-h-screen max-w-4xl px-6 py-10">
+        <p className="text-muted">Loading your profile...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto min-h-screen max-w-4xl px-6 py-10">
@@ -148,7 +193,6 @@ export default function OnboardingPage() {
           </div>
         </Card>
 
-        {/* Langues multi-selection */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Languages <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -169,7 +213,6 @@ export default function OnboardingPage() {
           </div>
         </Card>
 
-        {/* Jeux */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Games <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -213,7 +256,6 @@ export default function OnboardingPage() {
           </div>
         </Card>
 
-        {/* Disponibilites */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Availability</h2>
           <div className="mt-4 flex flex-wrap gap-3">
@@ -242,7 +284,6 @@ export default function OnboardingPage() {
           </label>
         </Card>
 
-        {/* Contact — US-017 */}
         <Card className="p-6">
           <h2 className="text-xl font-bold">Stay in the loop <span className="text-sm font-normal text-muted">(optional but recommended)</span></h2>
           <p className="mt-2 text-sm text-muted">You&apos;ll be the first to know when a compatible group forms in Utrecht. No spam, only useful match suggestions.</p>
