@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
+import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, type Match } from '@/lib/match';
@@ -107,7 +108,6 @@ export default function MatchesPage() {
     async function fetchMatches() {
       const profileId = profile.profileId;
 
-      // Guard: no profileId → stop loading, show no-profile state
       if (!profileId) {
         setLoading(false);
         return;
@@ -174,18 +174,7 @@ export default function MatchesPage() {
   const displayProfile = currentProfile ?? profile;
   const hasNoProfile = !loading && !profile.profileId;
 
-  const profileSummaryLines = [
-    (displayProfile.games ?? []).length > 0 && { label: 'Games', value: (displayProfile.games ?? []).join(', ') },
-    displayProfile.platform && { label: 'Platform', value: displayProfile.platform },
-    displayProfile.style && { label: 'Style', value: displayProfile.style },
-    (displayProfile.availability ?? []).length > 0 && { label: 'Available', value: (displayProfile.availability ?? []).join(', ') },
-    displayProfile.city && { label: 'City', value: displayProfile.city },
-    displayProfile.openIRL && { label: 'Open to in-person events', value: 'Yes' },
-  ].filter(Boolean) as { label: string; value: string }[];
-
-  const hasProfileData = profileSummaryLines.length > 0;
-
-  // No-profile guard screen
+  // ── NO PROFILE GUARD ────────────────────────────────────────────
   if (hasNoProfile) {
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
@@ -207,6 +196,7 @@ export default function MatchesPage() {
     );
   }
 
+  // ── MAIN LAYOUT ───────────────────────────────────────────────
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
 
@@ -214,94 +204,101 @@ export default function MatchesPage() {
         <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
       )}
 
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-4xl font-black">Your best local matches</h1>
-          <p className="mt-3 text-muted">Suggested based on your profile and Utrecht location.</p>
-        </div>
-        <Link className="rounded-xl border border-border px-4 py-3 text-sm" href="/onboarding">Edit profile</Link>
+      {/* Page header */}
+      <div className="mb-8">
+        <h1 className="text-4xl font-black">Your matches</h1>
+        <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
       </div>
 
-      <div className="mt-8 grid gap-5">
-        {loading && (
-          <p className="text-muted">Finding your matches...</p>
+      {/* ─── ZONE 1 — Notifications (stub — implémenté dans US-090b dès que US-051 + US-060 sont livrées) ─── */}
+      {/* <NotificationBanner requests={pendingRequests} /> */}
+
+      <div className="grid gap-6">
+
+        {/* ─── ZONE 2 — Résumé profil ─── */}
+        {!loading && (
+          <ProfileSummary
+            name={displayProfile.name}
+            games={displayProfile.games ?? []}
+            platform={displayProfile.platform}
+            style={displayProfile.style}
+            language={displayProfile.language ?? []}
+            city={displayProfile.city}
+            openIRL={displayProfile.openIRL}
+          />
         )}
 
-        {!loading && fetchError && (
-          <Card className="p-8 text-center">
-            <div className="text-2xl font-bold">Something went wrong</div>
-            <p className="mt-3 text-muted">We couldn&apos;t load your matches. Please try refreshing the page.</p>
-            <button
-              onClick={() => { setFetchError(false); setLoading(true); }}
-              className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
-            >
-              Try again
-            </button>
-          </Card>
-        )}
+        {/* ─── ZONE 3 — Matches ─── */}
+        <section>
+          {loading && (
+            <p className="text-muted text-sm">Finding your matches...</p>
+          )}
 
-        {!loading && !fetchError && matches.length === 0 && (
-          <div className="grid gap-5">
-            <Card className="p-6">
-              <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-                <div>
-                  <span className="inline-flex rounded-full border border-accent bg-accent px-4 py-1 text-xs font-bold text-black">Early OverFlow Tester · Utrecht</span>
-                  <p className="mt-3 text-muted text-sm">You&apos;ll be prioritised for the first match suggestions and test sessions when enough compatible players are available.</p>
-                </div>
-              </div>
+          {!loading && fetchError && (
+            <Card className="p-8 text-center">
+              <div className="text-2xl font-bold">Something went wrong</div>
+              <p className="mt-3 text-muted">We couldn&apos;t load your matches. Please try refreshing the page.</p>
+              <button
+                onClick={() => { setFetchError(false); setLoading(true); }}
+                className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
+              >
+                Try again
+              </button>
             </Card>
+          )}
 
-            {hasProfileData && (
+          {!loading && !fetchError && matches.length === 0 && (
+            <div className="grid gap-5">
               <Card className="p-6">
-                <h2 className="text-lg font-bold">Your saved profile</h2>
-                <p className="mt-1 text-sm text-muted">Here&apos;s what we&apos;ve recorded. <Link href="/onboarding" className="underline">Edit</Link> anytime.</p>
-                <ul className="mt-4 grid gap-2">
-                  {profileSummaryLines.map((line) => (
-                    <li key={line.label} className="flex gap-3 text-sm">
-                      <span className="w-36 shrink-0 text-muted">{line.label}</span>
-                      <span className="text-text font-medium">{line.value}</span>
-                    </li>
-                  ))}
-                </ul>
+                <span className="inline-flex rounded-full border border-accent bg-accent px-4 py-1 text-xs font-bold text-black">Early OverFlow Tester · Utrecht</span>
+                <p className="mt-3 text-muted text-sm">You&apos;re one of the first. The community is growing — you&apos;ll be prioritised when compatible players join.</p>
               </Card>
-            )}
 
-            <Card className="p-6">
-              <h2 className="text-lg font-bold">What happens next?</h2>
-              <ul className="mt-4 grid gap-3 text-sm text-muted">
-                <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you by email when a small compatible group forms.</li>
-                <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
-                <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
-              </ul>
-              {!displayProfile.email && (
-                <div className="mt-5 rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
-                  ⚠️ Add your email in your profile to get notified. <Link href="/onboarding" className="underline text-text">Update profile</Link>
-                </div>
-              )}
-            </Card>
-          </div>
-        )}
-
-        {!loading && !fetchError && matches.map((m, index) => (
-          <Card key={m.id || `match-${index}`} className="p-5">
-            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-              <div>
-                <div className="text-2xl font-bold">{m.name}</div>
-                <div className="mt-1 text-sm text-muted">{(m.games ?? []).join(', ')} • {m.platform} • {Array.isArray(m.language) ? m.language.join(', ') : m.language}</div>
-                <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${fitStyle(m.fitLabel)}`}>{m.fitLabel}</div>
-                <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
-              </div>
-              <div className="flex flex-col gap-2">
-                <button
-                  onClick={() => setSelectedContact({ name: m.name, email: m.email, discord: m.discord })}
-                  className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
-                >
-                  Request match
-                </button>
-              </div>
+              <Card className="p-6">
+                <h2 className="text-lg font-bold">What happens next?</h2>
+                <ul className="mt-4 grid gap-3 text-sm text-muted">
+                  <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you by email when a compatible group forms.</li>
+                  <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
+                  <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
+                </ul>
+                {!displayProfile.email && (
+                  <div className="mt-5 rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
+                    ⚠️ Add your email to get notified. <Link href="/onboarding" className="underline text-text">Update profile</Link>
+                  </div>
+                )}
+              </Card>
             </div>
-          </Card>
-        ))}
+          )}
+
+          {!loading && !fetchError && matches.length > 0 && (
+            <div className="grid gap-5">
+              <p className="text-sm text-muted font-medium">
+                {matches.length} player{matches.length > 1 ? 's' : ''} match your vibe in Utrecht
+              </p>
+              {matches.map((m, index) => (
+                <Card key={m.id || `match-${index}`} className="p-5">
+                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                    <div>
+                      <div className="text-2xl font-bold">{m.name}</div>
+                      <div className="mt-1 text-sm text-muted">{(m.games ?? []).join(', ')} • {m.platform} • {Array.isArray(m.language) ? m.language.join(', ') : m.language}</div>
+                      <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${fitStyle(m.fitLabel)}`}>{m.fitLabel}</div>
+                      <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
+                    </div>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={() => setSelectedContact({ name: m.name, email: m.email, discord: m.discord })}
+                        className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
+                      >
+                        Request match
+                      </button>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+        </section>
+
       </div>
     </main>
   );
