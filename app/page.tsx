@@ -109,7 +109,7 @@ export default function HomePage() {
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
         <header className="flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
-          <div className="text-sm text-muted">Utrecht only · Free</div>
+          <div className="text-sm text-muted">Utrecht · Free</div>
         </header>
       </main>
     );
@@ -136,7 +136,7 @@ export default function HomePage() {
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
         <header className="flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
-          <div className="text-sm text-muted">Utrecht only · MVP</div>
+          <div className="text-sm text-muted">Utrecht · MVP</div>
         </header>
         <section className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-2">
           <div>
@@ -190,14 +190,8 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        /* ───────────────────────────────────────────────── */
-        /* Token vert tertiaire                                   */
-        /* ───────────────────────────────────────────────── */
         :root { --of-green: #4ade80; --of-green-dim: rgba(74,222,128,0.12); }
 
-        /* ───────────────────────────────────────────────── */
-        /* DOT GRID — wrapper fixe pleine page                    */
-        /* ───────────────────────────────────────────────── */
         .of-dots {
           position: fixed;
           inset: 0;
@@ -205,11 +199,9 @@ export default function HomePage() {
           pointer-events: none;
           background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
           background-size: 28px 28px;
-          /* Masque uniquement ce div, pas le contenu */
           -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
           mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
         }
-        /* Glow orange subtil */
         .of-glow {
           position: fixed;
           top: -20%;
@@ -223,9 +215,6 @@ export default function HomePage() {
           z-index: 0;
         }
 
-        /* ───────────────────────────────────────────────── */
-        /* Reveal animations                                       */
-        /* ───────────────────────────────────────────────── */
         @keyframes of-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -236,9 +225,6 @@ export default function HomePage() {
         .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
 
-        /* ───────────────────────────────────────────────── */
-        /* Sweep headline — 2s                                     */
-        /* ───────────────────────────────────────────────── */
         @keyframes of-sweep {
           from { background-position: 200% center; }
           to   { background-position:   0% center; }
@@ -253,9 +239,6 @@ export default function HomePage() {
           animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
 
-        /* ───────────────────────────────────────────────── */
-        /* Why cards — reset gradient + scroll reveal               */
-        /* ───────────────────────────────────────────────── */
         .of-why,
         .of-why * {
           background-image: none !important;
@@ -271,9 +254,6 @@ export default function HomePage() {
         }
         .of-why.of-on { opacity: 1; transform: translateY(0); }
 
-        /* ───────────────────────────────────────────────── */
-        /* Vert — dot de statut pulse                              */
-        /* ───────────────────────────────────────────────── */
         @keyframes of-dot {
           0%,100% { box-shadow: 0 0 0 0   rgba(74,222,128,0.7); }
           50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0);   }
@@ -283,13 +263,11 @@ export default function HomePage() {
           animation: of-dot 2s ease-in-out infinite;
         }
 
-        /* ───────────────────────────────────────────────── */
-        /* Badges tertiaires verts                                 */
-        /* ───────────────────────────────────────────────── */
+        /* Badge vert — émoji + label inline */
         .of-tag {
           display: inline-flex;
           align-items: center;
-          gap: 4px;
+          gap: 5px;
           padding: 2px 8px;
           border-radius: 999px;
           font-size: 0.65rem;
@@ -299,24 +277,14 @@ export default function HomePage() {
           color: var(--of-green);
           background: var(--of-green-dim);
           border: 1px solid rgba(74,222,128,0.2);
-          margin-bottom: 6px;
         }
-        .of-tag::before {
-          content: '';
-          display: inline-block;
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--of-green);
-          opacity: 0.8;
+        .of-tag-icon {
+          font-size: 0.75rem;
+          line-height: 1;
         }
 
-        /* Texte vert utilitaire */
         .of-green { color: var(--of-green); }
 
-        /* ───────────────────────────────────────────────── */
-        /* CTA glow hover                                           */
-        /* ───────────────────────────────────────────────── */
         .of-cta {
           transition: transform 0.2s cubic-bezier(0.16,1,0.3,1),
                       box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
@@ -328,7 +296,6 @@ export default function HomePage() {
         .of-cta:active { transform: scale(0.97); }
       `}</style>
 
-      {/* Layers de fond — séparés du contenu */}
       <div className="of-dots" aria-hidden="true" />
       <div className="of-glow" aria-hidden="true" />
 
@@ -336,13 +303,10 @@ export default function HomePage() {
         className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10"
         style={{ backgroundColor: '#0a0a0a', zIndex: 1 }}
       >
+        {/* Header — sans badge Live */}
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
-          {/* Header : tag vert “Live” */}
-          <div className="flex items-center gap-3">
-            <span className="of-tag">Live</span>
-            <span className="text-sm text-muted">Utrecht only · Free</span>
-          </div>
+          <div className="text-sm text-muted">Utrecht · Free</div>
         </header>
 
         {/* Hero */}
@@ -383,18 +347,18 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Social proof — accents verts sur les mots clés */}
+            {/* Social proof — tout en vert */}
             <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted`}>
               <span className="of-green font-semibold">✓ Free</span>
               <span className="text-border">·</span>
-              <span>No account needed</span>
+              <span className="of-green font-semibold">✓ No account needed</span>
               <span className="text-border">·</span>
-              <span className="of-green font-semibold">✓ Utrecht only</span>
+              <span className="of-green font-semibold">✓ Utrecht</span>
             </p>
           </div>
         </section>
 
-        {/* Why OverFlow — scroll reveal cascade + tags verts */}
+        {/* Why OverFlow — émoji inline avec badge */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
@@ -404,8 +368,11 @@ export default function HomePage() {
                 className={`of-why${whyReveal.visible ? ' of-on' : ''}`}
                 style={{ transitionDelay: `${i * 130}ms` }}
               >
-                <span className="of-tag">{item.tag}</span>
-                <div className="mb-3 text-2xl">{item.icon}</div>
+                {/* Émoji + badge sur la même ligne */}
+                <div className="mb-3 flex items-center gap-2">
+                  <span className="text-xl leading-none">{item.icon}</span>
+                  <span className="of-tag">{item.tag}</span>
+                </div>
                 <h3 className="mb-2 text-sm font-bold text-text">{item.title}</h3>
                 <p className="text-sm leading-6 text-muted">{item.desc}</p>
               </div>
