@@ -187,17 +187,30 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        /* ─ Dot grid background ────────────────────────── */
+        /* ─ Background container ─────────────────────────────── */
         .of-bg {
           background-color: #0a0a0a;
-          background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
-          background-size: 28px 28px;
-          /* Fondu vers le bas : les points disparaissent progressivement */
-          -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
-          mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+          position: relative;
+          isolation: isolate;
         }
-        /* Glow orange isolé en pseudo-element, ne déborde pas sur les enfants */
+
+        /* Dot grid dans ::before — isolé du contenu, masque CSS s'applique
+           uniquement à ce pseudo-élément et non au texte */
         .of-bg::before {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.065) 1px, transparent 1px);
+          background-size: 28px 28px;
+          /* Fondu vers le bas : points disparaissent progressivement */
+          -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
+          mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
+          pointer-events: none;
+          z-index: -2;
+        }
+
+        /* Glow orange dans ::after — séparé du dot grid */
+        .of-bg::after {
           content: '';
           position: fixed;
           top: -20%;
@@ -205,13 +218,13 @@ export default function HomePage() {
           width: 65vw;
           height: 65vw;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,122,0,0.06) 0%, rgba(255,122,0,0.015) 45%, transparent 70%);
+          background: radial-gradient(circle, rgba(255,122,0,0.055) 0%, rgba(255,122,0,0.012) 45%, transparent 70%);
           pointer-events: none;
-          z-index: 0;
+          z-index: -1;
           filter: blur(60px);
         }
 
-        /* ─ Reveal animations ──────────────────────────── */
+        /* ─ Reveal animations ─────────────────────────────────── */
         @keyframes of-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -222,7 +235,7 @@ export default function HomePage() {
         .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
 
-        /* ─ Sweep headline — 2s au lieu de 1s ─────────────── */
+        /* ─ Sweep headline — 2s ────────────────────────────────── */
         @keyframes of-sweep {
           from { background-position: 200% center; }
           to   { background-position:   0% center; }
@@ -237,7 +250,7 @@ export default function HomePage() {
           animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
 
-        /* ─ Fix : reset complet sur les cards Why ───────────── */
+        /* ─ Fix : reset gradient sur les cards Why ─────────────── */
         .of-why,
         .of-why * {
           background-image: none !important;
@@ -253,14 +266,14 @@ export default function HomePage() {
         }
         .of-why.of-on { opacity: 1; transform: translateY(0); }
 
-        /* ─ Badge pulse dot ───────────────────────────── */
+        /* ─ Badge pulse dot ───────────────────────────────────── */
         @keyframes of-dot {
           0%,100% { box-shadow: 0 0 0 0   rgba(255,122,0,0.6); }
           50%      { box-shadow: 0 0 0 5px rgba(255,122,0,0);   }
         }
         .of-dot { animation: of-dot 2s ease-in-out infinite; }
 
-        /* ─ CTA glow hover ────────────────────────────── */
+        /* ─ CTA glow hover ────────────────────────────────────── */
         .of-cta {
           transition: transform 0.2s cubic-bezier(0.16,1,0.3,1),
                       box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
