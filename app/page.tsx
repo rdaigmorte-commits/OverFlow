@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
@@ -6,7 +7,13 @@ import { useOverflowStore } from '@/lib/store';
 
 export default function HomePage() {
   const { profile } = useOverflowStore();
-  const hasProfile = !!profile.profileId;
+  const [mounted, setMounted] = useState(false);
+
+  // Wait for client-side hydration before reading the store
+  // This prevents server/client HTML mismatch (Zustand persists to localStorage)
+  useEffect(() => { setMounted(true); }, []);
+
+  const hasProfile = mounted && !!profile.profileId;
 
   // ── RETURNING USER ──────────────────────────────────────────────
   if (hasProfile) {
@@ -64,7 +71,7 @@ export default function HomePage() {
     );
   }
 
-  // ── NEW VISITOR ─────────────────────────────────────────────────
+  // ── NEW VISITOR (also rendered server-side → always safe to hydrate) ──
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
       <header className="flex items-center justify-between py-2">
