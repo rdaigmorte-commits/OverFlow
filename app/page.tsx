@@ -6,17 +6,6 @@ import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 
-// Les timers de reveal ne démarrent qu'après mounted=true
-function useReveal(delay: number, enabled: boolean) {
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    if (!enabled) return;
-    const t = setTimeout(() => setVisible(true), delay);
-    return () => clearTimeout(t);
-  }, [delay, enabled]);
-  return visible;
-}
-
 function useScrollReveal(enabled: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
@@ -57,19 +46,19 @@ export default function HomePage() {
   const [mounted, setMounted] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [playerCount, setPlayerCount] = useState<number | null>(null);
+  const [heroVisible, setHeroVisible] = useState(false);
 
-  // Toutes les animations sont guardées par mounted
-  const r0 = useReveal(0, mounted);
-  const r1 = useReveal(120, mounted);
-  const r2 = useReveal(260, mounted);
-  const r3 = useReveal(400, mounted);
-  const r4 = useReveal(520, mounted);
   const whyReveal = useScrollReveal(mounted);
 
-  // mounted = true uniquement côté client
   useEffect(() => { setMounted(true); }, []);
 
-  // Compteur dynamique Supabase
+  // Déclenche les animations hero après mounted
+  useEffect(() => {
+    if (!mounted) return;
+    const t = setTimeout(() => setHeroVisible(true), 60);
+    return () => clearTimeout(t);
+  }, [mounted]);
+
   useEffect(() => {
     if (!mounted) return;
     supabase
@@ -80,7 +69,6 @@ export default function HomePage() {
       });
   }, [mounted]);
 
-  // Rechargement profil si profileId présent mais name absent
   useEffect(() => {
     if (!mounted) return;
     const profileId = profile.profileId;
@@ -114,7 +102,7 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, profile.profileId]);
 
-  // Avant mounted : rendu vide identique SSR/client — évite le mismatch
+  // Shell SSR neutre — identique serveur/client
   if (!mounted) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
@@ -196,120 +184,153 @@ export default function HomePage() {
   }
 
   // ── NEW VISITOR ──────────────────────────────────────────────────
+  const v = heroVisible;
+
   return (
     <>
       <style>{`
-        @keyframes of-grain {
-          0%,100% { transform:translate(0,0) }
-          25%      { transform:translate(-1%,-1%) }
-          50%      { transform:translate(1%,0) }
-          75%      { transform:translate(0,1%) }
+        /* ─ Radial glow background ───────────────────────── */
+        .of-bg::before {
+          content: '';
+          position: fixed;
+          top: -20%;
+          left: -10%;
+          width: 70vw;
+          height: 70vw;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(255,122,0,0.07) 0%, rgba(255,122,0,0.02) 40%, transparent 70%);
+          pointer-events: none;
+          z-index: 0;
+          filter: blur(40px);
         }
-        .of-grain::before {
-          content:'';
-          position:fixed;inset:-20%;
-          width:140%;height:140%;
-          background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-          background-size:180px 180px;
-          opacity:0.028;
-          pointer-events:none;
-          z-index:0;
-          animation:of-grain 8s steps(2) infinite;
+        /* ─ Grain overlay ────────────────────────────── */
+        .of-bg::after {
+          content: '';
+          position: fixed;
+          inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+          background-size: 180px 180px;
+          opacity: 0.03;
+          pointer-events: none;
+          z-index: 0;
         }
-        @keyframes of-fadeslide {
-          from { opacity:0; transform:translateY(18px); }
-          to   { opacity:1; transform:translateY(0); }
+
+        /* ─ Reveal ─────────────────────────────────── */
+        @keyframes of-up {
+          from { opacity: 0; transform: translateY(20px); }
+          to   { opacity: 1; transform: translateY(0); }
         }
-        .of-pulse { animation: of-pulse-dot 2s ease-in-out infinite; }
-        @keyframes of-pulse-dot {
-          0%,100% { box-shadow:0 0 0 0 rgba(255,122,0,0.5); }
-          50%      { box-shadow:0 0 0 5px rgba(255,122,0,0); }
+        .of-r0 { animation: of-up 0.6s cubic-bezier(0.16,1,0.3,1) both; }
+        .of-r1 { animation: of-up 0.6s 0.15s cubic-bezier(0.16,1,0.3,1) both; }
+        .of-r2 { animation: of-up 0.6s 0.30s cubic-bezier(0.16,1,0.3,1) both; }
+        .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
+        .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
+
+        /* ─ Sweep headline ───────────────────────────── */
+        @keyframes of-sweep {
+          from { background-position: 200% center; }
+          to   { background-position:   0% center; }
         }
-        .of-cta { transition: transform 0.18s cubic-bezier(0.16,1,0.3,1), box-shadow 0.18s cubic-bezier(0.16,1,0.3,1); }
-        .of-cta:hover { transform:scale(1.03); box-shadow:0 0 28px 4px rgba(255,122,0,0.2); }
-        .of-cta:active { transform:scale(0.98); }
-        .of-why-item {
-          opacity:0;
-          transform:translateY(14px);
-          transition: opacity 0.5s cubic-bezier(0.16,1,0.3,1), transform 0.5s cubic-bezier(0.16,1,0.3,1);
+        .of-sweep {
+          background: linear-gradient(90deg, #ff7a00 30%, #ffcc88 50%, #ff7a00 70%);
+          background-size: 200% auto;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          animation: of-sweep 1s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
-        .of-why-item.of-visible { opacity:1; transform:translateY(0); }
+
+        /* ─ Badge pulse dot ───────────────────────────── */
+        @keyframes of-dot {
+          0%,100% { box-shadow: 0 0 0 0   rgba(255,122,0,0.6); }
+          50%      { box-shadow: 0 0 0 5px rgba(255,122,0,0);   }
+        }
+        .of-dot { animation: of-dot 2s ease-in-out infinite; }
+
+        /* ─ CTA glow ───────────────────────────────── */
+        .of-cta {
+          transition: transform 0.2s cubic-bezier(0.16,1,0.3,1),
+                      box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
+        }
+        .of-cta:hover {
+          transform: scale(1.04) translateY(-1px);
+          box-shadow: 0 0 32px 6px rgba(255,122,0,0.25),
+                      0 4px 16px rgba(0,0,0,0.4);
+        }
+        .of-cta:active { transform: scale(0.97); }
+
+        /* ─ Why scroll reveal ─────────────────────────── */
+        .of-why {
+          opacity: 0;
+          transform: translateY(16px);
+          transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1),
+                      transform 0.55s cubic-bezier(0.16,1,0.3,1);
+        }
+        .of-why.of-on { opacity: 1; transform: translateY(0); }
       `}</style>
 
-      <main className="of-grain relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
+      <main className="of-bg relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
 
+        {/* Header */}
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
           <div className="text-sm text-muted">Utrecht only · Free</div>
         </header>
 
+        {/* Hero */}
         <section className="relative z-10 flex flex-1 flex-col justify-center py-16 lg:py-24">
           <div className="max-w-3xl">
 
             {/* Badge */}
-            <div
-              className="mb-6"
-              style={r0 ? { animation: 'of-fadeslide 0.55s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
-            >
+            <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
               {showBadge ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-pulse inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
                   {playerCount} gamers in Utrecht
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-pulse inline-block h-1.5 w-1.5 rounded-full bg-accent" />
+                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
                   Utrecht · Local matchmaking
                 </span>
               )}
             </div>
 
             {/* Headline */}
-            <h1
-              className="text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl"
-              style={r1 ? { animation: 'of-fadeslide 0.6s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
-            >
+            <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl`}>
               Find your teammates.<br />
-              <span className="text-accent">Play together.</span>
+              <span className={v ? 'of-sweep' : 'text-accent'}>Play together.</span>
             </h1>
 
             {/* Sub */}
-            <p
-              className="mt-6 max-w-xl text-lg leading-8 text-muted"
-              style={r2 ? { animation: 'of-fadeslide 0.55s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
-            >
+            <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
               OverFlow connects gamers in Utrecht — same games, same schedule, real meetups.<br />
               No feed, no algorithm. Just people who want to play.
             </p>
 
             {/* CTA */}
-            <div
-              className="mt-10 flex flex-wrap items-center gap-4"
-              style={r3 ? { animation: 'of-fadeslide 0.55s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
-            >
+            <div className={`${v ? 'of-r3' : 'opacity-0'} mt-10 flex flex-wrap items-center gap-4`}>
               <Link href="/onboarding">
                 <Button className="of-cta px-8 py-4 text-base font-bold">Find my teammates</Button>
               </Link>
             </div>
 
             {/* Social proof */}
-            <p
-              className="mt-5 text-xs text-muted"
-              style={r4 ? { animation: 'of-fadeslide 0.5s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
-            >
+            <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 text-xs text-muted`}>
               Free · No account needed · Utrecht only
             </p>
+
           </div>
         </section>
 
-        {/* Why OverFlow */}
+        {/* Why OverFlow — scroll reveal en cascade */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
             {WHY_ITEMS.map((item, i) => (
               <div
                 key={item.title}
-                className={`of-why-item${whyReveal.visible ? ' of-visible' : ''}`}
+                className={`of-why${whyReveal.visible ? ' of-on' : ''}`}
                 style={{ transitionDelay: `${i * 130}ms` }}
               >
                 <div className="mb-3 text-2xl">{item.icon}</div>
