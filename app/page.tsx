@@ -28,16 +28,19 @@ const WHY_ITEMS = [
     icon: '📍',
     title: 'Utrecht only',
     desc: 'Not a global feed. Every profile you see is someone you could actually meet.',
+    tag: 'Local',
   },
   {
     icon: '🎮',
     title: 'Same games, same vibe',
     desc: 'Matched by games, playstyle, language and schedule — not just location.',
+    tag: 'Smart match',
   },
   {
     icon: '🤝',
     title: 'Real meetups',
     desc: 'The goal is a session IRL. OverFlow is the bridge between online profiles and real play.',
+    tag: 'IRL ready',
   },
 ];
 
@@ -187,44 +190,42 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        /* ─ Background container ─────────────────────────────── */
-        .of-bg {
-          background-color: #0a0a0a;
-          position: relative;
-          isolation: isolate;
-        }
+        /* ───────────────────────────────────────────────── */
+        /* Token vert tertiaire                                   */
+        /* ───────────────────────────────────────────────── */
+        :root { --of-green: #4ade80; --of-green-dim: rgba(74,222,128,0.12); }
 
-        /* Dot grid dans ::before — isolé du contenu, masque CSS s'applique
-           uniquement à ce pseudo-élément et non au texte */
-        .of-bg::before {
-          content: '';
+        /* ───────────────────────────────────────────────── */
+        /* DOT GRID — wrapper fixe pleine page                    */
+        /* ───────────────────────────────────────────────── */
+        .of-dots {
           position: fixed;
           inset: 0;
-          background-image: radial-gradient(circle, rgba(255,255,255,0.065) 1px, transparent 1px);
-          background-size: 28px 28px;
-          /* Fondu vers le bas : points disparaissent progressivement */
-          -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
-          mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.5) 55%, transparent 100%);
+          z-index: 0;
           pointer-events: none;
-          z-index: -2;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+          background-size: 28px 28px;
+          /* Masque uniquement ce div, pas le contenu */
+          -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
+          mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
         }
-
-        /* Glow orange dans ::after — séparé du dot grid */
-        .of-bg::after {
-          content: '';
+        /* Glow orange subtil */
+        .of-glow {
           position: fixed;
           top: -20%;
           left: -10%;
           width: 65vw;
           height: 65vw;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,122,0,0.055) 0%, rgba(255,122,0,0.012) 45%, transparent 70%);
-          pointer-events: none;
-          z-index: -1;
+          background: radial-gradient(circle, rgba(255,122,0,0.055) 0%, rgba(255,122,0,0.01) 45%, transparent 70%);
           filter: blur(60px);
+          pointer-events: none;
+          z-index: 0;
         }
 
-        /* ─ Reveal animations ─────────────────────────────────── */
+        /* ───────────────────────────────────────────────── */
+        /* Reveal animations                                       */
+        /* ───────────────────────────────────────────────── */
         @keyframes of-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -235,7 +236,9 @@ export default function HomePage() {
         .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
 
-        /* ─ Sweep headline — 2s ────────────────────────────────── */
+        /* ───────────────────────────────────────────────── */
+        /* Sweep headline — 2s                                     */
+        /* ───────────────────────────────────────────────── */
         @keyframes of-sweep {
           from { background-position: 200% center; }
           to   { background-position:   0% center; }
@@ -250,7 +253,9 @@ export default function HomePage() {
           animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
 
-        /* ─ Fix : reset gradient sur les cards Why ─────────────── */
+        /* ───────────────────────────────────────────────── */
+        /* Why cards — reset gradient + scroll reveal               */
+        /* ───────────────────────────────────────────────── */
         .of-why,
         .of-why * {
           background-image: none !important;
@@ -266,14 +271,52 @@ export default function HomePage() {
         }
         .of-why.of-on { opacity: 1; transform: translateY(0); }
 
-        /* ─ Badge pulse dot ───────────────────────────────────── */
+        /* ───────────────────────────────────────────────── */
+        /* Vert — dot de statut pulse                              */
+        /* ───────────────────────────────────────────────── */
         @keyframes of-dot {
-          0%,100% { box-shadow: 0 0 0 0   rgba(255,122,0,0.6); }
-          50%      { box-shadow: 0 0 0 5px rgba(255,122,0,0);   }
+          0%,100% { box-shadow: 0 0 0 0   rgba(74,222,128,0.7); }
+          50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0);   }
         }
-        .of-dot { animation: of-dot 2s ease-in-out infinite; }
+        .of-dot {
+          background-color: var(--of-green);
+          animation: of-dot 2s ease-in-out infinite;
+        }
 
-        /* ─ CTA glow hover ────────────────────────────────────── */
+        /* ───────────────────────────────────────────────── */
+        /* Badges tertiaires verts                                 */
+        /* ───────────────────────────────────────────────── */
+        .of-tag {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 2px 8px;
+          border-radius: 999px;
+          font-size: 0.65rem;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--of-green);
+          background: var(--of-green-dim);
+          border: 1px solid rgba(74,222,128,0.2);
+          margin-bottom: 6px;
+        }
+        .of-tag::before {
+          content: '';
+          display: inline-block;
+          width: 5px;
+          height: 5px;
+          border-radius: 50%;
+          background: var(--of-green);
+          opacity: 0.8;
+        }
+
+        /* Texte vert utilitaire */
+        .of-green { color: var(--of-green); }
+
+        /* ───────────────────────────────────────────────── */
+        /* CTA glow hover                                           */
+        /* ───────────────────────────────────────────────── */
         .of-cta {
           transition: transform 0.2s cubic-bezier(0.16,1,0.3,1),
                       box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
@@ -285,28 +328,38 @@ export default function HomePage() {
         .of-cta:active { transform: scale(0.97); }
       `}</style>
 
-      <main className="of-bg relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
+      {/* Layers de fond — séparés du contenu */}
+      <div className="of-dots" aria-hidden="true" />
+      <div className="of-glow" aria-hidden="true" />
 
+      <main
+        className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10"
+        style={{ backgroundColor: '#0a0a0a', zIndex: 1 }}
+      >
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
-          <div className="text-sm text-muted">Utrecht only · Free</div>
+          {/* Header : tag vert “Live” */}
+          <div className="flex items-center gap-3">
+            <span className="of-tag">Live</span>
+            <span className="text-sm text-muted">Utrecht only · Free</span>
+          </div>
         </header>
 
         {/* Hero */}
         <section className="relative z-10 flex flex-1 flex-col justify-center py-16 lg:py-24">
           <div className="max-w-3xl">
 
-            {/* Badge */}
+            {/* Badge compteur — dot vert */}
             <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
               {showBadge ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-                  {playerCount} gamers in Utrecht
+                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
+                  <span>{playerCount} gamers in Utrecht</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full bg-accent" />
-                  Utrecht · Local matchmaking
+                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
+                  <span>Utrecht · Local matchmaking</span>
                 </span>
               )}
             </div>
@@ -330,14 +383,18 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Social proof */}
-            <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 text-xs text-muted`}>
-              Free · No account needed · Utrecht only
+            {/* Social proof — accents verts sur les mots clés */}
+            <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted`}>
+              <span className="of-green font-semibold">✓ Free</span>
+              <span className="text-border">·</span>
+              <span>No account needed</span>
+              <span className="text-border">·</span>
+              <span className="of-green font-semibold">✓ Utrecht only</span>
             </p>
           </div>
         </section>
 
-        {/* Why OverFlow — scroll reveal cascade */}
+        {/* Why OverFlow — scroll reveal cascade + tags verts */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
@@ -347,6 +404,7 @@ export default function HomePage() {
                 className={`of-why${whyReveal.visible ? ' of-on' : ''}`}
                 style={{ transitionDelay: `${i * 130}ms` }}
               >
+                <span className="of-tag">{item.tag}</span>
                 <div className="mb-3 text-2xl">{item.icon}</div>
                 <h3 className="mb-2 text-sm font-bold text-text">{item.title}</h3>
                 <p className="text-sm leading-6 text-muted">{item.desc}</p>
