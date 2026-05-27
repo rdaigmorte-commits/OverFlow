@@ -18,13 +18,6 @@ type ContactInfo = {
   discord?: string | null;
 };
 
-type WhyMatchInfo = {
-  name: string;
-  fitReason: string;
-  score: number;
-  fitLabel: string;
-};
-
 function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () => void }) {
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [copiedDiscord, setCopiedDiscord] = useState(false);
@@ -102,44 +95,12 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
   );
 }
 
-function WhyMatchModal({ match, onClose }: { match: WhyMatchInfo; onClose: () => void }) {
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Why {match.name}?</h2>
-          <button onClick={onClose} className="text-muted hover:text-text text-xl leading-none" aria-label="Close">×</button>
-        </div>
-        <div className="mt-4">
-          <div className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold mb-4 ${fitStyle(match.fitLabel)}`}>
-            {match.fitLabel} · {match.score} pts
-          </div>
-          <p className="text-sm text-muted leading-relaxed">{match.fitReason}</p>
-        </div>
-        <button
-          onClick={onClose}
-          className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
-        >
-          Got it
-        </button>
-      </div>
-    </div>
-  );
-}
-
 export default function MatchesPage() {
   const { profile, setProfile } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
-  const [selectedMatch, setSelectedMatch] = useState<WhyMatchInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
 
   useEffect(() => {
@@ -226,10 +187,6 @@ export default function MatchesPage() {
         <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
       )}
 
-      {selectedMatch && (
-        <WhyMatchModal match={selectedMatch} onClose={() => setSelectedMatch(null)} />
-      )}
-
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-4xl font-black">Your best local matches</h1>
@@ -313,12 +270,6 @@ export default function MatchesPage() {
                   className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
                 >
                   Request match
-                </button>
-                <button
-                  onClick={() => setSelectedMatch({ name: m.name, fitReason: m.fitReason, score: m.score, fitLabel: m.fitLabel })}
-                  className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text"
-                >
-                  Why this match?
                 </button>
               </div>
             </div>
