@@ -107,34 +107,38 @@ export default function MatchesPage() {
     async function fetchMatches() {
       const profileId = profile.profileId;
 
+      // Guard: no profileId → stop loading, show no-profile state
+      if (!profileId) {
+        setLoading(false);
+        return;
+      }
+
       let hydratedProfile = profile;
 
-      if (profileId) {
-        const { data: me, error: meError } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', profileId)
-          .single();
+      const { data: me, error: meError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
 
-        if (!meError && me) {
-          const updated = {
-            profileId: me.id,
-            name: me.name ?? '',
-            age: me.age ?? '',
-            city: me.city ?? 'Utrecht',
-            language: Array.isArray(me.language) ? me.language : (me.language ? [me.language] : []),
-            platform: me.platform ?? '',
-            games: Array.isArray(me.games) ? me.games : [],
-            style: me.style ?? '',
-            availability: Array.isArray(me.availability) ? me.availability : [],
-            openIRL: me.open_irl ?? false,
-            consent: me.consent ?? false,
-            email: me.email ?? '',
-            discord: me.discord ?? '',
-          };
-          setProfile(updated);
-          hydratedProfile = updated as typeof profile;
-        }
+      if (!meError && me) {
+        const updated = {
+          profileId: me.id,
+          name: me.name ?? '',
+          age: me.age ?? '',
+          city: me.city ?? 'Utrecht',
+          language: Array.isArray(me.language) ? me.language : (me.language ? [me.language] : []),
+          platform: me.platform ?? '',
+          games: Array.isArray(me.games) ? me.games : [],
+          style: me.style ?? '',
+          availability: Array.isArray(me.availability) ? me.availability : [],
+          openIRL: me.open_irl ?? false,
+          consent: me.consent ?? false,
+          email: me.email ?? '',
+          discord: me.discord ?? '',
+        };
+        setProfile(updated);
+        hydratedProfile = updated as typeof profile;
       }
 
       const { data: allProfiles, error: allError } = await supabase
@@ -168,6 +172,7 @@ export default function MatchesPage() {
   }, [profile.profileId]);
 
   const displayProfile = currentProfile ?? profile;
+  const hasNoProfile = !loading && !profile.profileId;
 
   const profileSummaryLines = [
     (displayProfile.games ?? []).length > 0 && { label: 'Games', value: (displayProfile.games ?? []).join(', ') },
@@ -179,6 +184,28 @@ export default function MatchesPage() {
   ].filter(Boolean) as { label: string; value: string }[];
 
   const hasProfileData = profileSummaryLines.length > 0;
+
+  // No-profile guard screen
+  if (hasNoProfile) {
+    return (
+      <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
+        <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+          <div className="text-5xl">🎮</div>
+          <div>
+            <h1 className="text-3xl font-black">You haven&apos;t created your profile yet</h1>
+            <p className="mt-3 text-muted max-w-md mx-auto">Create your gamer profile to see players in Utrecht who match your games, style, and availability.</p>
+          </div>
+          <Link
+            href="/onboarding"
+            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+          >
+            Create my profile
+          </Link>
+          <p className="text-xs text-muted">Takes less than 2 minutes · No account needed</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
