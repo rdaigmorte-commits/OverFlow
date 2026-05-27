@@ -3,19 +3,56 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
+import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 
 export default function HomePage() {
-  const { profile } = useOverflowStore();
+  const { profile, setProfile } = useOverflowStore();
   const [mounted, setMounted] = useState(false);
+  const [loadingProfile, setLoadingProfile] = useState(false);
 
-  // Wait for client-side hydration before reading the store
-  // This prevents server/client HTML mismatch (Zustand persists to localStorage)
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // Once mounted, if we have a profileId but no name yet, reload from Supabase
+  useEffect(() => {
+    if (!mounted) return;
+    const profileId = profile.profileId;
+    if (!profileId || profile.name) return; // already loaded
+
+    setLoadingProfile(true);
+    supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', profileId)
+      .single()
+      .then(({ data, error }) => {
+        if (!error && data) {
+          setProfile({
+            profileId: data.id,
+            name: data.name ?? '',
+            age: data.age ?? '',
+            city: data.city ?? 'Utrecht',
+            language: Array.isArray(data.language) ? data.language : (data.language ? [data.language] : []),
+            platform: data.platform ?? '',
+            games: Array.isArray(data.games) ? data.games : [],
+            style: data.style ?? '',
+            availability: Array.isArray(data.availability) ? data.availability : [],
+            openIRL: data.open_irl ?? false,
+            consent: data.consent ?? false,
+            email: data.email ?? '',
+            discord: data.discord ?? '',
+          });
+        }
+        setLoadingProfile(false);
+      });
+  }, [mounted, profile.profileId]);
 
   const hasProfile = mounted && !!profile.profileId;
+  const isReady = hasProfile && !loadingProfile;
 
-  // ── RETURNING USER ──────────────────────────────────────────────
+  // ── RETURNING USER ───────────────────────────────────────────
   if (hasProfile) {
     const games = (profile.games ?? []).join(', ');
     const summaryLines = [
@@ -57,21 +94,33 @@ export default function HomePage() {
               <h2 className="text-lg font-bold">Your profile</h2>
               <Link href="/onboarding" className="text-xs text-accent underline">Edit</Link>
             </div>
-            <ul className="mt-5 grid gap-3">
-              {summaryLines.map((line) => (
-                <li key={line.label} className="flex gap-3 text-sm">
-                  <span className="w-32 shrink-0 text-muted">{line.label}</span>
-                  <span className="font-medium text-text">{line.value}</span>
-                </li>
-              ))}
-            </ul>
+
+            {!isReady ? (
+              <div className="mt-5 grid gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="flex gap-3">
+                    <div className="h-4 w-24 rounded bg-panel2 animate-pulse" />
+                    <div className="h-4 w-36 rounded bg-panel2 animate-pulse" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <ul className="mt-5 grid gap-3">
+                {summaryLines.map((line) => (
+                  <li key={line.label} className="flex gap-3 text-sm">
+                    <span className="w-32 shrink-0 text-muted">{line.label}</span>
+                    <span className="font-medium text-text">{line.value}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
           </Card>
         </section>
       </main>
     );
   }
 
-  // ── NEW VISITOR (also rendered server-side → always safe to hydrate) ──
+  // ── NEW VISITOR ─────────────────────────────────────────────────
   return (
     <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
       <header className="flex items-center justify-between py-2">
