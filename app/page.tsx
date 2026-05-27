@@ -6,27 +6,29 @@ import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 
-function useReveal(delay = 0) {
+// Les timers de reveal ne démarrent qu'après mounted=true
+function useReveal(delay: number, enabled: boolean) {
   const [visible, setVisible] = useState(false);
   useEffect(() => {
+    if (!enabled) return;
     const t = setTimeout(() => setVisible(true), delay);
     return () => clearTimeout(t);
-  }, [delay]);
+  }, [delay, enabled]);
   return visible;
 }
 
-function useScrollReveal() {
+function useScrollReveal(enabled: boolean) {
   const ref = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   useEffect(() => {
-    if (!ref.current) return;
+    if (!enabled || !ref.current) return;
     const obs = new IntersectionObserver(
       ([entry]) => { if (entry.isIntersecting) { setVisible(true); obs.disconnect(); } },
       { threshold: 0.15 }
     );
     obs.observe(ref.current);
     return () => obs.disconnect();
-  }, []);
+  }, [enabled]);
   return { ref, visible };
 }
 
@@ -56,24 +58,29 @@ export default function HomePage() {
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [playerCount, setPlayerCount] = useState<number | null>(null);
 
-  const r0 = useReveal(0);
-  const r1 = useReveal(120);
-  const r2 = useReveal(260);
-  const r3 = useReveal(400);
-  const r4 = useReveal(520);
-  const whyReveal = useScrollReveal();
+  // Toutes les animations sont guardées par mounted
+  const r0 = useReveal(0, mounted);
+  const r1 = useReveal(120, mounted);
+  const r2 = useReveal(260, mounted);
+  const r3 = useReveal(400, mounted);
+  const r4 = useReveal(520, mounted);
+  const whyReveal = useScrollReveal(mounted);
 
+  // mounted = true uniquement côté client
   useEffect(() => { setMounted(true); }, []);
 
+  // Compteur dynamique Supabase
   useEffect(() => {
+    if (!mounted) return;
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
       .then(({ count }) => {
         if (typeof count === 'number') setPlayerCount(count);
       });
-  }, []);
+  }, [mounted]);
 
+  // Rechargement profil si profileId présent mais name absent
   useEffect(() => {
     if (!mounted) return;
     const profileId = profile.profileId;
@@ -107,7 +114,19 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, profile.profileId]);
 
-  const hasProfile = mounted && !!profile.profileId;
+  // Avant mounted : rendu vide identique SSR/client — évite le mismatch
+  if (!mounted) {
+    return (
+      <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
+        <header className="flex items-center justify-between py-2">
+          <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
+          <div className="text-sm text-muted">Utrecht only · Free</div>
+        </header>
+      </main>
+    );
+  }
+
+  const hasProfile = !!profile.profileId;
   const isReady = hasProfile && !loadingProfile;
   const showBadge = playerCount !== null && playerCount >= BADGE_MIN_PLAYERS;
 
@@ -224,12 +243,14 @@ export default function HomePage() {
           <div className="text-sm text-muted">Utrecht only · Free</div>
         </header>
 
-        {/* Hero */}
         <section className="relative z-10 flex flex-1 flex-col justify-center py-16 lg:py-24">
           <div className="max-w-3xl">
 
-            {/* Badge — RG: affiché uniquement si >= 10 profils en base */}
-            <div style={r0 ? { animation: 'of-fadeslide 0.55s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }} className="mb-6">
+            {/* Badge */}
+            <div
+              className="mb-6"
+              style={r0 ? { animation: 'of-fadeslide 0.55s cubic-bezier(0.16,1,0.3,1) forwards' } : { opacity: 0 }}
+            >
               {showBadge ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
                   <span className="of-pulse inline-block h-1.5 w-1.5 rounded-full bg-accent" />
@@ -281,7 +302,7 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Why OverFlow — scroll reveal en cascade */}
+        {/* Why OverFlow */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
