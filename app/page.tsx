@@ -52,7 +52,6 @@ export default function HomePage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // Déclenche les animations hero après mounted
   useEffect(() => {
     if (!mounted) return;
     const t = setTimeout(() => setHeroVisible(true), 60);
@@ -102,7 +101,6 @@ export default function HomePage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, profile.profileId]);
 
-  // Shell SSR neutre — identique serveur/client
   if (!mounted) {
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
@@ -189,33 +187,31 @@ export default function HomePage() {
   return (
     <>
       <style>{`
-        /* ─ Radial glow background ───────────────────────── */
+        /* ─ Dot grid background ────────────────────────── */
+        .of-bg {
+          background-color: #0a0a0a;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
+          background-size: 28px 28px;
+          /* Fondu vers le bas : les points disparaissent progressivement */
+          -webkit-mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+          mask-image: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.3) 50%, transparent 100%);
+        }
+        /* Glow orange isolé en pseudo-element, ne déborde pas sur les enfants */
         .of-bg::before {
           content: '';
           position: fixed;
           top: -20%;
           left: -10%;
-          width: 70vw;
-          height: 70vw;
+          width: 65vw;
+          height: 65vw;
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,122,0,0.07) 0%, rgba(255,122,0,0.02) 40%, transparent 70%);
+          background: radial-gradient(circle, rgba(255,122,0,0.06) 0%, rgba(255,122,0,0.015) 45%, transparent 70%);
           pointer-events: none;
           z-index: 0;
-          filter: blur(40px);
-        }
-        /* ─ Grain overlay ────────────────────────────── */
-        .of-bg::after {
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-          background-size: 180px 180px;
-          opacity: 0.03;
-          pointer-events: none;
-          z-index: 0;
+          filter: blur(60px);
         }
 
-        /* ─ Reveal ─────────────────────────────────── */
+        /* ─ Reveal animations ──────────────────────────── */
         @keyframes of-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -226,19 +222,36 @@ export default function HomePage() {
         .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
 
-        /* ─ Sweep headline ───────────────────────────── */
+        /* ─ Sweep headline — 2s au lieu de 1s ─────────────── */
         @keyframes of-sweep {
           from { background-position: 200% center; }
           to   { background-position:   0% center; }
         }
         .of-sweep {
+          display: inline-block;
           background: linear-gradient(90deg, #ff7a00 30%, #ffcc88 50%, #ff7a00 70%);
           background-size: 200% auto;
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
           background-clip: text;
-          animation: of-sweep 1s 0.55s cubic-bezier(0.16,1,0.3,1) both;
+          animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
         }
+
+        /* ─ Fix : reset complet sur les cards Why ───────────── */
+        .of-why,
+        .of-why * {
+          background-image: none !important;
+          -webkit-background-clip: unset !important;
+          background-clip: unset !important;
+          -webkit-text-fill-color: unset !important;
+        }
+        .of-why {
+          opacity: 0;
+          transform: translateY(16px);
+          transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1),
+                      transform 0.55s cubic-bezier(0.16,1,0.3,1);
+        }
+        .of-why.of-on { opacity: 1; transform: translateY(0); }
 
         /* ─ Badge pulse dot ───────────────────────────── */
         @keyframes of-dot {
@@ -247,31 +260,20 @@ export default function HomePage() {
         }
         .of-dot { animation: of-dot 2s ease-in-out infinite; }
 
-        /* ─ CTA glow ───────────────────────────────── */
+        /* ─ CTA glow hover ────────────────────────────── */
         .of-cta {
           transition: transform 0.2s cubic-bezier(0.16,1,0.3,1),
                       box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
         }
         .of-cta:hover {
           transform: scale(1.04) translateY(-1px);
-          box-shadow: 0 0 32px 6px rgba(255,122,0,0.25),
-                      0 4px 16px rgba(0,0,0,0.4);
+          box-shadow: 0 0 32px 6px rgba(255,122,0,0.25), 0 4px 16px rgba(0,0,0,0.4);
         }
         .of-cta:active { transform: scale(0.97); }
-
-        /* ─ Why scroll reveal ─────────────────────────── */
-        .of-why {
-          opacity: 0;
-          transform: translateY(16px);
-          transition: opacity 0.55s cubic-bezier(0.16,1,0.3,1),
-                      transform 0.55s cubic-bezier(0.16,1,0.3,1);
-        }
-        .of-why.of-on { opacity: 1; transform: translateY(0); }
       `}</style>
 
       <main className="of-bg relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
 
-        {/* Header */}
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
           <div className="text-sm text-muted">Utrecht only · Free</div>
@@ -319,11 +321,10 @@ export default function HomePage() {
             <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 text-xs text-muted`}>
               Free · No account needed · Utrecht only
             </p>
-
           </div>
         </section>
 
-        {/* Why OverFlow — scroll reveal en cascade */}
+        {/* Why OverFlow — scroll reveal cascade */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
