@@ -8,19 +8,37 @@ import { useOverflowStore } from '@/lib/store';
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
-  const { profile } = useOverflowStore();
+  const { profile, setProfile } = useOverflowStore();
 
   useEffect(() => {
-    // Supabase Auth lit automatiquement le token dans l'URL et établit la session.
-    // On écoute l'événement SIGNED_IN pour savoir quand c'est prêt.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === 'SIGNED_IN' && session) {
-        // On utilise le store Zustand (plus fiable que localStorage en SSR/iframe).
-        // Si le store a un profileId, l'utilisateur a déjà un profil → /matches
-        // Sinon → /onboarding pour compléter son profil
-        const hasProfile = Boolean(profile?.profileId);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session?.user) {
+        const user = session.user;
 
+        // — Fix #35 : lier le profil anonyme au compte auth fraîchement créé —
+        // Si un profil existe avec cet email mais sans user_id (créé avant la connexion),
+        // on met à jour son user_id pour activer les politiques RLS UPDATE.
+        if (user.email) {
+          await supabase
+            .from('profiles')
+            .update({ user_id: user.id })
+            .eq('email', user.email)
+            .is('user_id', null); // seulement les profils non encore liés
+        }
+
+        // Redirection selon qu'un profil existe déjà dans le store
+        const hasProfile = Boolean(profile?.profileId);
         if (hasProfile) {
+          // Mettre à jour le profileId dans le store si besoin
+          // (cas où l'utilisateur avait un profil anonyme avant de se connecter)
+          const { data } = await supabase
+            .from('profiles')
+            .select('id')
+            .eq('email', user.email ?? '')
+            .single();
+          if (data?.id && data.id !== profile.profileId) {
+            setProfile({ profileId: data.id });
+          }
           router.replace('/matches');
         } else {
           router.replace('/onboarding');
@@ -28,7 +46,6 @@ export default function AuthCallbackPage() {
       }
     });
 
-    // Timeout de sécurité : si rien ne se passe après 8s, on affiche une erreur
     const timeout = setTimeout(() => {
       setStatus('error');
     }, 8000);
