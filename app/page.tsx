@@ -45,7 +45,7 @@ const WHY_ITEMS = [
 ];
 
 export default function HomePage() {
-  const { profile, setProfile } = useOverflowStore();
+  const { profile, setProfile, reset } = useOverflowStore();
   const [mounted, setMounted] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(false);
   const [playerCount, setPlayerCount] = useState<number | null>(null);
@@ -54,6 +54,16 @@ export default function HomePage() {
   const whyReveal = useScrollReveal(mounted);
 
   useEffect(() => { setMounted(true); }, []);
+
+  // fix(#36) — vider le store quand l'utilisateur se déconnecte
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        reset();
+      }
+    });
+    return () => subscription.unsubscribe();
+  }, [reset]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -263,7 +273,6 @@ export default function HomePage() {
           animation: of-dot 2s ease-in-out infinite;
         }
 
-        /* Badge vert — émoji + label inline */
         .of-tag {
           display: inline-flex;
           align-items: center;
@@ -303,17 +312,14 @@ export default function HomePage() {
         className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10"
         style={{ backgroundColor: '#0a0a0a', zIndex: 1 }}
       >
-        {/* Header — sans badge Live */}
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
           <div className="text-sm text-muted">Utrecht · Free</div>
         </header>
 
-        {/* Hero */}
         <section className="relative z-10 flex flex-1 flex-col justify-center py-16 lg:py-24">
           <div className="max-w-3xl">
 
-            {/* Badge compteur — dot vert */}
             <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
               {showBadge ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
@@ -328,26 +334,22 @@ export default function HomePage() {
               )}
             </div>
 
-            {/* Headline */}
             <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl`}>
               Find your teammates.<br />
               <span className={v ? 'of-sweep' : 'text-accent'}>Play together.</span>
             </h1>
 
-            {/* Sub */}
             <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
               OverFlow connects gamers in Utrecht — same games, same schedule, real meetups.<br />
               No feed, no algorithm. Just people who want to play.
             </p>
 
-            {/* CTA */}
             <div className={`${v ? 'of-r3' : 'opacity-0'} mt-10 flex flex-wrap items-center gap-4`}>
               <Link href="/onboarding">
                 <Button className="of-cta px-8 py-4 text-base font-bold">Find my teammates</Button>
               </Link>
             </div>
 
-            {/* Social proof — tout en vert */}
             <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted`}>
               <span className="of-green font-semibold">✓ Free</span>
               <span className="text-border">·</span>
@@ -358,7 +360,6 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Why OverFlow — émoji inline avec badge */}
         <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
           <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
           <div className="grid gap-10 sm:grid-cols-3">
@@ -368,7 +369,6 @@ export default function HomePage() {
                 className={`of-why${whyReveal.visible ? ' of-on' : ''}`}
                 style={{ transitionDelay: `${i * 130}ms` }}
               >
-                {/* Émoji + badge sur la même ligne */}
                 <div className="mb-3 flex items-center gap-2">
                   <span className="text-xl leading-none">{item.icon}</span>
                   <span className="of-tag">{item.tag}</span>
