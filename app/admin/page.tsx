@@ -3,6 +3,54 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 
+// ─── Password Gate ────────────────────────────────────────────────────────────
+
+function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (input === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
+      onSuccess();
+    } else {
+      setError(true);
+      setInput('');
+    }
+  }
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-sm">
+        <h1 className="text-2xl font-black mb-1">Admin access</h1>
+        <p className="text-sm text-muted mb-6">Enter the admin password to continue.</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input
+            type="password"
+            value={input}
+            onChange={(e) => { setInput(e.target.value); setError(false); }}
+            placeholder="Password"
+            autoFocus
+            className={`w-full rounded-lg border px-4 py-3 text-sm bg-panel outline-none transition-colors
+              ${error ? 'border-red-500 focus:border-red-500' : 'border-border focus:border-accent'}`}
+          />
+          {error && (
+            <p className="text-xs text-red-500">Incorrect password. Try again.</p>
+          )}
+          <button
+            type="submit"
+            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          >
+            Enter
+          </button>
+        </form>
+      </div>
+    </main>
+  );
+}
+
+// ─── Stat Components ──────────────────────────────────────────────────────────
+
 function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
   const pct = Math.round((value / Math.max(max, 1)) * 100);
   return (
@@ -92,7 +140,9 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
   );
 }
 
-export default function AdminPage() {
+// ─── Admin Dashboard ──────────────────────────────────────────────────────────
+
+function AdminDashboard() {
   const [globals, setGlobals] = useState({ total_profiles: 0, open_irl: 0, consent: 0, new_this_week: 0 });
   const [games, setGames] = useState<any[]>([]);
   const [platforms, setPlatforms] = useState<any[]>([]);
@@ -165,4 +215,16 @@ export default function AdminPage() {
       </div>
     </main>
   );
+}
+
+// ─── Page Entry Point ─────────────────────────────────────────────────────────
+
+export default function AdminPage() {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  if (!isAuthenticated) {
+    return <PasswordGate onSuccess={() => setIsAuthenticated(true)} />;
+  }
+
+  return <AdminDashboard />;
 }
