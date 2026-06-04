@@ -1,10 +1,19 @@
+// Normalise language en string[] quelle que soit la source Supabase.
+// À appeler une seule fois au moment du fetch, pas à chaque utilisation.
+export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
+  if (!lang) return [];
+  if (Array.isArray(lang)) return lang;
+  return [lang];
+}
+
 export type Profile = {
   id: string;
   name: string;
   games: string[];
   platform: string;
   style: string;
-  language: string | string[];
+  // language est toujours string[] après normalisation via normalizeLanguage()
+  language: string[];
   availability: string[];
   city?: string;
   email?: string | null;
@@ -20,17 +29,10 @@ export type MatchResult = {
   name: string;
   games: string[];
   platform: string;
-  language: string | string[];
+  language: string[];
   email?: string | null;
   discord?: string | null;
 };
-
-// Normalise language en tableau quelle que soit la source
-function toLangArray(lang: string | string[] | null | undefined): string[] {
-  if (!lang) return [];
-  if (Array.isArray(lang)) return lang;
-  return [lang];
-}
 
 /**
  * Barème officiel (Option B — décision produit du 06/05/2026)
@@ -55,9 +57,8 @@ export function computeScore(a: Profile, b: Profile): number {
 
   if (a.style && b.style && a.style === b.style) score += 20;
 
-  const aLangs = toLangArray(a.language);
-  const bLangs = toLangArray(b.language);
-  if (aLangs.some((l) => bLangs.includes(l))) score += 10;
+  // language est garanti string[] — pas besoin de normaliser ici
+  if (a.language.some((l) => b.language.includes(l))) score += 10;
 
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
   if (commonSlots.length > 0) score += 10;
@@ -79,9 +80,8 @@ export function getFitReason(a: Profile, b: Profile): string {
   if (a.platform === b.platform) parts.push(`same platform (${a.platform})`);
   if (a.style === b.style) parts.push(`same playstyle (${a.style})`);
 
-  const aLangs = toLangArray(a.language);
-  const bLangs = toLangArray(b.language);
-  const commonLang = aLangs.find((l) => bLangs.includes(l));
+  // language est garanti string[] — pas besoin de normaliser ici
+  const commonLang = a.language.find((l) => b.language.includes(l));
   if (commonLang) parts.push(`speaks ${commonLang}`);
 
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
@@ -95,19 +95,26 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
   return others
     .filter((p) => p.id !== current.id)
     .map((p) => {
-      const score = computeScore(current, p);
+      // Normalisation au moment du mapping : une seule fois, à la source
+      const normalizedP: Profile = {
+        ...p,
+        language: normalizeLanguage(p.language),
+        games: Array.isArray(p.games) ? p.games : [],
+        availability: Array.isArray(p.availability) ? p.availability : [],
+      };
+      const score = computeScore(current, normalizedP);
       return {
-        profile: p,
+        profile: normalizedP,
         score,
         fitLabel: getFitLabel(score),
-        fitReason: getFitReason(current, p),
-        id: p.id,
-        name: p.name,
-        games: p.games ?? [],
-        platform: p.platform,
-        language: p.language,
-        email: p.email ?? null,
-        discord: p.discord ?? null,
+        fitReason: getFitReason(current, normalizedP),
+        id: normalizedP.id,
+        name: normalizedP.name,
+        games: normalizedP.games,
+        platform: normalizedP.platform,
+        language: normalizedP.language,
+        email: normalizedP.email ?? null,
+        discord: normalizedP.discord ?? null,
       };
     })
     .filter((r) => r.score > 0)

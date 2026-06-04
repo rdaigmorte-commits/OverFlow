@@ -5,6 +5,7 @@ import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
+import { normalizeLanguage } from '@/lib/match';
 
 const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
 const styles = ['Competitive', 'Co-op', 'Casual'];
@@ -38,7 +39,8 @@ export default function OnboardingPage() {
           name: data.name ?? '',
           age: data.age ?? '',
           city: data.city ?? 'Utrecht',
-          language: Array.isArray(data.language) ? data.language : (data.language ? [data.language] : []),
+          // normalizeLanguage() centralisé dans lib/match.ts — fix #34
+          language: normalizeLanguage(data.language),
           platform: data.platform ?? '',
           games: Array.isArray(data.games) ? data.games : [],
           style: data.style ?? '',
@@ -115,21 +117,18 @@ export default function OnboardingPage() {
     let error: any = null;
 
     if (profile.profileId) {
-      // Cas 1 : on a un ID → upsert classique sur l'id
       ({ data, error } = await supabase
         .from('profiles')
         .upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' })
         .select()
         .single());
     } else if (profile.email) {
-      // Cas 2 : pas d'ID mais un email → upsert sur l'email (évite le 409)
       ({ data, error } = await supabase
         .from('profiles')
         .upsert(basePayload, { onConflict: 'email' })
         .select()
         .single());
     } else {
-      // Cas 3 : pas d'ID ni d'email → insertion simple
       ({ data, error } = await supabase
         .from('profiles')
         .insert(basePayload)
