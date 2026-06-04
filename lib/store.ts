@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import type { Session } from '@supabase/supabase-js';
 
 type Profile = {
   profileId: string | null;
@@ -18,13 +19,14 @@ type Profile = {
 
 type State = {
   profile: Profile;
+  session: Session | null;
   setProfile: (p: Partial<Profile>) => void;
+  setSession: (session: Session | null) => void;
   reset: () => void;
 };
 
 const STORAGE_KEY = 'overflow_profile_id';
 
-// Récupère le profileId sauvegardé dans localStorage (si dispo)
 function getSavedProfileId(): string | null {
   if (typeof window === 'undefined') return null;
   try {
@@ -52,9 +54,10 @@ const initialProfile: Profile = {
 
 export const useOverflowStore = create<State>((set) => ({
   profile: initialProfile,
+  session: null,
+
   setProfile: (p) => set((s) => {
     const updated = { ...s.profile, ...p };
-    // Persiste le profileId dans localStorage à chaque mise à jour
     if (updated.profileId && typeof window !== 'undefined') {
       try {
         localStorage.setItem(STORAGE_KEY, updated.profileId);
@@ -64,10 +67,13 @@ export const useOverflowStore = create<State>((set) => ({
     }
     return { profile: updated };
   }),
+
+  setSession: (session) => set({ session }),
+
   reset: () => {
     if (typeof window !== 'undefined') {
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* silencieux */ }
     }
-    set({ profile: { ...initialProfile, profileId: null } });
+    set({ profile: { ...initialProfile, profileId: null }, session: null });
   },
 }));
