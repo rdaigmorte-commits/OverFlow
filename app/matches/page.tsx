@@ -97,10 +97,6 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
   );
 }
 
-// ── Trois états possibles pour la session ────────────────────────
-// 'pending'       = vérification en cours (on ne rend rien)
-// 'authenticated' = session valide, on peut charger les matches
-// 'unauthenticated' = pas de session → redirection gérée dans le useEffect
 type SessionState = 'pending' | 'authenticated' | 'unauthenticated';
 
 export default function MatchesPage() {
@@ -112,26 +108,23 @@ export default function MatchesPage() {
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>('pending');
+  const [signingOut, setSigningOut] = useState(false);
 
   // ── SESSION GUARD ─────────────────────────────────────────────
   useEffect(() => {
     async function checkSession() {
-      // 1. Vérifier d'abord le store Zustand (évite un appel réseau inutile)
       if (session) {
         setSessionState('authenticated');
         return;
       }
-      // 2. Interroger Supabase directement
       const { data: { session: supaSession }, error } = await supabase.auth.getSession();
 
       if (error || !supaSession) {
-        // Pas de session → on marque l'état PUIS on redirige
         setSessionState('unauthenticated');
         router.replace('/login?next=/matches');
         return;
       }
 
-      // Session trouvée → on la stocke et on continue
       setSession(supaSession);
       setSessionState('authenticated');
     }
@@ -139,7 +132,14 @@ export default function MatchesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── FETCH MATCHES (seulement si authentifié) ──────────────────
+  // ── LOGOUT ────────────────────────────────────────────────────
+  async function handleSignOut() {
+    setSigningOut(true);
+    await supabase.auth.signOut();
+    router.replace('/login');
+  }
+
+  // ── FETCH MATCHES ─────────────────────────────────────────────
   useEffect(() => {
     if (sessionState !== 'authenticated') return;
 
@@ -209,8 +209,6 @@ export default function MatchesPage() {
   }, [sessionState, profile.profileId]);
 
   // ── RENDER GUARDS ─────────────────────────────────────────────
-
-  // Vérification en cours → spinner neutre, rien d'autre
   if (sessionState === 'pending') {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -219,7 +217,6 @@ export default function MatchesPage() {
     );
   }
 
-  // Pas de session → la redirection est déjà en cours, on affiche rien
   if (sessionState === 'unauthenticated') {
     return (
       <main className="flex min-h-screen items-center justify-center">
@@ -235,6 +232,16 @@ export default function MatchesPage() {
   if (hasNoProfile) {
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
+        {/* Header avec logout */}
+        <div className="flex justify-end mb-4">
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="text-xs text-muted hover:text-text transition disabled:opacity-50"
+          >
+            {signingOut ? 'Signing out...' : 'Sign out'}
+          </button>
+        </div>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
           <div className="text-5xl">🎮</div>
           <div>
@@ -261,9 +268,19 @@ export default function MatchesPage() {
         <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
       )}
 
-      <div className="mb-8">
-        <h1 className="text-4xl font-black">Your matches</h1>
-        <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
+      {/* Header : titre + logout */}
+      <div className="mb-8 flex items-start justify-between">
+        <div>
+          <h1 className="text-4xl font-black">Your matches</h1>
+          <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
+        </div>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="text-xs text-muted hover:text-text transition disabled:opacity-50 mt-2"
+        >
+          {signingOut ? 'Signing out...' : 'Sign out'}
+        </button>
       </div>
 
       <div className="grid gap-6">
