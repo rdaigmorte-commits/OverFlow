@@ -97,6 +97,12 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
   );
 }
 
+// ── Trois états possibles pour la session ────────────────────────
+// 'pending'       = vérification en cours (on ne rend rien)
+// 'authenticated' = session valide, on peut charger les matches
+// 'unauthenticated' = pas de session → redirection gérée dans le useEffect
+type SessionState = 'pending' | 'authenticated' | 'unauthenticated';
+
 export default function MatchesPage() {
   const router = useRouter();
   const { profile, setProfile, session, setSession } = useOverflowStore();
@@ -105,35 +111,40 @@ export default function MatchesPage() {
   const [fetchError, setFetchError] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [sessionState, setSessionState] = useState<SessionState>('pending');
 
-  // ── SESSION GUARD ────────────────────────────────────────────────
+  // ── SESSION GUARD ─────────────────────────────────────────────
   useEffect(() => {
     async function checkSession() {
-      // Si on a déjà une session dans le store, on valide direct
+      // 1. Vérifier d'abord le store Zustand (évite un appel réseau inutile)
       if (session) {
-        setSessionChecked(true);
+        setSessionState('authenticated');
         return;
       }
-      // Sinon on interroge Supabase (utile après un refresh)
-      const { data: { session: supaSession } } = await supabase.auth.getSession();
-      if (!supaSession) {
+      // 2. Interroger Supabase directement
+      const { data: { session: supaSession }, error } = await supabase.auth.getSession();
+
+      if (error || !supaSession) {
+        // Pas de session → on marque l'état PUIS on redirige
+        setSessionState('unauthenticated');
         router.replace('/login?next=/matches');
         return;
       }
+
+      // Session trouvée → on la stocke et on continue
       setSession(supaSession);
-      setSessionChecked(true);
+      setSessionState('authenticated');
     }
     checkSession();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── FETCH MATCHES (seulement si authentifié) ──────────────────
   useEffect(() => {
-    if (!sessionChecked) return;
+    if (sessionState !== 'authenticated') return;
 
     async function fetchMatches() {
       const profileId = profile.profileId;
-
       if (!profileId) {
         setLoading(false);
         return;
@@ -195,10 +206,12 @@ export default function MatchesPage() {
     }
     fetchMatches();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionChecked, profile.profileId]);
+  }, [sessionState, profile.profileId]);
 
-  // ── Tant que la session n'est pas vérifiée, on ne rend rien ────
-  if (!sessionChecked) {
+  // ── RENDER GUARDS ─────────────────────────────────────────────
+
+  // Vérification en cours → spinner neutre, rien d'autre
+  if (sessionState === 'pending') {
     return (
       <main className="flex min-h-screen items-center justify-center">
         <p className="text-muted text-sm">Checking your session...</p>
@@ -206,10 +219,19 @@ export default function MatchesPage() {
     );
   }
 
+  // Pas de session → la redirection est déjà en cours, on affiche rien
+  if (sessionState === 'unauthenticated') {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <p className="text-muted text-sm">Redirecting...</p>
+      </main>
+    );
+  }
+
   const displayProfile = currentProfile ?? profile;
   const hasNoProfile = !loading && !profile.profileId;
 
-  // ── NO PROFILE GUARD ────────────────────────────────────────────
+  // ── NO PROFILE GUARD ──────────────────────────────────────────
   if (hasNoProfile) {
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
@@ -239,7 +261,6 @@ export default function MatchesPage() {
         <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
       )}
 
-      {/* Page header */}
       <div className="mb-8">
         <h1 className="text-4xl font-black">Your matches</h1>
         <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
@@ -247,7 +268,6 @@ export default function MatchesPage() {
 
       <div className="grid gap-6">
 
-        {/* ZONE 2 — Résumé profil */}
         {!loading && (
           <ProfileSummary
             name={displayProfile.name}
@@ -260,7 +280,6 @@ export default function MatchesPage() {
           />
         )}
 
-        {/* ZONE 3 — Matches */}
         <section>
           {loading && (
             <p className="text-muted text-sm">Finding your matches...</p>
