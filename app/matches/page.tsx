@@ -101,7 +101,7 @@ type SessionState = 'pending' | 'authenticated' | 'unauthenticated';
 
 export default function MatchesPage() {
   const router = useRouter();
-  const { profile, setProfile, session, setSession } = useOverflowStore();
+  const { profile, setProfile, setSession } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -111,21 +111,25 @@ export default function MatchesPage() {
   const [signingOut, setSigningOut] = useState(false);
 
   // ── SESSION GUARD ─────────────────────────────────────────────
+  // Fix: use getUser() instead of getSession().
+  // getSession() reads from local cache and returns null on SSR or when the
+  // Supabase project wakes from pause — causing false redirects to /login.
+  // getUser() performs a real server-side token verification and is reliable
+  // in all contexts (SSR, cold start, navigation).
   useEffect(() => {
     async function checkSession() {
-      if (session) {
-        setSessionState('authenticated');
-        return;
-      }
-      const { data: { session: supaSession }, error } = await supabase.auth.getSession();
+      const { data: { user }, error } = await supabase.auth.getUser();
 
-      if (error || !supaSession) {
+      if (error || !user) {
         setSessionState('unauthenticated');
         router.replace('/login?next=/matches');
         return;
       }
 
-      setSession(supaSession);
+      // Rebuild a lightweight session object for the store
+      const { data: { session: supaSession } } = await supabase.auth.getSession();
+      if (supaSession) setSession(supaSession);
+
       setSessionState('authenticated');
     }
     checkSession();
@@ -232,7 +236,6 @@ export default function MatchesPage() {
   if (hasNoProfile) {
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
-        {/* Header avec logout */}
         <div className="flex justify-end mb-4">
           <button
             onClick={handleSignOut}
