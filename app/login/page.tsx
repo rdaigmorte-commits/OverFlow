@@ -1,13 +1,27 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
 export default function LoginPage() {
+  const router = useRouter();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [checkingSession, setCheckingSession] = useState(true);
+
+  // Guard : si déjà connecté, rediriger vers /matches
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        router.replace('/matches');
+      } else {
+        setCheckingSession(false);
+      }
+    });
+  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -22,11 +36,24 @@ export default function LoginPage() {
     });
 
     if (error) {
-      setError('Something went wrong. Please try again.');
+      if (error.status === 429) {
+        setError('Too many attempts. Please wait a few minutes and try again.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
     } else {
       setSent(true);
     }
     setLoading(false);
+  }
+
+  // Pendant la vérification de session : spinner discret
+  if (checkingSession) {
+    return (
+      <main className="min-h-screen flex items-center justify-center bg-gray-950">
+        <p className="text-gray-500 text-sm">Checking your session...</p>
+      </main>
+    );
   }
 
   return (
