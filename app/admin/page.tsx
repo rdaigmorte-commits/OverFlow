@@ -1,52 +1,37 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 
-// ─── Password Gate ────────────────────────────────────────────────────────────
+// ─── Session Guard ────────────────────────────────────────────────────────────
+// L'accès admin est réservé à l'email défini dans NEXT_PUBLIC_ADMIN_EMAIL.
+// On vérifie la session Supabase Auth (Magic Link) — plus de mot de passe en dur.
 
-function PasswordGate({ onSuccess }: { onSuccess: () => void }) {
-  const [input, setInput] = useState('');
-  const [error, setError] = useState(false);
+function useAdminGuard() {
+  const router = useRouter();
+  const [allowed, setAllowed] = useState<boolean | null>(null); // null = en cours de vérification
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (input === process.env.NEXT_PUBLIC_ADMIN_PASSWORD) {
-      onSuccess();
-    } else {
-      setError(true);
-      setInput('');
+  useEffect(() => {
+    async function check() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        router.replace('/login?next=/admin');
+        return;
+      }
+      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
+      if (adminEmail && session.user.email !== adminEmail) {
+        // Connecté mais pas admin → on redirige sans exposer pourquoi
+        router.replace('/');
+        return;
+      }
+      setAllowed(true);
     }
-  }
+    check();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-black mb-1">Admin access</h1>
-        <p className="text-sm text-muted mb-6">Enter the admin password to continue.</p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="password"
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setError(false); }}
-            placeholder="Password"
-            autoFocus
-            className={`w-full rounded-lg border px-4 py-3 text-sm bg-panel outline-none transition-colors
-              ${error ? 'border-red-500 focus:border-red-500' : 'border-border focus:border-accent'}`}
-          />
-          {error && (
-            <p className="text-xs text-red-500">Incorrect password. Try again.</p>
-          )}
-          <button
-            type="submit"
-            className="w-full rounded-lg bg-accent px-4 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-90"
-          >
-            Enter
-          </button>
-        </form>
-      </div>
-    </main>
-  );
+  return allowed;
 }
 
 // ─── Stat Components ──────────────────────────────────────────────────────────
@@ -201,7 +186,7 @@ function AdminDashboard() {
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <StatsBlock title="🎮 Games" rows={games} labelKey="game" />
-        <StatsBlock title="🖥️ Platforms" rows={platforms} labelKey="platform" />
+        <StatsBlock title="🖵️ Platforms" rows={platforms} labelKey="platform" />
         <StatsBlock title="⚡ Play style" rows={styles} labelKey="style" />
         <StatsBlock title="🗣️ Languages" rows={languages} labelKey="language" />
         <StatsBlock title="🕒 Availability" rows={availability} labelKey="slot" />
@@ -220,10 +205,15 @@ function AdminDashboard() {
 // ─── Page Entry Point ─────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const allowed = useAdminGuard();
 
-  if (!isAuthenticated) {
-    return <PasswordGate onSuccess={() => setIsAuthenticated(true)} />;
+  // null = vérification en cours
+  if (allowed === null) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <p className="text-muted text-sm">Checking access...</p>
+      </main>
+    );
   }
 
   return <AdminDashboard />;

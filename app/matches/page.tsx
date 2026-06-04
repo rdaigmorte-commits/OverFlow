@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { ProfileSummary } from '@/components/ProfileSummary';
@@ -97,14 +98,39 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
 }
 
 export default function MatchesPage() {
-  const { profile, setProfile } = useOverflowStore();
+  const router = useRouter();
+  const { profile, setProfile, session, setSession } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
+  const [sessionChecked, setSessionChecked] = useState(false);
+
+  // ── SESSION GUARD ────────────────────────────────────────────────
+  useEffect(() => {
+    async function checkSession() {
+      // Si on a déjà une session dans le store, on valide direct
+      if (session) {
+        setSessionChecked(true);
+        return;
+      }
+      // Sinon on interroge Supabase (utile après un refresh)
+      const { data: { session: supaSession } } = await supabase.auth.getSession();
+      if (!supaSession) {
+        router.replace('/login?next=/matches');
+        return;
+      }
+      setSession(supaSession);
+      setSessionChecked(true);
+    }
+    checkSession();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
+    if (!sessionChecked) return;
+
     async function fetchMatches() {
       const profileId = profile.profileId;
 
@@ -169,7 +195,16 @@ export default function MatchesPage() {
     }
     fetchMatches();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [profile.profileId]);
+  }, [sessionChecked, profile.profileId]);
+
+  // ── Tant que la session n'est pas vérifiée, on ne rend rien ────
+  if (!sessionChecked) {
+    return (
+      <main className="flex min-h-screen items-center justify-center">
+        <p className="text-muted text-sm">Checking your session...</p>
+      </main>
+    );
+  }
 
   const displayProfile = currentProfile ?? profile;
   const hasNoProfile = !loading && !profile.profileId;
@@ -210,12 +245,9 @@ export default function MatchesPage() {
         <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
       </div>
 
-      {/* ─── ZONE 1 — Notifications (stub — implémenté dans US-090b dès que US-051 + US-060 sont livrées) ─── */}
-      {/* <NotificationBanner requests={pendingRequests} /> */}
-
       <div className="grid gap-6">
 
-        {/* ─── ZONE 2 — Résumé profil ─── */}
+        {/* ZONE 2 — Résumé profil */}
         {!loading && (
           <ProfileSummary
             name={displayProfile.name}
@@ -228,7 +260,7 @@ export default function MatchesPage() {
           />
         )}
 
-        {/* ─── ZONE 3 — Matches ─── */}
+        {/* ZONE 3 — Matches */}
         <section>
           {loading && (
             <p className="text-muted text-sm">Finding your matches...</p>
