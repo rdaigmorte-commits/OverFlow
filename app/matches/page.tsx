@@ -85,6 +85,7 @@ export default function MatchesPage() {
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -142,7 +143,8 @@ export default function MatchesPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.profileId, retryCount]);
 
-  async function handleReset() {
+  async function handleSignOut() {
+    setSigningOut(true);
     await supabase.auth.signOut();
     reset();
     router.replace('/');
@@ -180,13 +182,40 @@ export default function MatchesPage() {
       {selectedContact && <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />}
 
       {/* Header */}
-      <div className="mb-8 flex items-start justify-between">
+      <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-black">Your matches</h1>
           <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
         </div>
-        <button onClick={handleReset} className="text-xs text-muted hover:text-text transition mt-2">Reset profile</button>
+        <button
+          onClick={handleSignOut}
+          disabled={signingOut}
+          className="text-xs text-muted hover:text-text transition mt-2 disabled:opacity-50"
+        >
+          {signingOut ? 'Signing out…' : 'Sign out'}
+        </button>
       </div>
+
+      {/* Bandeau no-email */}
+      {!loading && !hasEmail && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-yellow-500/40 bg-yellow-500/5 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5">⚠️</span>
+            <div>
+              <p className="text-sm font-medium text-text">Your profile can&apos;t be recovered</p>
+              <p className="mt-1 text-xs text-muted">
+                Without an email, you won&apos;t be reachable by matches and you&apos;ll lose access to your profile if you change device or clear your browser.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/login"
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
+          >
+            Add email
+          </Link>
+        </div>
+      )}
 
       <div className="grid gap-6">
 

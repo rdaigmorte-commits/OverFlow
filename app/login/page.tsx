@@ -4,9 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
-// Cette page est optionnelle — elle n'est jamais un prérequis pour accéder à /matches.
-// Elle est proposée en fin de parcours comme option de sauvegarde du profil.
-// Le Magic Link permet de retrouver son profil sur un autre appareil.
+// /login couvre deux cas :
+// 1. Sauvegarde — utilisateur qui vient de créer son profil et veut le sécuriser
+// 2. Récupération — utilisateur déconnecté qui veut retrouver son profil existant
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -42,17 +42,19 @@ export default function LoginPage() {
     <main className="min-h-screen flex items-center justify-center bg-bg px-4">
       <div className="w-full max-w-sm">
 
-        {/* Retour */}
         <button
           onClick={() => router.back()}
           className="mb-6 text-sm text-muted hover:text-text transition flex items-center gap-1"
         >
-          ← Back to my matches
+          ← Back
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text">Save your profile</h1>
-          <p className="text-muted mt-2 text-sm">Access your matches from any device, anytime.</p>
+          <h1 className="text-3xl font-bold text-text">Access your profile</h1>
+          <p className="text-muted mt-2 text-sm">
+            New here? Save your profile to access it from any device.<br />
+            Already registered? Use your email to reconnect.
+          </p>
         </div>
 
         {sent ? (
@@ -60,8 +62,8 @@ export default function LoginPage() {
             <div className="text-4xl mb-4">📬</div>
             <h2 className="text-text font-semibold text-xl mb-2">Check your inbox!</h2>
             <p className="text-muted text-sm">
-              We sent a magic link to <span className="text-text font-medium">{email}</span>.
-              Click it to save your profile — no password needed.
+              We sent a magic link to <span className="text-text font-medium">{email}</span>.<br />
+              Click it to access your profile — no password needed.
             </p>
             <button
               onClick={() => setSent(false)}
@@ -78,7 +80,7 @@ export default function LoginPage() {
             <div>
               <h2 className="text-text font-semibold text-xl">Enter your email</h2>
               <p className="text-muted text-sm mt-1">
-                We&apos;ll send you a magic link to save your profile.
+                We&apos;ll send you a magic link — no password needed.
               </p>
             </div>
 
@@ -106,8 +108,15 @@ export default function LoginPage() {
               disabled={loading || !email}
               className="bg-accent hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-black font-semibold rounded-lg py-3 text-sm transition"
             >
-              {loading ? 'Sending...' : 'Send magic link 🔗'}
+              {loading ? 'Sending…' : 'Send magic link 🔗'}
             </button>
+
+            <p className="text-center text-xs text-muted">
+              No account yet?{' '}
+              <a href="/onboarding" className="text-accent underline underline-offset-2 hover:opacity-80">
+                Create your profile
+              </a>
+            </p>
           </form>
         )}
       </div>
