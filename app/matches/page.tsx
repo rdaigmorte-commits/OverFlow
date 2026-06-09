@@ -6,8 +6,7 @@ import { Card } from '@/components/Card';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
-import { computeMatches, type Match } from '@/lib/match';
-import { normalizeArray } from '@/lib/match';
+import { computeMatches, normalizeArray, type Match } from '@/lib/match';
 
 function fitStyle(label: string) {
   if (label === 'Strong fit') return 'border-accent bg-accent text-black';
@@ -196,21 +195,19 @@ export default function MatchesPage() {
 
       <div className="grid gap-6">
 
-        {/* ProfileSummary + Edit profile bien visible */}
+        {/* Bloc profil + Edit CTA (unique) */}
         {!loading && (
-          <div className="flex flex-col gap-3 rounded-2xl border border-border bg-panel px-5 py-4">
-            <div className="flex items-start justify-between gap-4">
-              <ProfileSummary
-                name={displayProfile.name}
-                games={displayProfile.games ?? []}
-                platform={displayProfile.platform}
-                style={displayProfile.style}
-                language={displayProfile.language ?? []}
-                city={displayProfile.city}
-                openIRL={displayProfile.openIRL}
-              />
-            </div>
-            <div className="pt-1 border-t border-border">
+          <div className="rounded-2xl border border-border bg-panel px-5 py-4 flex flex-col gap-3">
+            <ProfileSummary
+              name={displayProfile.name}
+              games={displayProfile.games ?? []}
+              platform={displayProfile.platform}
+              style={displayProfile.style}
+              language={displayProfile.language ?? []}
+              city={displayProfile.city}
+              openIRL={displayProfile.openIRL}
+            />
+            <div className="pt-2 border-t border-border">
               <Link
                 href="/onboarding"
                 className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-accent hover:text-accent transition"
@@ -236,38 +233,40 @@ export default function MatchesPage() {
           {!loading && !fetchError && matches.length === 0 && (
             <div className="grid gap-5">
 
-              {/* Encart Early Tester — mise en valeur avec fond accent */}
-              <div className="rounded-2xl border border-accent/40 bg-accent/10 px-6 py-5">
+              {/* Early Tester — vert */}
+              <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">🚀</span>
-                  <span className="rounded-full bg-accent px-3 py-1 text-xs font-bold text-black">Early OverFlow Tester · Utrecht</span>
+                  <span className="rounded-full border border-green-500/60 bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400">Early OverFlow Tester · Utrecht</span>
                 </div>
-                <p className="text-sm text-text font-medium">You&apos;re one of the first gamers to join OverFlow in Utrecht.</p>
+                <p className="text-sm font-medium text-text">You&apos;re one of the first gamers to join OverFlow in Utrecht.</p>
                 <p className="mt-1 text-sm text-muted">No compatible profile yet — but the community is growing. You&apos;ll be among the first notified when a match appears.</p>
               </div>
 
-              {/* What happens next — proposition de valeur retravaillée */}
+              {/* What happens next — email nudge */}
               <Card className="p-6">
                 <h2 className="text-lg font-bold">📧 Get notified when a match arrives</h2>
-                <p className="mt-2 text-sm text-muted">
-                  {hasEmail
-                    ? `We\'ll email you at ${displayProfile.email} when a compatible player joins Utrecht.`
-                    : "You haven\'t added an email yet. Without it, you won\'t be notified when a compatible player joins — and they won\'t be able to reach you either."}
-                </p>
-                {!hasEmail && (
-                  <Link
-                    href="/login"
-                    className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
-                  >
-                    📧 Add my email
-                  </Link>
-                )}
-                {hasEmail && (
-                  <ul className="mt-4 grid gap-3 text-sm text-muted">
-                    <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you when a compatible player joins Utrecht.</li>
-                    <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
-                    <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
-                  </ul>
+                {!hasEmail ? (
+                  <>
+                    <p className="mt-2 text-sm text-muted">
+                      You haven&apos;t added an email yet. Without it, you won&apos;t be notified when a compatible player joins — and they won&apos;t be able to reach you either.
+                    </p>
+                    <Link
+                      href="/login"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+                    >
+                      📧 Add my email
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <p className="mt-2 text-sm text-muted">We&apos;ll email you at <span className="text-text font-medium">{displayProfile.email}</span> when a compatible player joins Utrecht.</p>
+                    <ul className="mt-4 grid gap-3 text-sm text-muted">
+                      <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you when a compatible player joins Utrecht.</li>
+                      <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
+                      <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
+                    </ul>
+                  </>
                 )}
               </Card>
             </div>
@@ -284,34 +283,24 @@ export default function MatchesPage() {
                   <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                     <div>
                       <div className="text-2xl font-bold">{m.name}</div>
-                      <div className="mt-1 text-sm text-muted">{(m.games ?? []).join(', ')} • {normalizeArray(m.platform).join(', ')} • {Array.isArray(m.language) ? m.language.join(', ') : m.language}</div>
+                      <div className="mt-1 text-sm text-muted">
+                        {(m.games ?? []).join(', ')} • {normalizeArray(m.platform).join(', ')} • {Array.isArray(m.language) ? m.language.join(', ') : m.language}
+                      </div>
                       <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${fitStyle(m.fitLabel)}`}>{m.fitLabel}</div>
                       <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
                     </div>
-                    <div className="flex flex-col gap-2">
-                      <button onClick={() => handleRequestMatch(m.id, m.name)} className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition">
-                        Request match
-                      </button>
-                    </div>
+                    <button
+                      onClick={() => handleRequestMatch(m.id, m.name)}
+                      className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+                    >
+                      Request match
+                    </button>
                   </div>
                 </Card>
               ))}
             </div>
           )}
         </section>
-
-        {/* CTA Save profile — affiché seulement si pas d'email */}
-        {!loading && !fetchError && !hasEmail && (
-          <div className="rounded-2xl border border-dashed border-border px-6 py-5">
-            <h2 className="text-base font-bold">🔗 Save your profile</h2>
-            <p className="mt-2 text-sm text-muted">
-              Add your email to save your profile on any device and let other players reach you.
-            </p>
-            <Link href="/login" className="mt-4 inline-block rounded-xl border border-border px-5 py-2 text-sm font-semibold text-text hover:bg-panel2 transition">
-              Add my email
-            </Link>
-          </div>
-        )}
 
       </div>
     </main>
