@@ -132,38 +132,48 @@ export default function HomePage() {
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
           <div className="text-sm text-muted">Utrecht · MVP</div>
         </header>
-        <section className="grid flex-1 items-start gap-8 py-10 lg:grid-cols-2">
-          <div>
-            <p className="mb-4 inline-flex rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.25em] text-accent">Welcome back</p>
-            <h1 className="max-w-xl text-5xl font-black leading-tight text-text md:text-6xl">
-              Hey{profile.name ? `, ${profile.name.split(' ')[0]}` : ''} 👋
-            </h1>
-            <p className="mt-6 max-w-lg text-lg leading-8 text-muted">
-              Your profile is live. Check your matches or update your info anytime.
-            </p>
-            <div className="mt-8 flex gap-4">
-              <Link href="/matches"><Button>See my matches</Button></Link>
-            </div>
+
+        <section className="flex flex-1 flex-col justify-center py-10 max-w-2xl">
+
+          {/* Badge */}
+          <p className="mb-4 inline-flex w-fit rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.25em] text-accent">Welcome back</p>
+
+          {/* Titre */}
+          <h1 className="text-5xl font-black leading-tight text-text md:text-6xl">
+            Hey{profile.name ? `, ${profile.name.split(' ')[0]}` : ''} 👋
+          </h1>
+
+          {/* Card profil juste après le Hey */}
+          <div className="mt-6">
+            {loadingProfile ? (
+              <div className="rounded-2xl border border-orange-500/50 bg-orange-500/5 p-5 flex flex-col gap-3">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="h-4 w-full rounded bg-panel2 animate-pulse" />
+                ))}
+              </div>
+            ) : (
+              <ProfileSummary
+                name={profile.name}
+                games={profile.games ?? []}
+                platform={profile.platform}
+                style={profile.style}
+                language={profile.language ?? []}
+                city={profile.city}
+                openIRL={profile.openIRL}
+              />
+            )}
           </div>
 
-          {/* Profil redesigné */}
-          {loadingProfile ? (
-            <div className="rounded-2xl border border-orange-500/50 bg-orange-500/5 p-5 flex flex-col gap-3">
-              {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-4 w-full rounded bg-panel2 animate-pulse" />
-              ))}
-            </div>
-          ) : (
-            <ProfileSummary
-              name={profile.name}
-              games={profile.games ?? []}
-              platform={profile.platform}
-              style={profile.style}
-              language={profile.language ?? []}
-              city={profile.city}
-              openIRL={profile.openIRL}
-            />
-          )}
+          {/* Tagline */}
+          <p className="mt-6 max-w-lg text-lg leading-8 text-muted">
+            Your profile is live. Check your matches or update your info anytime.
+          </p>
+
+          {/* CTA */}
+          <div className="mt-8 flex gap-4">
+            <Link href="/matches"><Button>See my matches</Button></Link>
+          </div>
+
         </section>
       </main>
     );
