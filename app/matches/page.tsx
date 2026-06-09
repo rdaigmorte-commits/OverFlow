@@ -106,7 +106,7 @@ const PROFILE_FETCH_LIMIT = 200;
 
 export default function MatchesPage() {
   const router = useRouter();
-  const { profile, setProfile, setSession } = useOverflowStore();
+  const { profile, setProfile, setSession, reset } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
@@ -114,27 +114,17 @@ export default function MatchesPage() {
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [sessionState, setSessionState] = useState<SessionState>('pending');
   const [signingOut, setSigningOut] = useState(false);
-  // fix #33 : retryCount dans les dépendances du useEffect pour que "Try again" relance le fetch
   const [retryCount, setRetryCount] = useState(0);
 
   // ── SESSION GUARD ─────────────────────────────────────────────
-  // POC : on accepte deux cas :
-  //   1. Utilisateur connecté via Magic Link Auth (user != null)
-  //   2. Utilisateur anonyme avec un profileId en store (créé sans email)
-  // Dans les deux cas, on laisse passer vers /matches.
-  // La redirection vers /login ne se fait que si ni l'un ni l'autre n'existe.
+  // POC : accepte session Auth OU profileId anonyme en store.
   useEffect(() => {
     async function checkSession() {
       const { data: { user } } = await supabase.auth.getUser();
-
       if (user) {
-        // Utilisateur Auth connecté — on récupère la session complète
         const { data: { session: supaSession } } = await supabase.auth.getSession();
         if (supaSession) setSession(supaSession);
       }
-
-      // Dans tous les cas (Auth ou anonyme avec profileId), on considère
-      // l'utilisateur comme authentifié pour le POC
       setSessionState('authenticated');
     }
     checkSession();
@@ -142,15 +132,16 @@ export default function MatchesPage() {
   }, []);
 
   // ── LOGOUT ────────────────────────────────────────────────────
+  // fix #39 : reset() vide le store ET le localStorage (profileId + session)
+  // redirect vers / (landing) et non /login
   async function handleSignOut() {
     setSigningOut(true);
     await supabase.auth.signOut();
-    router.replace('/login');
+    reset();
+    router.replace('/');
   }
 
   // ── FETCH CONTACT INFO (email + discord) ──────────────────────
-  // Chargés à la demande uniquement, quand l'utilisateur clique "Request match".
-  // Cela évite d'exposer les coordonnées de tous les profils côté client.
   async function handleRequestMatch(matchId: string, matchName: string) {
     const { data, error } = await supabase
       .from('profiles')
@@ -204,7 +195,6 @@ export default function MatchesPage() {
         hydratedProfile = updated as typeof profile;
       }
 
-      // fix #31 : champs publics uniquement + limite de 200 profils
       const { data: allProfiles, error: allError } = await supabase
         .from('profiles')
         .select(PUBLIC_PROFILE_FIELDS)
@@ -237,7 +227,7 @@ export default function MatchesPage() {
     setFetchError(false);
     fetchMatches();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionState, profile.profileId, retryCount]); // fix #33 : retryCount ajouté
+  }, [sessionState, profile.profileId, retryCount]);
 
   // ── RENDER GUARDS ─────────────────────────────────────────────
   if (sessionState === 'pending') {
@@ -336,7 +326,6 @@ export default function MatchesPage() {
             <Card className="p-8 text-center">
               <div className="text-2xl font-bold">Something went wrong</div>
               <p className="mt-3 text-muted">We couldn&apos;t load your matches. Please try refreshing the page.</p>
-              {/* fix #33 : setRetryCount incrémente le compteur → déclenche useEffect */}
               <button
                 onClick={() => setRetryCount(c => c + 1)}
                 className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
@@ -384,7 +373,6 @@ export default function MatchesPage() {
                       <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
                     </div>
                     <div className="flex flex-col gap-2">
-                      {/* fix #31 : email/discord chargés à la demande via handleRequestMatch */}
                       <button
                         onClick={() => handleRequestMatch(m.id, m.name)}
                         className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black"
