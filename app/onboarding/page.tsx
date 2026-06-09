@@ -6,12 +6,12 @@ import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
 
-const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
+// Jeux de secours affichés en chips si la base est vide (premier utilisateur)
+const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
 const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
 const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
 const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
-
 const TOTAL_STEPS = 5;
 
 type GameCount = Record<string, number>;
@@ -32,9 +32,7 @@ function ProgressBar({ step }: { step: number }) {
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <button type="button" onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition ${
         selected ? 'border-accent bg-accent text-black font-semibold' : 'border-border bg-panel2 text-text hover:border-accent'
       }`}
@@ -58,17 +56,25 @@ export default function OnboardingPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Jeux presets triés par popularité décroissante (mis à jour dès que gameCounts est chargé)
-  const sortedPresets = [...PRESET_GAMES].sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0));
-
-  // Jeux hors presets connus en base, triés par count, filtrés par gameInput
-  const customSuggestions = Object.entries(gameCounts)
-    .filter(([g]) => !PRESET_GAMES.includes(g))
+  // Top 8 jeux toutes sources confondues, triés par count décroissant
+  // Si la base est encore vide, on utilise les jeux de secours
+  const allGamesSorted = Object.entries(gameCounts)
     .sort(([, a], [, b]) => b - a)
-    .map(([g]) => g)
+    .map(([g]) => g);
+  const top8 = allGamesSorted.length >= 8
+    ? allGamesSorted.slice(0, 8)
+    : FALLBACK_GAMES;
+
+  // Suggestions dropdown = jeux connus en base HORS top 8, filtrés par saisie
+  const dropdownSuggestions = allGamesSorted
+    .filter((g) => !top8.includes(g))
     .filter((g) => gameInput.trim().length === 0 || g.toLowerCase().includes(gameInput.toLowerCase()));
 
-  // ── Hydratation ─────────────────────────────────────────────────────────
+  // Jeux sélectionnés par l'utilisateur qui ne sont PAS dans le top 8
+  // (ajoutés via texte libre avant qu'ils atteignent le top 8)
+  const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
+
+  // ── Hydratation ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function hydrate() {
       const profileId = profile.profileId;
@@ -97,7 +103,7 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── COUNT par jeu (Step 2) ───────────────────────────────────────────────
+  // ── COUNT par jeu (Step 2) ────────────────────────────────────────────────
   useEffect(() => {
     if (currentStep !== 2) return;
     async function fetchGameCounts() {
@@ -113,7 +119,7 @@ export default function OnboardingPage() {
     fetchGameCounts();
   }, [currentStep]);
 
-  // ── Fermer suggestions si clic en dehors ────────────────────────────────
+  // ── Fermer suggestions si clic en dehors ─────────────────────────────────
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
@@ -141,7 +147,7 @@ export default function OnboardingPage() {
     fetchCompatible();
   }, [currentStep, profile.games, profile.profileId]);
 
-  // ── Helpers ──────────────────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────────────────
   const toggleMulti = (key: 'games' | 'availability' | 'language' | 'platform' | 'style', value: string) => {
     const current = profile[key] as string[];
     const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
@@ -156,9 +162,7 @@ export default function OnboardingPage() {
     setShowSuggestions(false);
   };
 
-  const customGames = profile.games.filter((g) => !PRESET_GAMES.includes(g));
-
-  // ── Save profil (Step 5) ─────────────────────────────────────────────────
+  // ── Save profil (Step 5) ──────────────────────────────────────────────────
   async function saveProfile(withEmail: boolean): Promise<boolean> {
     setLoading(true); setError(null);
     const basePayload = {
@@ -187,7 +191,6 @@ export default function OnboardingPage() {
 
   function goNext() { setError(null); setStep(currentStep + 1); }
   function goBack() { setError(null); setStep(currentStep - 1); }
-
   function validateStep(): string | null {
     if (currentStep === 1 && !profile.name.trim()) return 'Please enter your name or nickname.';
     if (currentStep === 2 && profile.games.length === 0) return 'Please select at least one game.';
@@ -198,7 +201,6 @@ export default function OnboardingPage() {
     }
     return null;
   }
-
   function handleNext() { const err = validateStep(); if (err) { setError(err); return; } goNext(); }
   async function handleSave() { const ok = await saveProfile(true); if (ok) router.push('/matches'); }
   async function handleSkip() { const ok = await saveProfile(false); if (ok) router.push('/matches'); }
@@ -244,9 +246,9 @@ export default function OnboardingPage() {
           </div>
           <Card className="p-6 flex flex-col gap-4">
 
-            {/* Chips preset triées par popularité */}
+            {/* Top 8 chips — dynamiques depuis Supabase */}
             <div className="flex flex-wrap gap-3">
-              {sortedPresets.map((g) => {
+              {top8.map((g) => {
                 const count = gameCounts[g] ?? 0;
                 return (
                   <div key={g} className="flex flex-col items-center gap-1">
@@ -257,10 +259,10 @@ export default function OnboardingPage() {
               })}
             </div>
 
-            {/* Jeux custom ajoutés */}
-            {customGames.length > 0 && (
+            {/* Jeux sélectionnés hors top 8 (ajoutés via texte libre) */}
+            {extraSelectedGames.length > 0 && (
               <div className="flex flex-wrap gap-3">
-                {customGames.map((g) => (
+                {extraSelectedGames.map((g) => (
                   <span key={g} className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold">
                     {g}
                     <button type="button" onClick={() => setProfile({ games: profile.games.filter(x => x !== g) })} className="hover:opacity-70" aria-label={`Remove ${g}`}>×</button>
@@ -269,7 +271,7 @@ export default function OnboardingPage() {
               </div>
             )}
 
-            {/* Input texte libre + suggestions */}
+            {/* Input texte libre + dropdown */}
             <div className="relative" ref={suggestionsRef}>
               <div className="flex gap-3">
                 <input
@@ -286,13 +288,10 @@ export default function OnboardingPage() {
                 <button type="button" onClick={() => addGame()} className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-panel2 transition">Add</button>
               </div>
 
-              {/* Dropdown suggestions */}
-              {showSuggestions && customSuggestions.length > 0 && (
+              {showSuggestions && dropdownSuggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border bg-panel shadow-lg overflow-hidden">
-                  {customSuggestions.slice(0, 6).map((g) => (
-                    <button
-                      key={g}
-                      type="button"
+                  {dropdownSuggestions.slice(0, 6).map((g) => (
+                    <button key={g} type="button"
                       onMouseDown={(e) => { e.preventDefault(); addGame(g); }}
                       className="flex w-full items-center justify-between px-4 py-3 text-sm text-text hover:bg-panel2 transition"
                     >
@@ -362,10 +361,10 @@ export default function OnboardingPage() {
         <div className="flex flex-col gap-6">
           <div>
             <h1 className="text-3xl font-black">
-              {compatCount === null ? 'Finding your matches…' : compatCount === 0 ? 'You\'re one of the first! 🚀' : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
+              {compatCount === null ? 'Finding your matches…' : compatCount === 0 ? "You're one of the first! 🚀" : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
             </h1>
             <p className="mt-2 text-muted text-sm">
-              {compatCount === 0 ? 'The community is growing. Save your profile and be notified when compatible players join Utrecht.' : 'Here\'s a preview of who you could play with in Utrecht.'}
+              {compatCount === 0 ? 'The community is growing. Save your profile and be notified when compatible players join Utrecht.' : "Here's a preview of who you could play with in Utrecht."}
             </p>
           </div>
           {previewMatches.length > 0 && (
