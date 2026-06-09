@@ -4,6 +4,7 @@ type MatchCardProps = {
   name: string;
   games: string[];
   platform: string[];
+  style: string[];
   language: string[];
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   fitReason: string;
@@ -32,15 +33,14 @@ const fitConfig = {
   },
 };
 
-// Transforme la fitReason "plays X · same platform (Y) · speaks Z" en bullets lisibles
 function parseFitReasonToBullets(fitReason: string): { emoji: string; text: string }[] {
   const parts = fitReason.split(' · ');
   return parts.map((part) => {
-    if (part.startsWith('plays '))       return { emoji: '🎮', text: `Both play ${part.replace('plays ', '')}` };
+    if (part.startsWith('plays '))        return { emoji: '🎮', text: `Both play ${part.replace('plays ', '')}` };
     if (part.startsWith('same platform')) return { emoji: '🖥️', text: part.charAt(0).toUpperCase() + part.slice(1) };
     if (part.startsWith('same playstyle')) return { emoji: '⚡', text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('speaks '))      return { emoji: '🌍', text: `Speaks ${part.replace('speaks ', '')}` };
-    if (part.startsWith('available '))   return { emoji: '📅', text: `Both free ${part.replace('available ', '')}` };
+    if (part.startsWith('speaks '))       return { emoji: '🌍', text: `Speaks ${part.replace('speaks ', '')}` };
+    if (part.startsWith('available '))    return { emoji: '📅', text: `Both free ${part.replace('available ', '')}` };
     return { emoji: '✅', text: part };
   });
 }
@@ -49,14 +49,16 @@ export function MatchCard({
   name,
   games,
   platform,
+  style,
   language,
   fitLabel,
   fitReason,
   onRequestMatch,
 }: MatchCardProps) {
-  const config = fitConfig[fitLabel] ?? fitConfig['Worth reaching out'];
-  const bullets = parseFitReasonToBullets(fitReason);
+  const config   = fitConfig[fitLabel] ?? fitConfig['Worth reaching out'];
+  const bullets  = parseFitReasonToBullets(fitReason);
   const platforms = normalizeArray(platform);
+  const styles    = normalizeArray(style);
 
   return (
     <div className={`rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
@@ -82,6 +84,11 @@ export function MatchCard({
         {platforms.map((p) => (
           <span key={p} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
             🖥️ {p}
+          </span>
+        ))}
+        {styles.map((s) => (
+          <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
+            ⚡ {s}
           </span>
         ))}
         {language.map((l) => (

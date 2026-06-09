@@ -266,6 +266,7 @@ export default function MatchesPage() {
                   name={m.name}
                   games={m.games ?? []}
                   platform={normalizeArray(m.platform)}
+                  style={normalizeArray(m.profile?.style)}
                   language={normalizeArray(m.language)}
                   fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                   fitReason={m.fitReason}
