@@ -1,37 +1,52 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 
-// ─── Session Guard ────────────────────────────────────────────────────────────
-// L'accès admin est réservé à l'email défini dans NEXT_PUBLIC_ADMIN_EMAIL.
-// On vérifie la session Supabase Auth (Magic Link) — plus de mot de passe en dur.
+// ─── Password Guard ───────────────────────────────────────────────────────────
+// Mot de passe défini dans .env.local : NEXT_PUBLIC_ADMIN_PASSWORD
+// Simple et sans dépendance Supabase Auth — suffisant pour un POC.
 
-function useAdminGuard() {
-  const router = useRouter();
-  const [allowed, setAllowed] = useState<boolean | null>(null); // null = en cours de vérification
+function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
+  const [input, setInput] = useState('');
+  const [error, setError] = useState(false);
 
-  useEffect(() => {
-    async function check() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        router.replace('/login?next=/admin');
-        return;
-      }
-      const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL;
-      if (adminEmail && session.user.email !== adminEmail) {
-        // Connecté mais pas admin → on redirige sans exposer pourquoi
-        router.replace('/');
-        return;
-      }
-      setAllowed(true);
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const pwd = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
+    if (input === pwd) {
+      sessionStorage.setItem('admin_unlocked', '1');
+      onUnlock();
+    } else {
+      setError(true);
+      setInput('');
     }
-    check();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }
 
-  return allowed;
+  return (
+    <main className="flex min-h-screen items-center justify-center px-6">
+      <div className="w-full max-w-sm flex flex-col gap-6">
+        <div>
+          <h1 className="text-3xl font-black">🔒 Admin access</h1>
+          <p className="mt-2 text-sm text-muted">Enter the admin password to continue.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+          <input
+            type="password"
+            autoFocus
+            className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+            placeholder="Password"
+            value={input}
+            onChange={(e) => { setInput(e.target.value); setError(false); }}
+          />
+          {error && <p className="text-sm text-red-400">Wrong password. Try again.</p>}
+          <button type="submit" className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">
+            Unlock →
+          </button>
+        </form>
+      </div>
+    </main>
+  );
 }
 
 // ─── Stat Components ──────────────────────────────────────────────────────────
@@ -171,7 +186,6 @@ function AdminDashboard() {
       <h1 className="text-4xl font-black">Admin overview</h1>
       <p className="mt-3 text-muted">Live dashboard — all data from Supabase.</p>
 
-      {/* Bloc 1 - Traction */}
       <div className="mt-8 grid gap-5 md:grid-cols-4">
         <Card className="p-5"><div className="text-sm text-muted">Total profiles</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.total_profiles}</div></Card>
         <Card className="p-5"><div className="text-sm text-muted">Open to IRL</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.open_irl}</div></Card>
@@ -179,20 +193,17 @@ function AdminDashboard() {
         <Card className="p-5"><div className="text-sm text-muted">New this week</div><div className="mt-2 text-3xl font-black">{loading ? '...' : globals.new_this_week}</div></Card>
       </div>
 
-      {/* Match opportunities */}
       <MatchOpportunitiesBlock data={matchOps} loading={loading} />
 
-      {/* Bloc 2 - Community profile */}
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <StatsBlock title="🎮 Games" rows={games} labelKey="game" />
-        <StatsBlock title="🖵️ Platforms" rows={platforms} labelKey="platform" />
+        <StatsBlock title="🖥️ Platforms" rows={platforms} labelKey="platform" />
         <StatsBlock title="⚡ Play style" rows={styles} labelKey="style" />
         <StatsBlock title="🗣️ Languages" rows={languages} labelKey="language" />
         <StatsBlock title="🕒 Availability" rows={availability} labelKey="slot" />
       </div>
 
-      {/* Bloc 3 - Demographics */}
       <h2 className="mt-10 text-2xl font-black">Demographics</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
         <StatsBlock title="👤 Age groups" rows={ages} labelKey="age_group" />
@@ -205,16 +216,18 @@ function AdminDashboard() {
 // ─── Page Entry Point ─────────────────────────────────────────────────────────
 
 export default function AdminPage() {
-  const allowed = useAdminGuard();
+  const [unlocked, setUnlocked] = useState<boolean | null>(null);
 
-  // null = vérification en cours
-  if (allowed === null) {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-muted text-sm">Checking access...</p>
-      </main>
-    );
-  }
+  useEffect(() => {
+    // Vérifie si déjà déverrouillé dans cette session navigateur
+    if (sessionStorage.getItem('admin_unlocked') === '1') {
+      setUnlocked(true);
+    } else {
+      setUnlocked(false);
+    }
+  }, []);
 
+  if (unlocked === null) return null; // flash prévention
+  if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
   return <AdminDashboard />;
 }
