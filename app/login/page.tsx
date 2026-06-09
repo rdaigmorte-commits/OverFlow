@@ -1,27 +1,18 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 
+// Cette page est optionnelle — elle n'est jamais un prérequis pour accéder à /matches.
+// Elle est proposée en fin de parcours comme option de sauvegarde du profil.
+// Le Magic Link permet de retrouver son profil sur un autre appareil.
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [checkingSession, setCheckingSession] = useState(true);
-
-  // Guard : si déjà connecté, rediriger vers /matches
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        router.replace('/matches');
-      } else {
-        setCheckingSession(false);
-      }
-    });
-  }, [router]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,32 +38,30 @@ export default function LoginPage() {
     setLoading(false);
   }
 
-  // Pendant la vérification de session : spinner discret
-  if (checkingSession) {
-    return (
-      <main className="min-h-screen flex items-center justify-center bg-bg">
-        <p className="text-muted text-sm">Checking your session...</p>
-      </main>
-    );
-  }
-
   return (
     <main className="min-h-screen flex items-center justify-center bg-bg px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
+
+        {/* Retour */}
+        <button
+          onClick={() => router.back()}
+          className="mb-6 text-sm text-muted hover:text-text transition flex items-center gap-1"
+        >
+          ← Back to my matches
+        </button>
+
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-text">OverFlow</h1>
-          <p className="text-muted mt-2 text-sm">Your gaming community in Utrecht</p>
+          <h1 className="text-3xl font-bold text-text">Save your profile</h1>
+          <p className="text-muted mt-2 text-sm">Access your matches from any device, anytime.</p>
         </div>
 
         {sent ? (
-          // État : email envoyé
           <div className="bg-panel border border-border rounded-2xl p-8 text-center">
             <div className="text-4xl mb-4">📬</div>
             <h2 className="text-text font-semibold text-xl mb-2">Check your inbox!</h2>
             <p className="text-muted text-sm">
               We sent a magic link to <span className="text-text font-medium">{email}</span>.
-              Click it to access your profile — no password needed.
+              Click it to save your profile — no password needed.
             </p>
             <button
               onClick={() => setSent(false)}
@@ -82,15 +71,14 @@ export default function LoginPage() {
             </button>
           </div>
         ) : (
-          // État : formulaire
           <form
             onSubmit={handleSubmit}
             className="bg-panel border border-border rounded-2xl p-8 flex flex-col gap-5"
           >
             <div>
-              <h2 className="text-text font-semibold text-xl">Sign in</h2>
+              <h2 className="text-text font-semibold text-xl">Enter your email</h2>
               <p className="text-muted text-sm mt-1">
-                Enter your email and we&apos;ll send you a magic link.
+                We&apos;ll send you a magic link to save your profile.
               </p>
             </div>
 

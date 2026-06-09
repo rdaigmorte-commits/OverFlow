@@ -97,69 +97,23 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
   );
 }
 
-type SessionState = 'pending' | 'authenticated' | 'unauthenticated';
-
-// Champs publics uniquement — email et discord sont exclus de la liste générale.
-// Ils sont chargés séparément uniquement quand l'utilisateur clique "Request match".
 const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl';
 const PROFILE_FETCH_LIMIT = 200;
 
 export default function MatchesPage() {
   const router = useRouter();
-  const { profile, setProfile, setSession, reset } = useOverflowStore();
+  const { profile, setProfile, reset } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
-  const [sessionState, setSessionState] = useState<SessionState>('pending');
-  const [signingOut, setSigningOut] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
 
-  // ── SESSION GUARD ─────────────────────────────────────────────
-  // POC : accepte session Auth OU profileId anonyme en store.
-  useEffect(() => {
-    async function checkSession() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        const { data: { session: supaSession } } = await supabase.auth.getSession();
-        if (supaSession) setSession(supaSession);
-      }
-      setSessionState('authenticated');
-    }
-    checkSession();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  // ── LOGOUT ────────────────────────────────────────────────────
-  // fix #39 : reset() vide le store ET le localStorage (profileId + session)
-  // redirect vers / (landing) et non /login
-  async function handleSignOut() {
-    setSigningOut(true);
-    await supabase.auth.signOut();
-    reset();
-    router.replace('/');
-  }
-
-  // ── FETCH CONTACT INFO (email + discord) ──────────────────────
-  async function handleRequestMatch(matchId: string, matchName: string) {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('email, discord')
-      .eq('id', matchId)
-      .single();
-
-    if (error || !data) {
-      setSelectedContact({ name: matchName, email: null, discord: null });
-    } else {
-      setSelectedContact({ name: matchName, email: data.email, discord: data.discord });
-    }
-  }
-
   // ── FETCH MATCHES ─────────────────────────────────────────────
+  // Pas d'auth requise — un profileId en localStorage suffit.
+  // Le Magic Link est proposé en fin de page comme option de sauvegarde.
   useEffect(() => {
-    if (sessionState !== 'authenticated') return;
-
     async function fetchMatches() {
       const profileId = profile.profileId;
       if (!profileId) {
@@ -227,23 +181,28 @@ export default function MatchesPage() {
     setFetchError(false);
     fetchMatches();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sessionState, profile.profileId, retryCount]);
+  }, [profile.profileId, retryCount]);
 
-  // ── RENDER GUARDS ─────────────────────────────────────────────
-  if (sessionState === 'pending') {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-muted text-sm">Checking your session...</p>
-      </main>
-    );
+  // ── RESET PROFIL ─────────────────────────────────────────────
+  async function handleReset() {
+    await supabase.auth.signOut(); // au cas où une session Auth existe
+    reset();
+    router.replace('/');
   }
 
-  if (sessionState === 'unauthenticated') {
-    return (
-      <main className="flex min-h-screen items-center justify-center">
-        <p className="text-muted text-sm">Redirecting...</p>
-      </main>
-    );
+  // ── FETCH CONTACT INFO ─────────────────────────────────────────
+  async function handleRequestMatch(matchId: string, matchName: string) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email, discord')
+      .eq('id', matchId)
+      .single();
+
+    if (error || !data) {
+      setSelectedContact({ name: matchName, email: null, discord: null });
+    } else {
+      setSelectedContact({ name: matchName, email: data.email, discord: data.discord });
+    }
   }
 
   const displayProfile = currentProfile ?? profile;
@@ -253,15 +212,6 @@ export default function MatchesPage() {
   if (hasNoProfile) {
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
-        <div className="flex justify-end mb-4">
-          <button
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="text-xs text-muted hover:text-text transition disabled:opacity-50"
-          >
-            {signingOut ? 'Signing out...' : 'Sign out'}
-          </button>
-        </div>
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
           <div className="text-5xl">🎮</div>
           <div>
@@ -288,18 +238,17 @@ export default function MatchesPage() {
         <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />
       )}
 
-      {/* Header : titre + logout */}
+      {/* Header */}
       <div className="mb-8 flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-black">Your matches</h1>
           <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
         </div>
         <button
-          onClick={handleSignOut}
-          disabled={signingOut}
-          className="text-xs text-muted hover:text-text transition disabled:opacity-50 mt-2"
+          onClick={handleReset}
+          className="text-xs text-muted hover:text-text transition mt-2"
         >
-          {signingOut ? 'Signing out...' : 'Sign out'}
+          Reset profile
         </button>
       </div>
 
@@ -349,11 +298,6 @@ export default function MatchesPage() {
                   <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
                   <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
                 </ul>
-                {!displayProfile.email && (
-                  <div className="mt-5 rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
-                    ⚠️ Add your email to get notified. <Link href="/onboarding" className="underline text-text">Update profile</Link>
-                  </div>
-                )}
               </Card>
             </div>
           )}
@@ -386,6 +330,23 @@ export default function MatchesPage() {
             </div>
           )}
         </section>
+
+        {/* CTA save profile — Magic Link optionnel, en bas de page */}
+        {!loading && !fetchError && (
+          <Card className="p-6 border-dashed">
+            <h2 className="text-base font-bold">🔗 Save your profile</h2>
+            <p className="mt-2 text-sm text-muted">
+              Want to access your matches from another device or come back later?
+              Enter your email and we&apos;ll send you a magic link.
+            </p>
+            <Link
+              href="/login"
+              className="mt-4 inline-block rounded-xl border border-border px-5 py-2 text-sm font-semibold text-text hover:bg-panel2 transition"
+            >
+              Save my profile
+            </Link>
+          </Card>
+        )}
 
       </div>
     </main>
