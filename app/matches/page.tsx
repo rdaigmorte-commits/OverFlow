@@ -190,27 +190,17 @@ export default function MatchesPage() {
 
       <div className="grid gap-6">
 
-        {/* Bloc profil + Edit CTA */}
+        {/* Profil utilisateur */}
         {!loading && (
-          <div className="rounded-2xl border border-border bg-panel px-5 py-4 flex flex-col gap-3">
-            <ProfileSummary
-              name={displayProfile.name}
-              games={displayProfile.games ?? []}
-              platform={displayProfile.platform}
-              style={displayProfile.style}
-              language={displayProfile.language ?? []}
-              city={displayProfile.city}
-              openIRL={displayProfile.openIRL}
-            />
-            <div className="pt-2 border-t border-border">
-              <Link
-                href="/onboarding"
-                className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-accent hover:text-accent transition"
-              >
-                ✏️ Edit my profile
-              </Link>
-            </div>
-          </div>
+          <ProfileSummary
+            name={displayProfile.name}
+            games={displayProfile.games ?? []}
+            platform={displayProfile.platform}
+            style={displayProfile.style}
+            language={displayProfile.language ?? []}
+            city={displayProfile.city}
+            openIRL={displayProfile.openIRL}
+          />
         )}
 
         <section>
