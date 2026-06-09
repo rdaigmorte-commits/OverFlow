@@ -9,7 +9,7 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
   const { profile, setProfile } = useOverflowStore();
-  const handledRef = useRef(false); // évite le double traitement
+  const handledRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   async function handleSession(userId: string, userEmail: string | undefined) {
@@ -17,17 +17,29 @@ export default function AuthCallbackPage() {
     handledRef.current = true;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    // Lier le profil anonyme au compte auth (fix #35)
+    const hasProfile = Boolean(profile?.profileId);
+
     if (userEmail) {
-      await supabase
-        .from('profiles')
-        .update({ user_id: userId })
-        .eq('email', userEmail)
-        .is('user_id', null);
+      if (hasProfile) {
+        // Cas "Add email" : on met à jour le profil existant avec l'email + user_id
+        await supabase
+          .from('profiles')
+          .update({ email: userEmail, user_id: userId })
+          .eq('id', profile.profileId);
+        // Met à jour le store local pour que hasEmail passe à true immédiatement
+        setProfile({ ...profile, email: userEmail });
+      } else {
+        // Cas reconnexion : on lie le compte auth au profil existant par email
+        await supabase
+          .from('profiles')
+          .update({ user_id: userId })
+          .eq('email', userEmail)
+          .is('user_id', null);
+      }
     }
 
-    const hasProfile = Boolean(profile?.profileId);
     if (hasProfile) {
+      // Si un autre profil existe pour cet email, on bascule dessus
       const { data } = await supabase
         .from('profiles')
         .select('id')
@@ -43,21 +55,18 @@ export default function AuthCallbackPage() {
   }
 
   useEffect(() => {
-    // 1️⃣ Tentative immédiate — la session est peut-être déjà établie au montage
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         handleSession(session.user.id, session.user.email ?? undefined);
       }
     });
 
-    // 2️⃣ Fallback — écoute l'événement si la session arrive après le montage
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         handleSession(session.user.id, session.user.email ?? undefined);
       }
     });
 
-    // Timeout 60s : si ni getSession ni onAuthStateChange n'ont abouti
     timeoutRef.current = setTimeout(() => setStatus('error'), 60_000);
 
     return () => {
