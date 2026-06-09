@@ -6,7 +6,7 @@ import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
 
-// Jeux de secours affichés en chips si la base est vide (premier utilisateur)
+// Jeux de secours pour compléter le top 8 si la base n'a pas assez de jeux distincts
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
 const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
@@ -51,30 +51,37 @@ export default function OnboardingPage() {
   const [hydrating, setHydrating]     = useState(true);
   const [error, setError]             = useState<string | null>(null);
   const [gameCounts, setGameCounts]   = useState<GameCount>({});
+  const [countsLoaded, setCountsLoaded] = useState(false);
   const [compatCount, setCompatCount] = useState<number | null>(null);
   const [previewMatches, setPreviewMatches] = useState<{ id: string; name: string; games: string[] }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Top 8 jeux toutes sources confondues, triés par count décroissant
-  // Si la base est encore vide, on utilise les jeux de secours
+  // Jeux de la base triés par count décroissant
   const allGamesSorted = Object.entries(gameCounts)
     .sort(([, a], [, b]) => b - a)
     .map(([g]) => g);
-  const top8 = allGamesSorted.length >= 8
-    ? allGamesSorted.slice(0, 8)
+
+  // Top 8 :
+  // 1. On prend d'abord tous les jeux réels de la base (triés par count)
+  // 2. On complète avec les FALLBACK s'il en manque pour atteindre 8
+  // 3. Si les counts ne sont pas encore chargés, on affiche les FALLBACK
+  const top8: string[] = countsLoaded
+    ? [
+        ...allGamesSorted.slice(0, 8),
+        ...FALLBACK_GAMES.filter((g) => !allGamesSorted.includes(g)),
+      ].slice(0, 8)
     : FALLBACK_GAMES;
 
-  // Suggestions dropdown = jeux connus en base HORS top 8, filtrés par saisie
+  // Dropdown = jeux en base hors top 8, filtrés par saisie
   const dropdownSuggestions = allGamesSorted
     .filter((g) => !top8.includes(g))
     .filter((g) => gameInput.trim().length === 0 || g.toLowerCase().includes(gameInput.toLowerCase()));
 
-  // Jeux sélectionnés par l'utilisateur qui ne sont PAS dans le top 8
-  // (ajoutés via texte libre avant qu'ils atteignent le top 8)
+  // Jeux sélectionnés par l'utilisateur hors top 8
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
-  // ── Hydratation ──────────────────────────────────────────────────────────
+  // ── Hydratation ─────────────────────────────────────────────────────────
   useEffect(() => {
     async function hydrate() {
       const profileId = profile.profileId;
@@ -103,23 +110,24 @@ export default function OnboardingPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── COUNT par jeu (Step 2) ────────────────────────────────────────────────
+  // ── COUNT par jeu (Step 2) ───────────────────────────────────────────────
   useEffect(() => {
     if (currentStep !== 2) return;
     async function fetchGameCounts() {
       const { data } = await supabase.from('profiles').select('games');
-      if (!data) return;
+      if (!data) { setCountsLoaded(true); return; }
       const counts: GameCount = {};
       data.forEach((row) => {
         const games = Array.isArray(row.games) ? row.games : [];
         games.forEach((g: string) => { counts[g] = (counts[g] ?? 0) + 1; });
       });
       setGameCounts(counts);
+      setCountsLoaded(true);
     }
     fetchGameCounts();
   }, [currentStep]);
 
-  // ── Fermer suggestions si clic en dehors ─────────────────────────────────
+  // ── Fermer suggestions si clic en dehors ────────────────────────────────
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
       if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
@@ -147,7 +155,7 @@ export default function OnboardingPage() {
     fetchCompatible();
   }, [currentStep, profile.games, profile.profileId]);
 
-  // ── Helpers ───────────────────────────────────────────────────────────────
+  // ── Helpers ──────────────────────────────────────────────────────────────
   const toggleMulti = (key: 'games' | 'availability' | 'language' | 'platform' | 'style', value: string) => {
     const current = profile[key] as string[];
     const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
@@ -162,7 +170,7 @@ export default function OnboardingPage() {
     setShowSuggestions(false);
   };
 
-  // ── Save profil (Step 5) ──────────────────────────────────────────────────
+  // ── Save profil (Step 5) ─────────────────────────────────────────────────
   async function saveProfile(withEmail: boolean): Promise<boolean> {
     setLoading(true); setError(null);
     const basePayload = {
@@ -246,7 +254,7 @@ export default function OnboardingPage() {
           </div>
           <Card className="p-6 flex flex-col gap-4">
 
-            {/* Top 8 chips — dynamiques depuis Supabase */}
+            {/* Top 8 chips — jeux réels en premier, complétés par FALLBACK */}
             <div className="flex flex-wrap gap-3">
               {top8.map((g) => {
                 const count = gameCounts[g] ?? 0;
@@ -259,7 +267,7 @@ export default function OnboardingPage() {
               })}
             </div>
 
-            {/* Jeux sélectionnés hors top 8 (ajoutés via texte libre) */}
+            {/* Jeux sélectionnés hors top 8 */}
             {extraSelectedGames.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {extraSelectedGames.map((g) => (
@@ -287,7 +295,6 @@ export default function OnboardingPage() {
                 />
                 <button type="button" onClick={() => addGame()} className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-panel2 transition">Add</button>
               </div>
-
               {showSuggestions && dropdownSuggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border bg-panel shadow-lg overflow-hidden">
                   {dropdownSuggestions.slice(0, 6).map((g) => (
