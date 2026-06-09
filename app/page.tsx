@@ -2,9 +2,10 @@
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/Button';
-import { Card } from '@/components/Card';
+import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
+import { normalizeArray } from '@/lib/match';
 
 function useScrollReveal(enabled: boolean) {
   const ref = useRef<HTMLDivElement>(null);
@@ -55,12 +56,9 @@ export default function HomePage() {
 
   useEffect(() => { setMounted(true); }, []);
 
-  // fix(#36) — vider le store quand l'utilisateur se déconnecte
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_OUT') {
-        reset();
-      }
+      if (event === 'SIGNED_OUT') reset();
     });
     return () => subscription.unsubscribe();
   }, [reset]);
@@ -76,9 +74,7 @@ export default function HomePage() {
     supabase
       .from('profiles')
       .select('id', { count: 'exact', head: true })
-      .then(({ count }) => {
-        if (typeof count === 'number') setPlayerCount(count);
-      });
+      .then(({ count }) => { if (typeof count === 'number') setPlayerCount(count); });
   }, [mounted]);
 
   useEffect(() => {
@@ -99,9 +95,9 @@ export default function HomePage() {
             age: data.age ?? '',
             city: data.city ?? 'Utrecht',
             language: Array.isArray(data.language) ? data.language : (data.language ? [data.language] : []),
-            platform: data.platform ?? '',
+            platform: normalizeArray(data.platform),
             games: Array.isArray(data.games) ? data.games : [],
-            style: data.style ?? '',
+            style: normalizeArray(data.style),
             availability: Array.isArray(data.availability) ? data.availability : [],
             openIRL: data.open_irl ?? false,
             consent: data.consent ?? false,
@@ -126,22 +122,10 @@ export default function HomePage() {
   }
 
   const hasProfile = !!profile.profileId;
-  const isReady = hasProfile && !loadingProfile;
   const showBadge = playerCount !== null && playerCount >= BADGE_MIN_PLAYERS;
 
-  // ── RETURNING USER ────────────────────────────────────────────
+  // ── RETURNING USER ─────────────────────────────────────────────
   if (hasProfile) {
-    const games = (profile.games ?? []).join(', ');
-    const summaryLines = [
-      profile.name && { label: 'Name', value: profile.name },
-      games && { label: 'Games', value: games },
-      profile.platform && { label: 'Platform', value: profile.platform },
-      profile.style && { label: 'Style', value: profile.style },
-      (profile.availability ?? []).length > 0 && { label: 'Available', value: (profile.availability ?? []).join(', ') },
-      profile.city && { label: 'City', value: profile.city },
-      profile.openIRL && { label: 'IRL events', value: 'Open to it' },
-    ].filter(Boolean) as { label: string; value: string }[];
-
     return (
       <main className="mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10">
         <header className="flex items-center justify-between py-2">
@@ -159,36 +143,27 @@ export default function HomePage() {
             </p>
             <div className="mt-8 flex gap-4">
               <Link href="/matches"><Button>See my matches</Button></Link>
-              <Link href="/onboarding" className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition-colors">
-                Edit profile
-              </Link>
             </div>
           </div>
-          <Card className="p-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold">Your profile</h2>
-              <Link href="/onboarding" className="text-xs text-accent underline">Edit</Link>
+
+          {/* Profil redesigné */}
+          {loadingProfile ? (
+            <div className="rounded-2xl border border-orange-500/50 bg-orange-500/5 p-5 flex flex-col gap-3">
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-4 w-full rounded bg-panel2 animate-pulse" />
+              ))}
             </div>
-            {!isReady ? (
-              <div className="mt-5 grid gap-3">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="flex gap-3">
-                    <div className="h-4 w-24 rounded bg-panel2 animate-pulse" />
-                    <div className="h-4 w-36 rounded bg-panel2 animate-pulse" />
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <ul className="mt-5 grid gap-3">
-                {summaryLines.map((line) => (
-                  <li key={line.label} className="flex gap-3 text-sm">
-                    <span className="w-32 shrink-0 text-muted">{line.label}</span>
-                    <span className="font-medium text-text">{line.value}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </Card>
+          ) : (
+            <ProfileSummary
+              name={profile.name}
+              games={profile.games ?? []}
+              platform={profile.platform}
+              style={profile.style}
+              language={profile.language ?? []}
+              city={profile.city}
+              openIRL={profile.openIRL}
+            />
+          )}
         </section>
       </main>
     );
@@ -287,11 +262,7 @@ export default function HomePage() {
           background: var(--of-green-dim);
           border: 1px solid rgba(74,222,128,0.2);
         }
-        .of-tag-icon {
-          font-size: 0.75rem;
-          line-height: 1;
-        }
-
+        .of-tag-icon { font-size: 0.75rem; line-height: 1; }
         .of-green { color: var(--of-green); }
 
         .of-cta {
