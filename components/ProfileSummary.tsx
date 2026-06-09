@@ -3,18 +3,24 @@ import Link from 'next/link';
 type Props = {
   name: string;
   games: string[];
-  platform: string;
-  style: string;
+  platform: string | string[];
+  style: string | string[];
   language: string[];
   city: string;
   openIRL: boolean;
 };
 
+function toArray(val: string | string[] | null | undefined): string[] {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  return [val];
+}
+
 export function ProfileSummary({ name, games, platform, style, language, city, openIRL }: Props) {
   const chips = [
     ...games.slice(0, 3),
-    platform,
-    style,
+    ...toArray(platform),
+    ...toArray(style),
     ...(language.length > 0 ? [language.join(' / ')] : []),
     city,
     openIRL ? 'IRL ✓' : null,
@@ -28,9 +34,9 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
           <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">Utrecht</span>
         </div>
         <div className="flex flex-wrap gap-2">
-          {chips.map((chip) => (
+          {chips.map((chip, i) => (
             <span
-              key={chip}
+              key={`${chip}-${i}`}
               className="rounded-full border border-border bg-panel2 px-3 py-1 text-xs font-medium text-text"
             >
               {chip}
