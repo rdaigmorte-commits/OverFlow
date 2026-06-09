@@ -3,16 +3,11 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
+import { MatchCard } from '@/components/MatchCard';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, type Match } from '@/lib/match';
-
-function fitStyle(label: string) {
-  if (label === 'Strong fit') return 'border-accent bg-accent text-black';
-  if (label === 'Good fit') return 'border-accent2 bg-accent2 text-black';
-  return 'border-border bg-panel2 text-text';
-}
 
 type ContactInfo = {
   name: string;
@@ -195,7 +190,7 @@ export default function MatchesPage() {
 
       <div className="grid gap-6">
 
-        {/* Bloc profil + Edit CTA (unique) */}
+        {/* Bloc profil + Edit CTA */}
         {!loading && (
           <div className="rounded-2xl border border-border bg-panel px-5 py-4 flex flex-col gap-3">
             <ProfileSummary
@@ -232,8 +227,6 @@ export default function MatchesPage() {
           {/* 0 match */}
           {!loading && !fetchError && matches.length === 0 && (
             <div className="grid gap-5">
-
-              {/* Early Tester — vert */}
               <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">🚀</span>
@@ -243,7 +236,6 @@ export default function MatchesPage() {
                 <p className="mt-1 text-sm text-muted">No compatible profile yet — but the community is growing. You&apos;ll be among the first notified when a match appears.</p>
               </div>
 
-              {/* What happens next — email nudge */}
               <Card className="p-6">
                 <h2 className="text-lg font-bold">📧 Get notified when a match arrives</h2>
                 {!hasEmail ? (
@@ -279,24 +271,17 @@ export default function MatchesPage() {
                 {matches.length} player{matches.length > 1 ? 's' : ''} match your vibe in Utrecht
               </p>
               {matches.map((m, index) => (
-                <Card key={m.id || `match-${index}`} className="p-5">
-                  <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                    <div>
-                      <div className="text-2xl font-bold">{m.name}</div>
-                      <div className="mt-1 text-sm text-muted">
-                        {(m.games ?? []).join(', ')} • {normalizeArray(m.platform).join(', ')} • {Array.isArray(m.language) ? m.language.join(', ') : m.language}
-                      </div>
-                      <div className={`mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${fitStyle(m.fitLabel)}`}>{m.fitLabel}</div>
-                      <p className="mt-3 text-sm text-muted">{m.fitReason}</p>
-                    </div>
-                    <button
-                      onClick={() => handleRequestMatch(m.id, m.name)}
-                      className="rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
-                    >
-                      Request match
-                    </button>
-                  </div>
-                </Card>
+                <MatchCard
+                  key={m.id || `match-${index}`}
+                  name={m.name}
+                  games={m.games ?? []}
+                  platform={normalizeArray(m.platform)}
+                  language={normalizeArray(m.language)}
+                  fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
+                  fitReason={m.fitReason}
+                  score={m.score}
+                  onRequestMatch={() => handleRequestMatch(m.id, m.name)}
+                />
               ))}
             </div>
           )}
