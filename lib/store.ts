@@ -7,9 +7,9 @@ type Profile = {
   age: string;
   city: string;
   language: string[];
-  platform: string;
+  platform: string[];   // multi-choix désormais
   games: string[];
-  style: string;
+  style: string[];      // multi-choix désormais
   availability: string[];
   openIRL: boolean;
   consent: boolean;
@@ -20,8 +20,10 @@ type Profile = {
 type State = {
   profile: Profile;
   session: Session | null;
+  currentStep: number;
   setProfile: (p: Partial<Profile>) => void;
   setSession: (session: Session | null) => void;
+  setStep: (step: number) => void;
   reset: () => void;
 };
 
@@ -29,11 +31,7 @@ const STORAGE_KEY = 'overflow_profile_id';
 
 function getSavedProfileId(): string | null {
   if (typeof window === 'undefined') return null;
-  try {
-    return localStorage.getItem(STORAGE_KEY);
-  } catch {
-    return null;
-  }
+  try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 }
 
 const initialProfile: Profile = {
@@ -42,9 +40,9 @@ const initialProfile: Profile = {
   age: '',
   city: 'Utrecht',
   language: [],
-  platform: '',
+  platform: [],
   games: [],
-  style: '',
+  style: [],
   availability: [],
   openIRL: false,
   consent: false,
@@ -55,25 +53,24 @@ const initialProfile: Profile = {
 export const useOverflowStore = create<State>((set) => ({
   profile: initialProfile,
   session: null,
+  currentStep: 1,
 
   setProfile: (p) => set((s) => {
     const updated = { ...s.profile, ...p };
     if (updated.profileId && typeof window !== 'undefined') {
-      try {
-        localStorage.setItem(STORAGE_KEY, updated.profileId);
-      } catch {
-        // silencieux si localStorage est bloqué
-      }
+      try { localStorage.setItem(STORAGE_KEY, updated.profileId); } catch { /* silencieux */ }
     }
     return { profile: updated };
   }),
 
   setSession: (session) => set({ session }),
 
+  setStep: (step) => set({ currentStep: step }),
+
   reset: () => {
     if (typeof window !== 'undefined') {
       try { localStorage.removeItem(STORAGE_KEY); } catch { /* silencieux */ }
     }
-    set({ profile: { ...initialProfile, profileId: null }, session: null });
+    set({ profile: { ...initialProfile, profileId: null }, session: null, currentStep: 1 });
   },
 }));

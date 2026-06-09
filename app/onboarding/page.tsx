@@ -1,152 +1,242 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/Button';
 import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
-import { normalizeLanguage } from '@/lib/match';
+import { normalizeLanguage, normalizeArray } from '@/lib/match';
 
-const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'Animal Crossing'];
-const styles = ['Competitive', 'Co-op', 'Casual'];
-const platforms = ['PC', 'PlayStation', 'Xbox', 'Switch'];
-const langs = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
-const slots = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
+const PRESET_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
+const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
+const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
+const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
+const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
+
+const TOTAL_STEPS = 5;
+
+type GameCount = Record<string, number>;
+
+function ProgressBar({ step }: { step: number }) {
+  return (
+    <div className="mb-8">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-xs text-muted">Step {step} of {TOTAL_STEPS}</span>
+        <span className="text-xs text-muted">{Math.round((step / TOTAL_STEPS) * 100)}%</span>
+      </div>
+      <div className="h-1.5 w-full rounded-full bg-panel2">
+        <div
+          className="h-1.5 rounded-full bg-accent transition-all duration-300"
+          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function Chip({
+  label, selected, onClick
+}: { label: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-4 py-2 text-sm transition ${
+        selected
+          ? 'border-accent bg-accent text-black font-semibold'
+          : 'border-border bg-panel2 text-text hover:border-accent'
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const { profile, setProfile } = useOverflowStore();
-  const [gameInput, setGameInput] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [hydrating, setHydrating] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { profile, setProfile, currentStep, setStep } = useOverflowStore();
 
+  const [gameInput, setGameInput]   = useState('');
+  const [loading, setLoading]       = useState(false);
+  const [hydrating, setHydrating]   = useState(true);
+  const [error, setError]           = useState<string | null>(null);
+  const [gameCounts, setGameCounts] = useState<GameCount>({});
+  const [compatCount, setCompatCount] = useState<number | null>(null);
+  const [previewMatches, setPreviewMatches] = useState<{ id: string; name: string; games: string[] }[]>([]);
+
+  // ── Hydratation depuis Supabase si profil existant ──────────────────────────
   useEffect(() => {
-    async function hydrateFromSupabase() {
+    async function hydrate() {
       const profileId = profile.profileId;
-      if (!profileId) {
-        setHydrating(false);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', profileId)
-        .single();
+      if (!profileId) { setHydrating(false); return; }
+      const { data, error } = await supabase.from('profiles').select('*').eq('id', profileId).single();
       if (!error && data) {
         setProfile({
-          profileId: data.id,
-          name: data.name ?? '',
-          age: data.age ?? '',
-          city: data.city ?? 'Utrecht',
-          // normalizeLanguage() centralisé dans lib/match.ts — fix #34
-          language: normalizeLanguage(data.language),
-          platform: data.platform ?? '',
-          games: Array.isArray(data.games) ? data.games : [],
-          style: data.style ?? '',
+          profileId:    data.id,
+          name:         data.name ?? '',
+          age:          data.age ?? '',
+          city:         'Utrecht',
+          language:     normalizeLanguage(data.language),
+          platform:     normalizeArray(data.platform),
+          games:        Array.isArray(data.games) ? data.games : [],
+          style:        normalizeArray(data.style),
           availability: Array.isArray(data.availability) ? data.availability : [],
-          openIRL: data.open_irl ?? false,
-          consent: data.consent ?? false,
-          email: data.email ?? '',
-          discord: data.discord ?? '',
+          openIRL:      data.open_irl ?? false,
+          consent:      data.consent ?? false,
+          email:        data.email ?? '',
+          discord:      data.discord ?? '',
         });
       }
       setHydrating(false);
     }
-    hydrateFromSupabase();
+    hydrate();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const toggleMulti = (key: 'games' | 'availability' | 'language', value: string) => {
+  // ── COUNT par jeu (Step 2) ────────────────────────────────────────────────
+  useEffect(() => {
+    if (currentStep !== 2) return;
+    async function fetchGameCounts() {
+      const { data } = await supabase.from('profiles').select('games');
+      if (!data) return;
+      const counts: GameCount = {};
+      data.forEach((row) => {
+        const games = Array.isArray(row.games) ? row.games : [];
+        games.forEach((g: string) => { counts[g] = (counts[g] ?? 0) + 1; });
+      });
+      setGameCounts(counts);
+    }
+    fetchGameCounts();
+  }, [currentStep]);
+
+  // ── Profils compatibles (Step 4) ──────────────────────────────────────────
+  useEffect(() => {
+    if (currentStep !== 4) return;
+    async function fetchCompatible() {
+      if (profile.games.length === 0) { setPreviewMatches([]); setCompatCount(0); return; }
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, name, games')
+        .neq('id', profile.profileId ?? '');
+      if (!data) { setCompatCount(0); return; }
+      const matches = data.filter((p) => {
+        const pGames = Array.isArray(p.games) ? p.games : [];
+        return pGames.some((g: string) => profile.games.includes(g));
+      });
+      setPreviewMatches(matches.slice(0, 5));
+      setCompatCount(matches.length);
+    }
+    fetchCompatible();
+  }, [currentStep, profile.games, profile.profileId]);
+
+  // ── Helpers chips ─────────────────────────────────────────────────────────
+  const toggleMulti = (key: 'games' | 'availability' | 'language' | 'platform' | 'style', value: string) => {
     const current = profile[key] as string[];
     const next = current.includes(value)
       ? current.filter((v) => v !== value)
       : [...current, value];
-    setProfile({ [key]: next } as any);
+    setProfile({ [key]: next } as Parameters<typeof setProfile>[0]);
   };
 
   const addGame = () => {
     const value = gameInput.trim();
-    if (!value) return;
-    if (!profile.games.includes(value)) setProfile({ games: [...profile.games, value] });
+    if (!value || profile.games.includes(value)) return;
+    setProfile({ games: [...profile.games, value] });
     setGameInput('');
-  };
-
-  const handleGameInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') { e.preventDefault(); addGame(); }
-  };
-
-  const removeCustomGame = (game: string) => {
-    setProfile({ games: profile.games.filter((g) => g !== game) });
   };
 
   const customGames = profile.games.filter((g) => !PRESET_GAMES.includes(g));
 
-  const validate = (): string | null => {
-    if (!profile.name.trim()) return 'Please enter your name or nickname.';
-    if (profile.games.length === 0) return 'Please select at least one game.';
-    if (!profile.platform) return 'Please select your main platform.';
-    if (!profile.style) return 'Please select your play style.';
-    if (profile.language.length === 0) return 'Please select at least one language.';
-    return null;
-  };
-
-  const handleSubmit = async () => {
-    const validationError = validate();
-    if (validationError) { setError(validationError); return; }
-
+  // ── Sauvegarde profil (appelée à Step 5) ─────────────────────────────────
+  async function saveProfile(withEmail: boolean): Promise<boolean> {
     setLoading(true);
     setError(null);
 
     const basePayload = {
-      name: profile.name,
-      age: profile.age,
-      city: profile.city,
-      language: profile.language,
-      platform: profile.platform,
-      games: profile.games,
-      style: profile.style,
+      name:         profile.name,
+      age:          profile.age || null,
+      city:         'Utrecht',
+      language:     profile.language,
+      platform:     profile.platform,
+      games:        profile.games,
+      style:        profile.style,
       availability: profile.availability,
-      open_irl: profile.openIRL,
-      consent: profile.consent,
-      email: profile.email || null,
-      discord: profile.discord || null,
+      open_irl:     profile.openIRL,
+      consent:      true,
+      email:        withEmail && profile.email ? profile.email : null,
+      discord:      profile.discord || null,
     };
 
-    let data: any = null;
-    let error: any = null;
+    let data: { id: string } | null = null;
+    let dbError: { message?: string } | null = null;
 
     if (profile.profileId) {
-      ({ data, error } = await supabase
+      ({ data, error: dbError } = await supabase
         .from('profiles')
         .upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' })
-        .select()
-        .single());
-    } else if (profile.email) {
-      ({ data, error } = await supabase
-        .from('profiles')
-        .upsert(basePayload, { onConflict: 'email' })
-        .select()
+        .select('id')
         .single());
     } else {
-      ({ data, error } = await supabase
+      ({ data, error: dbError } = await supabase
         .from('profiles')
         .insert(basePayload)
-        .select()
+        .select('id')
         .single());
     }
 
     setLoading(false);
 
-    if (error) { setError('Something went wrong. Please try again.'); return; }
+    if (dbError || !data) {
+      setError('Something went wrong. Please try again.');
+      return false;
+    }
 
-    setProfile({ profileId: data.id });
-    router.push('/matches');
-  };
+    setProfile({ profileId: data.id, consent: true });
+
+    // Magic Link si email fourni
+    if (withEmail && profile.email) {
+      await supabase.auth.signInWithOtp({
+        email: profile.email,
+        options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+      });
+    }
+
+    return true;
+  }
+
+  // ── Navigation steps ─────────────────────────────────────────────────────
+  function goNext() { setError(null); setStep(currentStep + 1); }
+  function goBack() { setError(null); setStep(currentStep - 1); }
+
+  function validateStep(): string | null {
+    if (currentStep === 1 && !profile.name.trim()) return 'Please enter your name or nickname.';
+    if (currentStep === 2 && profile.games.length === 0) return 'Please select at least one game.';
+    if (currentStep === 3) {
+      if (profile.platform.length === 0) return 'Please select at least one platform.';
+      if (profile.style.length === 0) return 'Please select at least one play style.';
+      if (profile.language.length === 0) return 'Please select at least one language.';
+    }
+    return null;
+  }
+
+  function handleNext() {
+    const err = validateStep();
+    if (err) { setError(err); return; }
+    goNext();
+  }
+
+  async function handleSave() {
+    const ok = await saveProfile(true);
+    if (ok) router.push('/matches');
+  }
+
+  async function handleSkip() {
+    const ok = await saveProfile(false);
+    if (ok) router.push('/matches');
+  }
 
   if (hydrating) {
     return (
-      <main className="mx-auto min-h-screen max-w-4xl px-6 py-10">
+      <main className="mx-auto min-h-screen max-w-lg px-6 py-10">
         <p className="text-muted">Loading your profile...</p>
       </main>
     );
@@ -155,180 +245,253 @@ export default function OnboardingPage() {
   const isEditing = !!profile.profileId;
 
   return (
-    <main className="mx-auto min-h-screen max-w-4xl px-6 py-10">
-      <h1 className="text-4xl font-black text-text">
-        {isEditing ? 'Update your gaming profile' : 'Tell us your gaming profile'}
-      </h1>
-      <p className="mt-3 text-muted">This helps us match you with the right players in Utrecht.</p>
+    <main className="mx-auto min-h-screen max-w-lg px-6 py-10">
 
-      <div className="mt-8 grid gap-6">
-        <Card className="p-6">
-          <div className="grid gap-4 md:grid-cols-2">
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Name / nickname *"
-              value={profile.name}
-              onChange={(e) => setProfile({ name: e.target.value })}
-            />
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Age"
-              type="number"
-              min={10}
-              max={99}
-              value={profile.age}
-              onChange={(e) => setProfile({ age: e.target.value })}
-            />
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="City"
-              value={profile.city}
-              onChange={(e) => setProfile({ city: e.target.value })}
-            />
-            <select
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              value={profile.platform}
-              onChange={(e) => setProfile({ platform: e.target.value })}
-            >
-              <option value="">Platform *</option>
-              {platforms.map((p) => (
-                <option key={p} value={p}>{p}</option>
-              ))}
-            </select>
-            <select
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              value={profile.style}
-              onChange={(e) => setProfile({ style: e.target.value })}
-            >
-              <option value="">Play style *</option>
-              {styles.map((s) => (
-                <option key={s} value={s}>{s}</option>
-              ))}
-            </select>
-          </div>
-        </Card>
+      <ProgressBar step={currentStep} />
 
-        <Card className="p-6">
-          <h2 className="text-xl font-bold">Languages <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {langs.map((l) => (
-              <button
-                key={l}
-                type="button"
-                onClick={() => toggleMulti('language', l)}
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  profile.language.includes(l)
-                    ? 'border-accent bg-accent text-black'
-                    : 'border-border bg-panel2 text-text'
-                }`}
-              >
-                {l}
-              </button>
-            ))}
+      {/* ── STEP 1 — Who are you? ─────────────────────────────────────────── */}
+      {currentStep === 1 && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-black">Who are you? 🎮</h1>
+            <p className="mt-2 text-muted text-sm">Let&apos;s start with the basics.</p>
           </div>
-        </Card>
+          <Card className="p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-text">Nickname <span className="text-accent">*</span></label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="How do people call you in-game?"
+                value={profile.name}
+                onChange={(e) => setProfile({ name: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-text">Age <span className="text-muted text-xs">(optional)</span></label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="Your age"
+                type="number"
+                min={10}
+                max={99}
+                value={profile.age}
+                onChange={(e) => setProfile({ age: e.target.value })}
+              />
+            </div>
+            <div className="flex items-center gap-3 rounded-xl border border-border bg-panel2 px-4 py-3">
+              <span className="text-lg">📍</span>
+              <div>
+                <div className="text-xs text-muted uppercase tracking-widest">City</div>
+                <div className="text-sm font-semibold text-text">Utrecht</div>
+              </div>
+            </div>
+          </Card>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <button onClick={handleNext} className="self-end rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">
+            Next →
+          </button>
+        </div>
+      )}
 
-        <Card className="p-6">
-          <h2 className="text-xl font-bold">Games <span className="text-sm font-normal text-muted">(select at least one *)</span></h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {PRESET_GAMES.map((g) => (
-              <button
-                key={g}
-                type="button"
-                onClick={() => toggleMulti('games', g)}
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  profile.games.includes(g)
-                    ? 'border-accent bg-accent text-black'
-                    : 'border-border bg-panel2 text-text'
-                }`}
-              >
-                {g}
-              </button>
-            ))}
+      {/* ── STEP 2 — What do you play? ───────────────────────────────────── */}
+      {currentStep === 2 && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-black">What do you play? 🕹️</h1>
+            <p className="mt-2 text-muted text-sm">Select the games you&apos;re active on right now.</p>
           </div>
-          {customGames.length > 0 && (
-            <div className="mt-4">
-              <p className="mb-2 text-xs uppercase tracking-widest text-muted">Added by you</p>
+          <Card className="p-6 flex flex-col gap-4">
+            <div className="flex flex-wrap gap-3">
+              {PRESET_GAMES.map((g) => {
+                const count = gameCounts[g] ?? 0;
+                return (
+                  <div key={g} className="flex flex-col items-center gap-1">
+                    <Chip label={g} selected={profile.games.includes(g)} onClick={() => toggleMulti('games', g)} />
+                    {count > 0 && (
+                      <span className="text-xs text-muted">{count} player{count > 1 ? 's' : ''}</span>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+            {customGames.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {customGames.map((g) => (
-                  <span key={g} className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black">
+                  <span key={g} className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold">
                     {g}
-                    <button type="button" onClick={() => removeCustomGame(g)} className="ml-1 font-bold leading-none hover:opacity-70" aria-label={`Remove ${g}`}>×</button>
+                    <button type="button" onClick={() => setProfile({ games: profile.games.filter(x => x !== g) })} className="hover:opacity-70" aria-label={`Remove ${g}`}>×</button>
                   </span>
                 ))}
               </div>
+            )}
+            <div className="flex gap-3">
+              <input
+                className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="Add another game…"
+                value={gameInput}
+                onChange={(e) => setGameInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addGame(); } }}
+              />
+              <button type="button" onClick={addGame} className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-panel2 transition">Add</button>
+            </div>
+            {/* Micro-feedback */}
+            {profile.games.length > 0 && (() => {
+              const topGame = profile.games[0];
+              const count = gameCounts[topGame] ?? 0;
+              return count > 0 ? (
+                <p className="text-sm text-accent font-medium">🎮 {count} player{count > 1 ? 's' : ''} in Utrecht also play {topGame}!</p>
+              ) : null;
+            })()}
+          </Card>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div className="flex justify-between">
+            <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
+            <button onClick={handleNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Next →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 3 — How do you play? ────────────────────────────────────── */}
+      {currentStep === 3 && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-black">How do you play? ⚔️</h1>
+            <p className="mt-2 text-muted text-sm">Help us find players with the same vibe.</p>
+          </div>
+          <Card className="p-6 flex flex-col gap-5">
+            <div>
+              <h2 className="text-sm font-semibold text-text mb-3">Platform <span className="text-accent">*</span> <span className="text-muted font-normal">(select all that apply)</span></h2>
+              <div className="flex flex-wrap gap-3">
+                {PLATFORMS.map((p) => <Chip key={p} label={p} selected={profile.platform.includes(p)} onClick={() => toggleMulti('platform', p)} />)}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text mb-3">Play style <span className="text-accent">*</span> <span className="text-muted font-normal">(select all that apply)</span></h2>
+              <div className="flex flex-wrap gap-3">
+                {STYLES.map((s) => <Chip key={s} label={s} selected={profile.style.includes(s)} onClick={() => toggleMulti('style', s)} />)}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text mb-3">Language <span className="text-accent">*</span></h2>
+              <div className="flex flex-wrap gap-3">
+                {LANGS.map((l) => <Chip key={l} label={l} selected={profile.language.includes(l)} onClick={() => toggleMulti('language', l)} />)}
+              </div>
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-text mb-3">Availability <span className="text-muted font-normal">(optional)</span></h2>
+              <div className="flex flex-wrap gap-3">
+                {SLOTS.map((s) => <Chip key={s} label={s} selected={profile.availability.includes(s)} onClick={() => toggleMulti('availability', s)} />)}
+              </div>
+            </div>
+            <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
+              <input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} className="accent-[var(--accent)]" />
+              Open to meeting IRL in Utrecht
+            </label>
+          </Card>
+          {error && <p className="text-sm text-red-400">{error}</p>}
+          <div className="flex justify-between">
+            <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
+            <button onClick={handleNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Next →</button>
+          </div>
+        </div>
+      )}
+
+      {/* ── STEP 4 — Your matches preview ────────────────────────────────── */}
+      {currentStep === 4 && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-black">
+              {compatCount === null ? 'Finding your matches…' : compatCount === 0 ? 'You\'re one of the first! 🚀' : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
+            </h1>
+            <p className="mt-2 text-muted text-sm">
+              {compatCount === 0
+                ? 'The community is growing. Save your profile and be notified when compatible players join Utrecht.'
+                : 'Here\'s a preview of who you could play with in Utrecht.'}
+            </p>
+          </div>
+
+          {previewMatches.length > 0 && (
+            <div className="flex flex-col gap-3">
+              {previewMatches.map((m) => (
+                <Card key={m.id} className="p-4 flex items-center justify-between">
+                  <div>
+                    <div className="font-bold text-text">{m.name}</div>
+                    <div className="text-xs text-muted mt-1">{(Array.isArray(m.games) ? m.games : []).join(', ')}</div>
+                  </div>
+                  <span className="text-xs border border-accent text-accent rounded-full px-3 py-1">Compatible</span>
+                </Card>
+              ))}
+              {compatCount !== null && compatCount > 5 && (
+                <p className="text-xs text-muted text-center">+{compatCount - 5} more players waiting…</p>
+              )}
             </div>
           )}
-          <div className="mt-4 flex gap-3">
-            <input
-              className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Add another game"
-              value={gameInput}
-              onChange={(e) => setGameInput(e.target.value)}
-              onKeyDown={handleGameInputKeyDown}
-            />
-            <button type="button" className="rounded-xl border border-border px-4 py-3" onClick={addGame}>Add</button>
+
+          <Card className="p-5 border-dashed">
+            <p className="text-sm text-muted">Save your profile to contact them and be notified when new compatible players join Utrecht.</p>
+          </Card>
+
+          <div className="flex justify-between">
+            <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
+            <button onClick={goNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Save & unlock →</button>
           </div>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-xl font-bold">Availability</h2>
-          <div className="mt-4 flex flex-wrap gap-3">
-            {slots.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => toggleMulti('availability', s)}
-                className={`rounded-full border px-4 py-2 text-sm ${
-                  profile.availability.includes(s)
-                    ? 'border-accent bg-accent text-black'
-                    : 'border-border bg-panel2 text-text'
-                }`}
-              >
-                {s}
-              </button>
-            ))}
-          </div>
-          <label className="mt-4 flex items-center gap-3 text-sm text-muted">
-            <input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} />
-            Open to in-person later
-          </label>
-          <label className="mt-2 flex items-center gap-3 text-sm text-muted">
-            <input type="checkbox" checked={profile.consent} onChange={(e) => setProfile({ consent: e.target.checked })} />
-            I agree to be recontacted
-          </label>
-        </Card>
-
-        <Card className="p-6">
-          <h2 className="text-xl font-bold">Stay in the loop <span className="text-sm font-normal text-muted">(optional but recommended)</span></h2>
-          <p className="mt-2 text-sm text-muted">You&apos;ll be the first to know when a compatible group forms in Utrecht. No spam, only useful match suggestions.</p>
-          <div className="mt-4 grid gap-4">
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Your email"
-              type="email"
-              value={profile.email}
-              onChange={(e) => setProfile({ email: e.target.value })}
-            />
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 outline-none"
-              placeholder="Discord handle (optional)"
-              value={profile.discord}
-              onChange={(e) => setProfile({ discord: e.target.value })}
-            />
-          </div>
-        </Card>
-
-        {error && (
-          <p className="rounded-xl border border-red-500 bg-red-500/10 px-4 py-3 text-sm text-red-400">{error}</p>
-        )}
-
-        <div className="flex justify-end">
-          <Button onClick={handleSubmit} disabled={loading}>
-            {loading ? 'Saving...' : isEditing ? 'Update profile' : 'See matches'}
-          </Button>
         </div>
-      </div>
+      )}
+
+      {/* ── STEP 5 — Save your profile ───────────────────────────────────── */}
+      {currentStep === 5 && (
+        <div className="flex flex-col gap-6">
+          <div>
+            <h1 className="text-3xl font-black">Save your profile 🔗</h1>
+            <p className="mt-2 text-muted text-sm">
+              Add your email to be notified of new matches and come back from any device.
+              <span className="block mt-1 text-xs">No spam. No password. Just a magic link.</span>
+            </p>
+          </div>
+          <Card className="p-6 flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-text">Email <span className="text-muted text-xs">(optional)</span></label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="you@example.com"
+                type="email"
+                value={profile.email}
+                onChange={(e) => setProfile({ email: e.target.value })}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-text">Discord <span className="text-muted text-xs">(optional)</span></label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="yourhandle#1234"
+                value={profile.discord}
+                onChange={(e) => setProfile({ discord: e.target.value })}
+              />
+            </div>
+          </Card>
+
+          {error && <p className="text-sm text-red-400">{error}</p>}
+
+          <div className="flex flex-col gap-3">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
+            >
+              {loading ? 'Saving…' : 'Save & see my matches 🎮'}
+            </button>
+            <button
+              onClick={handleSkip}
+              disabled={loading}
+              className="w-full rounded-xl border border-border px-6 py-3 text-sm font-semibold text-text hover:bg-panel2 disabled:opacity-50 transition"
+            >
+              {loading ? 'Saving…' : 'Skip for now →'}
+            </button>
+          </div>
+          <button onClick={goBack} className="self-start text-sm text-muted hover:text-text transition">← Back</button>
+        </div>
+      )}
+
     </main>
   );
 }
