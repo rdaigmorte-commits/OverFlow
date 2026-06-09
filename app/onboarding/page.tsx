@@ -6,7 +6,6 @@ import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
 
-// Jeux de secours pour compléter le top 8 si la base n'a pas assez de jeux distincts
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
 const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
@@ -42,6 +41,22 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
   );
 }
 
+// Indicateur live : point vert animé + texte vert, uniquement si count réel en base
+function LiveCount({ count }: { count: number }) {
+  if (count === 0) return null;
+  return (
+    <span className="flex items-center gap-1">
+      <span className="relative flex h-2 w-2">
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+      </span>
+      <span className="text-xs font-medium text-green-400">
+        {count} playing
+      </span>
+    </span>
+  );
+}
+
 export default function OnboardingPage() {
   const router = useRouter();
   const { profile, setProfile, currentStep, setStep } = useOverflowStore();
@@ -57,15 +72,10 @@ export default function OnboardingPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
-  // Jeux de la base triés par count décroissant
   const allGamesSorted = Object.entries(gameCounts)
     .sort(([, a], [, b]) => b - a)
     .map(([g]) => g);
 
-  // Top 8 :
-  // 1. On prend d'abord tous les jeux réels de la base (triés par count)
-  // 2. On complète avec les FALLBACK s'il en manque pour atteindre 8
-  // 3. Si les counts ne sont pas encore chargés, on affiche les FALLBACK
   const top8: string[] = countsLoaded
     ? [
         ...allGamesSorted.slice(0, 8),
@@ -73,12 +83,10 @@ export default function OnboardingPage() {
       ].slice(0, 8)
     : FALLBACK_GAMES;
 
-  // Dropdown = jeux en base hors top 8, filtrés par saisie
   const dropdownSuggestions = allGamesSorted
     .filter((g) => !top8.includes(g))
     .filter((g) => gameInput.trim().length === 0 || g.toLowerCase().includes(gameInput.toLowerCase()));
 
-  // Jeux sélectionnés par l'utilisateur hors top 8
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
   // ── Hydratation ─────────────────────────────────────────────────────────
@@ -254,14 +262,14 @@ export default function OnboardingPage() {
           </div>
           <Card className="p-6 flex flex-col gap-4">
 
-            {/* Top 8 chips — jeux réels en premier, complétés par FALLBACK */}
+            {/* Top 8 chips avec live indicator */}
             <div className="flex flex-wrap gap-3">
               {top8.map((g) => {
                 const count = gameCounts[g] ?? 0;
                 return (
                   <div key={g} className="flex flex-col items-center gap-1">
                     <Chip label={g} selected={profile.games.includes(g)} onClick={() => toggleMulti('games', g)} />
-                    {count > 0 && <span className="text-xs text-muted">{count} player{count > 1 ? 's' : ''}</span>}
+                    <LiveCount count={count} />
                   </div>
                 );
               })}
@@ -303,7 +311,10 @@ export default function OnboardingPage() {
                       className="flex w-full items-center justify-between px-4 py-3 text-sm text-text hover:bg-panel2 transition"
                     >
                       <span>{g}</span>
-                      <span className="text-xs text-muted">{gameCounts[g]} player{gameCounts[g] > 1 ? 's' : ''}</span>
+                      <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
+                        <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                        {gameCounts[g]} playing
+                      </span>
                     </button>
                   ))}
                 </div>
@@ -314,7 +325,7 @@ export default function OnboardingPage() {
             {profile.games.length > 0 && (() => {
               const topGame = [...profile.games].sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0))[0];
               const count = gameCounts[topGame] ?? 0;
-              return count > 0 ? <p className="text-sm text-accent font-medium">🎮 {count} player{count > 1 ? 's' : ''} in Utrecht also play {topGame}!</p> : null;
+              return count > 0 ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} in Utrecht also play {topGame}!</p> : null;
             })()}
 
           </Card>
