@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
@@ -9,28 +9,27 @@ export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
   const { profile, setProfile } = useOverflowStore();
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' && session?.user) {
+        // Annule le timeout dès que l'auth réussit
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+
         const user = session.user;
 
-        // — Fix #35 : lier le profil anonyme au compte auth fraîchement créé —
-        // Si un profil existe avec cet email mais sans user_id (créé avant la connexion),
-        // on met à jour son user_id pour activer les politiques RLS UPDATE.
+        // Lier le profil anonyme au compte auth (fix #35)
         if (user.email) {
           await supabase
             .from('profiles')
             .update({ user_id: user.id })
             .eq('email', user.email)
-            .is('user_id', null); // seulement les profils non encore liés
+            .is('user_id', null);
         }
 
-        // Redirection selon qu'un profil existe déjà dans le store
         const hasProfile = Boolean(profile?.profileId);
         if (hasProfile) {
-          // Mettre à jour le profileId dans le store si besoin
-          // (cas où l'utilisateur avait un profil anonyme avant de se connecter)
           const { data } = await supabase
             .from('profiles')
             .select('id')
@@ -46,13 +45,14 @@ export default function AuthCallbackPage() {
       }
     });
 
-    const timeout = setTimeout(() => {
+    // Timeout porté à 60s — l'auth PKCE peut prendre jusqu'à ~36s (observé en logs)
+    timeoutRef.current = setTimeout(() => {
       setStatus('error');
-    }, 8000);
+    }, 60_000);
 
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timeout);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
