@@ -11,7 +11,7 @@ const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
 const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
 const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
 const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
-const TOTAL_STEPS = 5;
+const TOTAL_STEPS = 4;
 
 type GameCount = Record<string, number>;
 
@@ -175,8 +175,8 @@ export default function OnboardingPage() {
     setShowSuggestions(false);
   };
 
-  // ── Save profil (Step 5) ─────────────────────────────────────────────────
-  async function saveProfile(withEmail: boolean): Promise<boolean> {
+  // ── Save profil (Step 4) — sans email ────────────────────────────────────
+  async function saveProfile(): Promise<boolean> {
     setLoading(true); setError(null);
     const basePayload = {
       name:         profile.name,
@@ -189,11 +189,9 @@ export default function OnboardingPage() {
       availability: profile.availability,
       open_irl:     profile.openIRL,
       consent:      true,
-      email:        withEmail && profile.email ? profile.email : null,
-      discord:      profile.discord || null,
     };
     let data: { id: string } | null = null;
-    let dbError: { message?: string } | null = null;
+    let dbError: { message?: string; code?: string } | null = null;
     if (profile.profileId) {
       ({ data, error: dbError } = await supabase.from('profiles').upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' }).select('id').single());
     } else {
@@ -202,9 +200,6 @@ export default function OnboardingPage() {
     setLoading(false);
     if (dbError || !data) { setError('Something went wrong. Please try again.'); return false; }
     setProfile({ profileId: data.id, consent: true });
-    if (withEmail && profile.email) {
-      await supabase.auth.signInWithOtp({ email: profile.email, options: { emailRedirectTo: `${window.location.origin}/auth/callback` } });
-    }
     return true;
   }
 
@@ -221,8 +216,7 @@ export default function OnboardingPage() {
     return null;
   }
   function handleNext() { const err = validateStep(); if (err) { setError(err); return; } goNext(); }
-  async function handleSave() { const ok = await saveProfile(true); if (ok) router.push('/matches'); }
-  async function handleSkip() { const ok = await saveProfile(false); if (ok) router.push('/matches'); }
+  async function handleSave() { const ok = await saveProfile(); if (ok) router.push('/matches'); }
 
   if (hydrating) return <main className="mx-auto min-h-screen max-w-lg px-6 py-10"><p className="text-muted">Loading your profile...</p></main>;
 
@@ -373,7 +367,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* STEP 4 */}
+      {/* STEP 4 — Preview matches + save */}
       {currentStep === 4 && (
         <div className="flex flex-col gap-6">
           <div>
@@ -399,38 +393,15 @@ export default function OnboardingPage() {
             </div>
           )}
           <Card className="p-5 border-dashed">
-            <p className="text-sm text-muted">Save your profile to contact them and be notified when new compatible players join.</p>
-          </Card>
-          <div className="flex justify-between">
-            <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
-            <button onClick={goNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Save & unlock →</button>
-          </div>
-        </div>
-      )}
-
-      {/* STEP 5 */}
-      {currentStep === 5 && (
-        <div className="flex flex-col gap-6">
-          <div>
-            <h1 className="text-3xl font-black">Save your profile 🔗</h1>
-            <p className="mt-2 text-muted text-sm">Add your email to be notified of new matches and come back from any device.<span className="block mt-1 text-xs">No spam. No password. Just a magic link.</span></p>
-          </div>
-          <Card className="p-6 flex flex-col gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text">Email <span className="text-muted text-xs">(optional)</span></label>
-              <input className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition" placeholder="you@example.com" type="email" value={profile.email} onChange={(e) => setProfile({ email: e.target.value })} />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text">Discord <span className="text-muted text-xs">(optional)</span></label>
-              <input className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition" placeholder="yourhandle#1234" value={profile.discord} onChange={(e) => setProfile({ discord: e.target.value })} />
-            </div>
+            <p className="text-sm text-muted">Save your profile to see all your matches and connect with compatible players.</p>
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
-          <div className="flex flex-col gap-3">
-            <button onClick={handleSave} disabled={loading} className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition">{loading ? 'Saving…' : 'Save & see my matches 🎮'}</button>
-            <button onClick={handleSkip} disabled={loading} className="w-full rounded-xl border border-border px-6 py-3 text-sm font-semibold text-text hover:bg-panel2 disabled:opacity-50 transition">{loading ? 'Saving…' : 'Skip for now →'}</button>
+          <div className="flex justify-between">
+            <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
+            <button onClick={handleSave} disabled={loading} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition">
+              {loading ? 'Saving…' : 'See my matches 🎮'}
+            </button>
           </div>
-          <button onClick={goBack} className="self-start text-sm text-muted hover:text-text transition">← Back</button>
         </div>
       )}
     </main>
