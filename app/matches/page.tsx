@@ -9,84 +9,139 @@ import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
 
-type ContactInfo = {
-  name: string;
-  email?: string | null;
-  discord?: string | null;
-};
+// ─── Types ───────────────────────────────────────────────────────────────────
+type ContactSituation =
+  | { type: 'discord'; discord: string; name: string }
+  | { type: 'mail_only'; name: string }
+  | { type: 'no_contact'; name: string };
 
-function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () => void }) {
-  const [copiedEmail, setCopiedEmail] = useState(false);
-  const [copiedDiscord, setCopiedDiscord] = useState(false);
+// ─── ContactModal ────────────────────────────────────────────────────────────
+// Le mail n'est JAMAIS affiché dans l'UI — seul le Discord est visible.
+function ContactModal({
+  situation,
+  onClose,
+}: {
+  situation: ContactSituation;
+  onClose: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
 
-  const copy = (value: string, type: 'email' | 'discord') => {
+  const copy = (value: string) => {
     navigator.clipboard.writeText(value).then(() => {
-      if (type === 'email') { setCopiedEmail(true); setTimeout(() => setCopiedEmail(false), 2000); }
-      else { setCopiedDiscord(true); setTimeout(() => setCopiedDiscord(false), 2000); }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
     });
   };
 
-  const hasContact = contact.email || contact.discord;
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
-      <div className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-bold">Contact {contact.name}</h2>
-          <button onClick={onClose} className="text-muted hover:text-text text-xl leading-none" aria-label="Close">×</button>
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold">🎮 Let&apos;s play with {situation.name}</h2>
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-text text-xl leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
         </div>
-        {!hasContact ? (
-          <div className="mt-5">
-            <p className="text-sm text-muted">{contact.name} hasn&apos;t shared any contact info yet.</p>
-            <p className="mt-2 text-sm text-muted">You can still connect with them through OverFlow! 🎮</p>
-          </div>
-        ) : (
-          <div className="mt-5 grid gap-3">
-            <p className="text-sm text-muted">Reach out directly to connect and organise a session.</p>
-            {contact.email && (
-              <div className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
-                <div>
-                  <div className="text-xs text-muted uppercase tracking-widest mb-1">Email</div>
-                  <div className="text-sm font-medium text-text">{contact.email}</div>
-                </div>
-                <button onClick={() => copy(contact.email!, 'email')} className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2">
-                  {copiedEmail ? '✓ Copied' : 'Copy'}
-                </button>
+
+        {situation.type === 'discord' && (
+          <div className="grid gap-4">
+            <p className="text-sm text-muted">
+              {situation.name} is on Discord — reach out directly to set up a session.
+            </p>
+            <div className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
+              <div>
+                <div className="text-xs text-muted uppercase tracking-widest mb-1">Discord</div>
+                <div className="text-sm font-medium text-text">{situation.discord}</div>
               </div>
-            )}
-            {contact.discord && (
-              <div className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
-                <div>
-                  <div className="text-xs text-muted uppercase tracking-widest mb-1">Discord</div>
-                  <div className="text-sm font-medium text-text">{contact.discord}</div>
-                </div>
-                <button onClick={() => copy(contact.discord!, 'discord')} className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2">
-                  {copiedDiscord ? '✓ Copied' : 'Copy'}
-                </button>
-              </div>
-            )}
+              <button
+                onClick={() => copy(situation.discord)}
+                className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2"
+              >
+                {copied ? '✓ Copied' : 'Copy'}
+              </button>
+            </div>
+            <p className="text-xs text-muted">
+              Your invitation has been recorded. 🎮
+            </p>
           </div>
         )}
-        <button onClick={onClose} className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">Close</button>
+
+        {situation.type === 'mail_only' && (
+          <div className="grid gap-4">
+            <p className="text-sm text-muted">
+              We&apos;ve sent {situation.name} a notification to let them know you want to play.
+            </p>
+            <div className="rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
+              They&apos;ll get an email inviting them to connect with you. If they don&apos;t respond, we&apos;ll nudge them again.
+            </div>
+          </div>
+        )}
+
+        {situation.type === 'no_contact' && (
+          <div className="grid gap-4">
+            <p className="text-sm text-muted">
+              {situation.name} hasn&apos;t shared contact info yet.
+            </p>
+            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-muted">
+              ⚠️ We&apos;ll notify them that players want to connect — this might nudge them to add their Discord or email.
+            </div>
+          </div>
+        )}
+
+        <button
+          onClick={onClose}
+          className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+        >
+          Close
+        </button>
       </div>
     </div>
   );
 }
 
+// ─── Constants ───────────────────────────────────────────────────────────────
 const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl';
 const PROFILE_FETCH_LIMIT = 200;
+const SENT_KEY = 'overflow_invitations_sent'; // clé localStorage
 
+function getSentInvitations(): Record<string, boolean> {
+  try { return JSON.parse(localStorage.getItem(SENT_KEY) ?? '{}'); } catch { return {}; }
+}
+function markInvitationSent(receiverId: string) {
+  const current = getSentInvitations();
+  current[receiverId] = true;
+  try { localStorage.setItem(SENT_KEY, JSON.stringify(current)); } catch { /* silently fail */ }
+}
+
+// ─── Page ────────────────────────────────────────────────────────────────────
 export default function MatchesPage() {
   const router = useRouter();
   const { profile, setProfile, reset } = useOverflowStore();
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
-  const [selectedContact, setSelectedContact] = useState<ContactInfo | null>(null);
+  const [situation, setSituation] = useState<ContactSituation | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
+  const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
+  const [inboundCount, setInboundCount] = useState(0);
+
+  // Charger les invitations déjà envoyées depuis localStorage
+  useEffect(() => {
+    setSentInvitations(getSentInvitations());
+  }, []);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -95,7 +150,11 @@ export default function MatchesPage() {
 
       let hydratedProfile = profile;
 
-      const { data: me, error: meError } = await supabase.from('profiles').select('*').eq('id', profileId).single();
+      const { data: me, error: meError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', profileId)
+        .single();
 
       if (!meError && me) {
         const updated = {
@@ -117,7 +176,17 @@ export default function MatchesPage() {
         hydratedProfile = updated as typeof profile;
       }
 
-      const { data: allProfiles, error: allError } = await supabase.from('profiles').select(PUBLIC_PROFILE_FIELDS).limit(PROFILE_FETCH_LIMIT);
+      // Compter les demandes entrantes (inbound) pour le badge
+      const { count } = await supabase
+        .from('match_requests')
+        .select('id', { count: 'exact', head: true })
+        .eq('receiver_id', profileId);
+      setInboundCount(count ?? 0);
+
+      const { data: allProfiles, error: allError } = await supabase
+        .from('profiles')
+        .select(PUBLIC_PROFILE_FIELDS)
+        .limit(PROFILE_FETCH_LIMIT);
 
       if (allError || !allProfiles) { setFetchError(true); setLoading(false); return; }
 
@@ -151,18 +220,49 @@ export default function MatchesPage() {
     router.replace('/');
   }
 
-  async function handleRequestMatch(matchId: string, matchName: string) {
-    const { data, error } = await supabase.from('profiles').select('email, discord').eq('id', matchId).single();
-    if (error || !data) setSelectedContact({ name: matchName, email: null, discord: null });
-    else setSelectedContact({ name: matchName, email: data.email, discord: data.discord });
+  async function handleLetsPlay(matchId: string, matchName: string) {
+    const senderId = profile.profileId;
+    if (!senderId) return;
+
+    // 1. Enregistrer l'intention (anti-spam via contrainte UNIQUE en DB)
+    await supabase.from('match_requests').upsert(
+      { sender_id: senderId, receiver_id: matchId },
+      { onConflict: 'sender_id,receiver_id', ignoreDuplicates: true }
+    );
+
+    // 2. Marquer comme envoyé en localStorage
+    markInvitationSent(matchId);
+    setSentInvitations((prev) => ({ ...prev, [matchId]: true }));
+
+    // 3. Récupérer UNIQUEMENT le Discord (jamais afficher le mail)
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('discord, email')
+      .eq('id', matchId)
+      .single();
+
+    if (error || !data) {
+      setSituation({ type: 'no_contact', name: matchName });
+      return;
+    }
+
+    if (data.discord) {
+      setSituation({ type: 'discord', discord: data.discord, name: matchName });
+    } else if (data.email) {
+      // Mail disponible → notification côté serveur (on l'affiche JAMAIS)
+      setSituation({ type: 'mail_only', name: matchName });
+      // TODO(#43): appeler une Edge Function pour envoyer le mail au destinataire
+    } else {
+      setSituation({ type: 'no_contact', name: matchName });
+    }
   }
 
   const displayProfile = currentProfile ?? profile;
   const hasNoProfile = !loading && !profile.profileId;
   const hasEmail = !!displayProfile.email;
+  const hasContact = !!displayProfile.email || !!displayProfile.discord;
   const userCity = displayProfile.city || '';
 
-  // Filtre Near me : garde uniquement les joueurs de la même ville si toggle actif
   const visibleMatches = nearMeOnly && userCity
     ? matches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity))
     : matches;
@@ -190,7 +290,7 @@ export default function MatchesPage() {
   return (
     <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
 
-      {selectedContact && <ContactModal contact={selectedContact} onClose={() => setSelectedContact(null)} />}
+      {situation && <ContactModal situation={situation} onClose={() => setSituation(null)} />}
 
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
@@ -209,6 +309,29 @@ export default function MatchesPage() {
         </button>
       </div>
 
+      {/* Badge inbound — visible si l'utilisateur n'a pas de contact renseigné */}
+      {!loading && !hasContact && inboundCount > 0 && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent/40 bg-accent/5 px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5">🎮</span>
+            <div>
+              <p className="text-sm font-medium text-text">
+                {inboundCount} player{inboundCount > 1 ? 's' : ''} want{inboundCount === 1 ? 's' : ''} to play with you
+              </p>
+              <p className="mt-1 text-xs text-muted">
+                Add your Discord or email so they can reach you.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/profile/edit"
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
+          >
+            Add contact
+          </Link>
+        </div>
+      )}
+
       {/* Bandeau no-email */}
       {!loading && !hasEmail && (
         <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-yellow-500/40 bg-yellow-500/5 px-5 py-4">
@@ -217,7 +340,7 @@ export default function MatchesPage() {
             <div>
               <p className="text-sm font-medium text-text">Your profile can&apos;t be recovered</p>
               <p className="mt-1 text-xs text-muted">
-                Without an email, you won&apos;t be reachable by matches and you&apos;ll lose access to your profile if you change device or clear your browser.
+                Without an email, you&apos;ll lose access to your profile if you change device or clear your browser.
               </p>
             </div>
           </div>
@@ -232,7 +355,6 @@ export default function MatchesPage() {
 
       <div className="grid gap-6">
 
-        {/* Profil utilisateur */}
         {!loading && (
           <ProfileSummary
             name={displayProfile.name}
@@ -256,7 +378,6 @@ export default function MatchesPage() {
             </Card>
           )}
 
-          {/* 0 match */}
           {!loading && !fetchError && matches.length === 0 && (
             <div className="grid gap-5">
               <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-6 py-5">
@@ -275,7 +396,7 @@ export default function MatchesPage() {
                 {!hasEmail ? (
                   <>
                     <p className="mt-2 text-sm text-muted">
-                      You haven&apos;t added an email yet. Without it, you won&apos;t be notified when a compatible player joins — and they won&apos;t be able to reach you either.
+                      You haven&apos;t added an email yet. Without it, you won&apos;t be notified when a compatible player joins.
                     </p>
                     <Link
                       href="/login"
@@ -286,7 +407,7 @@ export default function MatchesPage() {
                   </>
                 ) : (
                   <>
-                    <p className="mt-2 text-sm text-muted">We&apos;ll email you at <span className="text-text font-medium">{displayProfile.email}</span> when a compatible player joins{userCity ? ` ${userCity}` : ''}.</p>
+                    <p className="mt-2 text-sm text-muted">We&apos;ll email you at <span className="text-text font-medium">your registered address</span> when a compatible player joins{userCity ? ` ${userCity}` : ''}.</p>
                     <ul className="mt-4 grid gap-3 text-sm text-muted">
                       <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you when a compatible player joins.</li>
                       <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
@@ -298,18 +419,13 @@ export default function MatchesPage() {
             </div>
           )}
 
-          {/* matches > 0 */}
           {!loading && !fetchError && matches.length > 0 && (
             <div className="grid gap-5">
-
-              {/* Barre de filtres */}
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-muted font-medium">
                   {visibleMatches.length} player{visibleMatches.length !== 1 ? 's' : ''} match your vibe
                   {nearMeOnly && userCity ? ` in ${userCity}` : ''}
                 </p>
-
-                {/* Toggle Near me — affiché uniquement si l'utilisateur a une ville */}
                 {userCity && (
                   <button
                     onClick={() => setNearMeOnly((v) => !v)}
@@ -324,7 +440,6 @@ export default function MatchesPage() {
                 )}
               </div>
 
-              {/* Message si filtre Near me actif et 0 résultat */}
               {nearMeOnly && visibleMatches.length === 0 && (
                 <Card className="p-6 text-center">
                   <p className="text-sm font-medium text-text">No players found in {userCity} yet.</p>
@@ -352,7 +467,8 @@ export default function MatchesPage() {
                   fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                   fitReason={m.fitReason}
                   score={m.score}
-                  onRequestMatch={() => handleRequestMatch(m.id, m.name)}
+                  invitationSent={!!sentInvitations[m.id]}
+                  onRequestMatch={() => handleLetsPlay(m.id, m.name)}
                 />
               ))}
             </div>
