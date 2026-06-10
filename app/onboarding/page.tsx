@@ -41,7 +41,6 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
   );
 }
 
-// Indicateur live : point vert animé + texte vert, uniquement si count réel en base
 function LiveCount({ count }: { count: number }) {
   if (count === 0) return null;
   return (
@@ -50,9 +49,7 @@ function LiveCount({ count }: { count: number }) {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
       </span>
-      <span className="text-xs font-medium text-green-400">
-        {count} playing
-      </span>
+      <span className="text-xs font-medium text-green-400">{count} playing</span>
     </span>
   );
 }
@@ -89,7 +86,7 @@ export default function OnboardingPage() {
 
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
-  // ── Hydratation ─────────────────────────────────────────────────────────
+  // ── Hydratation ──────────────────────────────────────────────────────────
   useEffect(() => {
     async function hydrate() {
       const profileId = profile.profileId;
@@ -100,7 +97,7 @@ export default function OnboardingPage() {
           profileId:    data.id,
           name:         data.name ?? '',
           age:          data.age ?? '',
-          city:         'Utrecht',
+          city:         data.city ?? '',
           language:     normalizeLanguage(data.language),
           platform:     normalizeArray(data.platform),
           games:        Array.isArray(data.games) ? data.games : [],
@@ -182,12 +179,18 @@ export default function OnboardingPage() {
   async function saveProfile(withEmail: boolean): Promise<boolean> {
     setLoading(true); setError(null);
     const basePayload = {
-      name: profile.name, age: profile.age || null, city: 'Utrecht',
-      language: profile.language, platform: profile.platform, games: profile.games,
-      style: profile.style, availability: profile.availability, open_irl: profile.openIRL,
-      consent: true,
-      email: withEmail && profile.email ? profile.email : null,
-      discord: profile.discord || null,
+      name:         profile.name,
+      age:          profile.age || null,
+      city:         profile.city || null,
+      language:     profile.language,
+      platform:     profile.platform,
+      games:        profile.games,
+      style:        profile.style,
+      availability: profile.availability,
+      open_irl:     profile.openIRL,
+      consent:      true,
+      email:        withEmail && profile.email ? profile.email : null,
+      discord:      profile.discord || null,
     };
     let data: { id: string } | null = null;
     let dbError: { message?: string } | null = null;
@@ -243,9 +246,14 @@ export default function OnboardingPage() {
               <label className="text-sm font-medium text-text">Age <span className="text-muted text-xs">(optional)</span></label>
               <input className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition" placeholder="Your age" type="number" min={10} max={99} value={profile.age} onChange={(e) => setProfile({ age: e.target.value })} />
             </div>
-            <div className="flex items-center gap-3 rounded-xl border border-border bg-panel2 px-4 py-3">
-              <span className="text-lg">📍</span>
-              <div><div className="text-xs text-muted uppercase tracking-widest">City</div><div className="text-sm font-semibold text-text">Utrecht</div></div>
+            <div className="flex flex-col gap-1">
+              <label className="text-sm font-medium text-text">City <span className="text-muted text-xs">(optional — helps find nearby players)</span></label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="e.g. Utrecht, Amsterdam, Paris…"
+                value={profile.city}
+                onChange={(e) => setProfile({ city: e.target.value })}
+              />
             </div>
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -261,8 +269,6 @@ export default function OnboardingPage() {
             <p className="mt-2 text-muted text-sm">Select the games you&apos;re active on right now.</p>
           </div>
           <Card className="p-6 flex flex-col gap-4">
-
-            {/* Top 8 chips avec live indicator */}
             <div className="flex flex-wrap gap-3">
               {top8.map((g) => {
                 const count = gameCounts[g] ?? 0;
@@ -274,8 +280,6 @@ export default function OnboardingPage() {
                 );
               })}
             </div>
-
-            {/* Jeux sélectionnés hors top 8 */}
             {extraSelectedGames.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {extraSelectedGames.map((g) => (
@@ -286,8 +290,6 @@ export default function OnboardingPage() {
                 ))}
               </div>
             )}
-
-            {/* Input texte libre + dropdown */}
             <div className="relative" ref={suggestionsRef}>
               <div className="flex gap-3">
                 <input
@@ -320,14 +322,11 @@ export default function OnboardingPage() {
                 </div>
               )}
             </div>
-
-            {/* Micro-feedback */}
             {profile.games.length > 0 && (() => {
               const topGame = [...profile.games].sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0))[0];
               const count = gameCounts[topGame] ?? 0;
-              return count > 0 ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} in Utrecht also play {topGame}!</p> : null;
+              return count > 0 ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} also play {topGame}!</p> : null;
             })()}
-
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex justify-between">
@@ -363,7 +362,7 @@ export default function OnboardingPage() {
             </div>
             <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
               <input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} className="accent-[var(--accent)]" />
-              Open to meeting IRL in Utrecht
+              Open to meeting IRL with local players
             </label>
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -382,7 +381,7 @@ export default function OnboardingPage() {
               {compatCount === null ? 'Finding your matches…' : compatCount === 0 ? "You're one of the first! 🚀" : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
             </h1>
             <p className="mt-2 text-muted text-sm">
-              {compatCount === 0 ? 'The community is growing. Save your profile and be notified when compatible players join Utrecht.' : "Here's a preview of who you could play with in Utrecht."}
+              {compatCount === 0 ? 'The community is growing. Save your profile and be notified when compatible players join.' : "Here's a preview of who you could play with."}
             </p>
           </div>
           {previewMatches.length > 0 && (
@@ -400,7 +399,7 @@ export default function OnboardingPage() {
             </div>
           )}
           <Card className="p-5 border-dashed">
-            <p className="text-sm text-muted">Save your profile to contact them and be notified when new compatible players join Utrecht.</p>
+            <p className="text-sm text-muted">Save your profile to contact them and be notified when new compatible players join.</p>
           </Card>
           <div className="flex justify-between">
             <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>

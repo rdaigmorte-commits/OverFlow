@@ -6,6 +6,9 @@ type MatchCardProps = {
   platform: string[];
   style: string[];
   language: string[];
+  city?: string;
+  openIRL?: boolean;
+  isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   fitReason: string;
   score: number;
@@ -36,11 +39,12 @@ const fitConfig = {
 function parseFitReasonToBullets(fitReason: string): { emoji: string; text: string }[] {
   const parts = fitReason.split(' · ');
   return parts.map((part) => {
-    if (part.startsWith('plays '))        return { emoji: '🎮', text: `Both play ${part.replace('plays ', '')}` };
-    if (part.startsWith('same platform')) return { emoji: '🖥️', text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('plays '))         return { emoji: '🎮', text: `Both play ${part.replace('plays ', '')}` };
+    if (part.startsWith('same platform'))  return { emoji: '🖥️', text: part.charAt(0).toUpperCase() + part.slice(1) };
     if (part.startsWith('same playstyle')) return { emoji: '⚡', text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('speaks '))       return { emoji: '🌍', text: `Speaks ${part.replace('speaks ', '')}` };
-    if (part.startsWith('available '))    return { emoji: '📅', text: `Both free ${part.replace('available ', '')}` };
+    if (part.startsWith('speaks '))        return { emoji: '🌍', text: `Speaks ${part.replace('speaks ', '')}` };
+    if (part.startsWith('available '))     return { emoji: '📅', text: `Both free ${part.replace('available ', '')}` };
+    if (part.startsWith('same city'))      return { emoji: '📍', text: part.charAt(0).toUpperCase() + part.slice(1) };
     return { emoji: '✅', text: part };
   });
 }
@@ -51,6 +55,9 @@ export function MatchCard({
   platform,
   style,
   language,
+  city,
+  openIRL,
+  isIRLNearby,
   fitLabel,
   fitReason,
   onRequestMatch,
@@ -64,11 +71,30 @@ export function MatchCard({
     <div className={`rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
 
       {/* Header */}
-      <div className="flex items-center justify-between px-5 pt-4 pb-3">
-        <span className="text-xl font-black text-text">{name}</span>
-        <span className={`rounded-full border px-3 py-1 text-xs font-bold ${config.badgeBg}`}>
-          {config.badge}
-        </span>
+      <div className="flex items-center justify-between gap-2 px-5 pt-4 pb-3">
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-xl font-black text-text truncate">{name}</span>
+          {city && (
+            <span className="shrink-0 rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">
+              📍 {city}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {/* Badge IRL Nearby — prioritaire sur le badge IRL simple */}
+          {isIRLNearby ? (
+            <span className="rounded-full border border-emerald-400/60 bg-emerald-400/15 px-3 py-1 text-xs font-bold text-emerald-400 animate-pulse">
+              📍 Nearby · IRL ready
+            </span>
+          ) : openIRL ? (
+            <span className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">
+              IRL ✓
+            </span>
+          ) : null}
+          <span className={`rounded-full border px-3 py-1 text-xs font-bold ${config.badgeBg}`}>
+            {config.badge}
+          </span>
+        </div>
       </div>
 
       {/* Séparateur */}
@@ -123,7 +149,7 @@ export function MatchCard({
           onClick={onRequestMatch}
           className="w-full rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
         >
-          Request match
+          Let&apos;s play 🎮
         </button>
       </div>
 

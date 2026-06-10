@@ -12,15 +12,21 @@ export function normalizeArray(val: string | string[] | null | undefined): strin
   return [val]; // compatibilité ascendante avec les anciens profils string
 }
 
+// Normalise une ville pour comparaison insensible à la casse / espaces
+export function normalizeCity(city: string | null | undefined): string {
+  return (city ?? '').toLowerCase().trim();
+}
+
 export type Profile = {
   id: string;
   name: string;
   games: string[];
-  platform: string | string[]; // string[] en cible, string pour compat anciens profils
-  style: string | string[];    // idem
+  platform: string | string[];
+  style: string | string[];
   language: string[];
   availability: string[];
   city?: string;
+  open_irl?: boolean;
   email?: string | null;
   discord?: string | null;
 };
@@ -30,17 +36,20 @@ export type MatchResult = {
   score: number;
   fitLabel: string;
   fitReason: string;
+  isIRLNearby: boolean;
   id: string;
   name: string;
   games: string[];
   platform: string[];
   language: string[];
+  city?: string;
+  openIRL?: boolean;
   email?: string | null;
   discord?: string | null;
 };
 
 /**
- * Barème v2 (US-105 — platform et style passés en arrays)
+ * Barème v3 (US-083 — ville comme critère de matching)
  *
  * Critère                          | Points
  * ─────────────────────────────────────────
@@ -49,9 +58,12 @@ export type MatchResult = {
  * Au moins 1 style en commun       |  +20
  * Langue en commun                 |  +10
  * Au moins 1 créneau commun        |  +10
+ * Même ville (bonus)               |  +10
  * ─────────────────────────────────────────
- * Score max                        |  100
+ * Score max                        |  110
  */
+const CITY_BONUS = 10;
+
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
@@ -71,6 +83,11 @@ export function computeScore(a: Profile, b: Profile): number {
 
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
   if (commonSlots.length > 0) score += 10;
+
+  // Bonus ville — pas un filtre bloquant, juste un bonus de score
+  if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
+    score += CITY_BONUS;
+  }
 
   return score;
 }
@@ -104,6 +121,11 @@ export function getFitReason(a: Profile, b: Profile): string {
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
   if (commonSlots.length > 0) parts.push(`available ${commonSlots[0]}`);
 
+  // Mention ville en commun dans le fitReason
+  if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
+    parts.push(`same city (${b.city})`);
+  }
+
   if (parts.length === 0) return 'Some interests in common';
   return parts.join(' · ');
 }
@@ -121,18 +143,29 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         availability: Array.isArray(p.availability) ? p.availability : [],
       };
       const score = computeScore(current, normalizedP);
+
+      // Badge IRL Nearby : même ville + open_irl
+      const isIRLNearby =
+        !!normalizedP.open_irl &&
+        !!current.city &&
+        !!normalizedP.city &&
+        normalizeCity(current.city) === normalizeCity(normalizedP.city);
+
       return {
-        profile:  normalizedP,
+        profile:     normalizedP,
         score,
-        fitLabel: getFitLabel(score),
-        fitReason: getFitReason(current, normalizedP),
-        id:       normalizedP.id,
-        name:     normalizedP.name,
-        games:    normalizedP.games,
-        platform: normalizeArray(normalizedP.platform),
-        language: normalizeArray(normalizedP.language),
-        email:    normalizedP.email ?? null,
-        discord:  normalizedP.discord ?? null,
+        fitLabel:    getFitLabel(score),
+        fitReason:   getFitReason(current, normalizedP),
+        isIRLNearby,
+        id:          normalizedP.id,
+        name:        normalizedP.name,
+        games:       normalizedP.games,
+        platform:    normalizeArray(normalizedP.platform),
+        language:    normalizeArray(normalizedP.language),
+        city:        normalizedP.city,
+        openIRL:     normalizedP.open_irl ?? false,
+        email:       normalizedP.email ?? null,
+        discord:     normalizedP.discord ?? null,
       };
     })
     .filter((r) => r.score > 0)
