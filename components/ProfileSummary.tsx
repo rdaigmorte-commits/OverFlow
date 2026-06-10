@@ -69,10 +69,10 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
       {/* Séparateur */}
       <div className="border-t border-orange-500/20 mx-5" />
 
-      {/* CTA Edit */}
+      {/* CTA Edit — pointe maintenant vers /profile/edit */}
       <div className="px-5 py-4">
         <Link
-          href="/onboarding"
+          href="/profile/edit"
           className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-orange-500/60 hover:text-orange-400 transition"
         >
           ✏️ Edit my profile
