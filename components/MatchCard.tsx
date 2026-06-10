@@ -12,6 +12,7 @@ type MatchCardProps = {
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   fitReason: string;
   score: number;
+  invitationSent?: boolean;
   onRequestMatch: () => void;
 };
 
@@ -60,6 +61,7 @@ export function MatchCard({
   isIRLNearby,
   fitLabel,
   fitReason,
+  invitationSent = false,
   onRequestMatch,
 }: MatchCardProps) {
   const config   = fitConfig[fitLabel] ?? fitConfig['Worth reaching out'];
@@ -70,15 +72,10 @@ export function MatchCard({
   return (
     <div className={`rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
 
-      {/* Header — 3 lignes hiérarchisées */}
+      {/* Header */}
       <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
-
-        {/* Colonne gauche : pseudo + contexte IRL/ville */}
         <div className="flex flex-col gap-1 min-w-0">
-          {/* Ligne 1 : Pseudo */}
           <span className="text-xl font-black text-text truncate">{name}</span>
-
-          {/* Ligne 2 : Ville + badge IRL (informations contextuelles) */}
           {(city || isIRLNearby || openIRL) && (
             <div className="flex items-center gap-2 flex-wrap">
               {city && (
@@ -98,41 +95,29 @@ export function MatchCard({
             </div>
           )}
         </div>
-
-        {/* Colonne droite : badge fit — toujours visible, ne compresse pas le pseudo */}
         <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${config.badgeBg}`}>
           {config.badge}
         </span>
       </div>
 
-      {/* Séparateur */}
       <div className="border-t border-border/50 mx-5" />
 
       {/* Tags profil */}
       <div className="px-5 py-3 flex flex-wrap gap-2">
         {games.map((g) => (
-          <span key={g} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            🎮 {g}
-          </span>
+          <span key={g} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">🎮 {g}</span>
         ))}
         {platforms.map((p) => (
-          <span key={p} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            🖥️ {p}
-          </span>
+          <span key={p} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">🖥️ {p}</span>
         ))}
         {styles.map((s) => (
-          <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            ⚡ {s}
-          </span>
+          <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">⚡ {s}</span>
         ))}
         {language.map((l) => (
-          <span key={l} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            🌍 {l}
-          </span>
+          <span key={l} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">🌍 {l}</span>
         ))}
       </div>
 
-      {/* Séparateur */}
       <div className="border-t border-border/50 mx-5" />
 
       {/* Why you match */}
@@ -148,17 +133,22 @@ export function MatchCard({
         </ul>
       </div>
 
-      {/* Séparateur */}
       <div className="border-t border-border/50 mx-5" />
 
       {/* CTA */}
       <div className="px-5 py-4">
-        <button
-          onClick={onRequestMatch}
-          className="w-full rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
-        >
-          Let&apos;s play 🎮
-        </button>
+        {invitationSent ? (
+          <div className="w-full rounded-xl border border-green-500/40 bg-green-500/10 px-5 py-3 text-sm font-semibold text-green-400 text-center">
+            Invitation sent ✓
+          </div>
+        ) : (
+          <button
+            onClick={onRequestMatch}
+            className="w-full rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+          >
+            Let&apos;s play 🎮
+          </button>
+        )}
       </div>
 
     </div>
