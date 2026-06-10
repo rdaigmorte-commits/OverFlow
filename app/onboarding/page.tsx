@@ -23,7 +23,10 @@ function ProgressBar({ step }: { step: number }) {
         <span className="text-xs text-muted">{Math.round((step / TOTAL_STEPS) * 100)}%</span>
       </div>
       <div className="h-1.5 w-full rounded-full bg-panel2">
-        <div className="h-1.5 rounded-full bg-accent transition-all duration-300" style={{ width: `${(step / TOTAL_STEPS) * 100}%` }} />
+        <div
+          className="h-1.5 rounded-full bg-accent transition-all duration-300"
+          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+        />
       </div>
     </div>
   );
@@ -31,9 +34,13 @@ function ProgressBar({ step }: { step: number }) {
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
-    <button type="button" onClick={onClick}
+    <button
+      type="button"
+      onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition ${
-        selected ? 'border-accent bg-accent text-black font-semibold' : 'border-border bg-panel2 text-text hover:border-accent'
+        selected
+          ? 'border-accent bg-accent text-black font-semibold'
+          : 'border-border bg-panel2 text-text hover:border-accent'
       }`}
     >
       {label}
@@ -58,13 +65,13 @@ export default function OnboardingPage() {
   const router = useRouter();
   const { profile, setProfile, currentStep, setStep } = useOverflowStore();
 
-  const [gameInput, setGameInput]     = useState('');
-  const [loading, setLoading]         = useState(false);
-  const [hydrating, setHydrating]     = useState(true);
-  const [error, setError]             = useState<string | null>(null);
-  const [gameCounts, setGameCounts]   = useState<GameCount>({});
+  const [gameInput, setGameInput]       = useState('');
+  const [loading, setLoading]           = useState(false);
+  const [hydrating, setHydrating]       = useState(true);
+  const [error, setError]               = useState<string | null>(null);
+  const [gameCounts, setGameCounts]     = useState<GameCount>({});
   const [countsLoaded, setCountsLoaded] = useState(false);
-  const [compatCount, setCompatCount] = useState<number | null>(null);
+  const [compatCount, setCompatCount]   = useState<number | null>(null);
   const [previewMatches, setPreviewMatches] = useState<{ id: string; name: string; games: string[] }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -82,16 +89,24 @@ export default function OnboardingPage() {
 
   const dropdownSuggestions = allGamesSorted
     .filter((g) => !top8.includes(g))
-    .filter((g) => gameInput.trim().length === 0 || g.toLowerCase().includes(gameInput.toLowerCase()));
+    .filter((g) =>
+      gameInput.trim().length === 0
+        ? false
+        : g.toLowerCase().includes(gameInput.toLowerCase())
+    );
 
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
-  // ── Hydratation ──────────────────────────────────────────────────────────
+  // ── Hydratation — ne charge que les champs du profil de base (pas email) ─
   useEffect(() => {
     async function hydrate() {
       const profileId = profile.profileId;
       if (!profileId) { setHydrating(false); return; }
-      const { data, error } = await supabase.from('profiles').select('*').eq('id', profileId).single();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent')
+        .eq('id', profileId)
+        .single();
       if (!error && data) {
         setProfile({
           profileId:    data.id,
@@ -105,8 +120,6 @@ export default function OnboardingPage() {
           availability: Array.isArray(data.availability) ? data.availability : [],
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
-          email:        data.email ?? '',
-          discord:      data.discord ?? '',
         });
       }
       setHydrating(false);
@@ -148,7 +161,10 @@ export default function OnboardingPage() {
     if (currentStep !== 4) return;
     async function fetchCompatible() {
       if (profile.games.length === 0) { setPreviewMatches([]); setCompatCount(0); return; }
-      const { data } = await supabase.from('profiles').select('id, name, games').neq('id', profile.profileId ?? '');
+      const { data } = await supabase
+        .from('profiles')
+        .select('id, name, games')
+        .neq('id', profile.profileId ?? '');
       if (!data) { setCompatCount(0); return; }
       const matches = data.filter((p) => {
         const pGames = Array.isArray(p.games) ? p.games : [];
@@ -161,9 +177,14 @@ export default function OnboardingPage() {
   }, [currentStep, profile.games, profile.profileId]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-  const toggleMulti = (key: 'games' | 'availability' | 'language' | 'platform' | 'style', value: string) => {
+  const toggleMulti = (
+    key: 'games' | 'availability' | 'language' | 'platform' | 'style',
+    value: string
+  ) => {
     const current = profile[key] as string[];
-    const next = current.includes(value) ? current.filter((v) => v !== value) : [...current, value];
+    const next = current.includes(value)
+      ? current.filter((v) => v !== value)
+      : [...current, value];
     setProfile({ [key]: next } as Parameters<typeof setProfile>[0]);
   };
 
@@ -175,7 +196,7 @@ export default function OnboardingPage() {
     setShowSuggestions(false);
   };
 
-  // ── Save profil (Step 4) — sans email ────────────────────────────────────
+  // ── Save profil (Step 4) — email exclu, géré via /profile/edit ───────────
   async function saveProfile(): Promise<boolean> {
     setLoading(true); setError(null);
     const basePayload = {
@@ -193,9 +214,17 @@ export default function OnboardingPage() {
     let data: { id: string } | null = null;
     let dbError: { message?: string; code?: string } | null = null;
     if (profile.profileId) {
-      ({ data, error: dbError } = await supabase.from('profiles').upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' }).select('id').single());
+      ({ data, error: dbError } = await supabase
+        .from('profiles')
+        .upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' })
+        .select('id')
+        .single());
     } else {
-      ({ data, error: dbError } = await supabase.from('profiles').insert(basePayload).select('id').single());
+      ({ data, error: dbError } = await supabase
+        .from('profiles')
+        .insert(basePayload)
+        .select('id')
+        .single());
     }
     setLoading(false);
     if (dbError || !data) { setError('Something went wrong. Please try again.'); return false; }
@@ -205,26 +234,42 @@ export default function OnboardingPage() {
 
   function goNext() { setError(null); setStep(currentStep + 1); }
   function goBack() { setError(null); setStep(currentStep - 1); }
+
   function validateStep(): string | null {
     if (currentStep === 1 && !profile.name.trim()) return 'Please enter your name or nickname.';
     if (currentStep === 2 && profile.games.length === 0) return 'Please select at least one game.';
     if (currentStep === 3) {
       if (profile.platform.length === 0) return 'Please select at least one platform.';
-      if (profile.style.length === 0) return 'Please select at least one play style.';
+      if (profile.style.length === 0)    return 'Please select at least one play style.';
       if (profile.language.length === 0) return 'Please select at least one language.';
     }
     return null;
   }
-  function handleNext() { const err = validateStep(); if (err) { setError(err); return; } goNext(); }
-  async function handleSave() { const ok = await saveProfile(); if (ok) router.push('/matches'); }
 
-  if (hydrating) return <main className="mx-auto min-h-screen max-w-lg px-6 py-10"><p className="text-muted">Loading your profile...</p></main>;
+  function handleNext() {
+    const err = validateStep();
+    if (err) { setError(err); return; }
+    goNext();
+  }
+
+  async function handleSave() {
+    const ok = await saveProfile();
+    if (ok) router.push('/matches');
+  }
+
+  if (hydrating) {
+    return (
+      <main className="mx-auto min-h-screen max-w-lg px-6 py-10">
+        <p className="text-muted">Loading your profile...</p>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto min-h-screen max-w-lg px-6 py-10">
       <ProgressBar step={currentStep} />
 
-      {/* STEP 1 */}
+      {/* STEP 1 — Identité */}
       {currentStep === 1 && (
         <div className="flex flex-col gap-6">
           <div>
@@ -233,15 +278,34 @@ export default function OnboardingPage() {
           </div>
           <Card className="p-6 flex flex-col gap-4">
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text">Nickname <span className="text-accent">*</span></label>
-              <input className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition" placeholder="How do people call you in-game?" value={profile.name} onChange={(e) => setProfile({ name: e.target.value })} />
+              <label className="text-sm font-medium text-text">
+                Nickname <span className="text-accent">*</span>
+              </label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="How do people call you in-game?"
+                value={profile.name}
+                onChange={(e) => setProfile({ name: e.target.value })}
+              />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text">Age <span className="text-muted text-xs">(optional)</span></label>
-              <input className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition" placeholder="Your age" type="number" min={10} max={99} value={profile.age} onChange={(e) => setProfile({ age: e.target.value })} />
+              <label className="text-sm font-medium text-text">
+                Age <span className="text-muted text-xs">(optional)</span>
+              </label>
+              <input
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                placeholder="Your age"
+                type="number"
+                min={10}
+                max={99}
+                value={profile.age}
+                onChange={(e) => setProfile({ age: e.target.value })}
+              />
             </div>
             <div className="flex flex-col gap-1">
-              <label className="text-sm font-medium text-text">City <span className="text-muted text-xs">(optional — helps find nearby players)</span></label>
+              <label className="text-sm font-medium text-text">
+                City <span className="text-muted text-xs">(optional — helps find nearby players)</span>
+              </label>
               <input
                 className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
                 placeholder="e.g. Utrecht, Amsterdam, Paris…"
@@ -251,11 +315,14 @@ export default function OnboardingPage() {
             </div>
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
-          <button onClick={handleNext} className="self-end rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Next →</button>
+          <button
+            onClick={handleNext}
+            className="self-end rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+          >Next →</button>
         </div>
       )}
 
-      {/* STEP 2 */}
+      {/* STEP 2 — Jeux */}
       {currentStep === 2 && (
         <div className="flex flex-col gap-6">
           <div>
@@ -277,9 +344,17 @@ export default function OnboardingPage() {
             {extraSelectedGames.length > 0 && (
               <div className="flex flex-wrap gap-3">
                 {extraSelectedGames.map((g) => (
-                  <span key={g} className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold">
+                  <span
+                    key={g}
+                    className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold"
+                  >
                     {g}
-                    <button type="button" onClick={() => setProfile({ games: profile.games.filter(x => x !== g) })} className="hover:opacity-70" aria-label={`Remove ${g}`}>×</button>
+                    <button
+                      type="button"
+                      onClick={() => setProfile({ games: profile.games.filter((x) => x !== g) })}
+                      className="hover:opacity-70"
+                      aria-label={`Remove ${g}`}
+                    >×</button>
                   </span>
                 ))}
               </div>
@@ -297,12 +372,18 @@ export default function OnboardingPage() {
                     if (e.key === 'Escape') setShowSuggestions(false);
                   }}
                 />
-                <button type="button" onClick={() => addGame()} className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-panel2 transition">Add</button>
+                <button
+                  type="button"
+                  onClick={() => addGame()}
+                  className="rounded-xl border border-border px-4 py-3 text-sm hover:bg-panel2 transition"
+                >Add</button>
               </div>
               {showSuggestions && dropdownSuggestions.length > 0 && (
                 <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border bg-panel shadow-lg overflow-hidden">
                   {dropdownSuggestions.slice(0, 6).map((g) => (
-                    <button key={g} type="button"
+                    <button
+                      key={g}
+                      type="button"
                       onMouseDown={(e) => { e.preventDefault(); addGame(g); }}
                       className="flex w-full items-center justify-between px-4 py-3 text-sm text-text hover:bg-panel2 transition"
                     >
@@ -319,7 +400,9 @@ export default function OnboardingPage() {
             {profile.games.length > 0 && (() => {
               const topGame = [...profile.games].sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0))[0];
               const count = gameCounts[topGame] ?? 0;
-              return count > 0 ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} also play {topGame}!</p> : null;
+              return count > 0
+                ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} also play {topGame}!</p>
+                : null;
             })()}
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
@@ -330,7 +413,7 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* STEP 3 */}
+      {/* STEP 3 — Comment tu joues */}
       {currentStep === 3 && (
         <div className="flex flex-col gap-6">
           <div>
@@ -339,23 +422,54 @@ export default function OnboardingPage() {
           </div>
           <Card className="p-6 flex flex-col gap-5">
             <div>
-              <h2 className="text-sm font-semibold text-text mb-3">Platform <span className="text-accent">*</span> <span className="text-muted font-normal">(select all that apply)</span></h2>
-              <div className="flex flex-wrap gap-3">{PLATFORMS.map((p) => <Chip key={p} label={p} selected={profile.platform.includes(p)} onClick={() => toggleMulti('platform', p)} />)}</div>
+              <h2 className="text-sm font-semibold text-text mb-3">
+                Platform <span className="text-accent">*</span>{' '}
+                <span className="text-muted font-normal">(select all that apply)</span>
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {PLATFORMS.map((p) => (
+                  <Chip key={p} label={p} selected={profile.platform.includes(p)} onClick={() => toggleMulti('platform', p)} />
+                ))}
+              </div>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-text mb-3">Play style <span className="text-accent">*</span> <span className="text-muted font-normal">(select all that apply)</span></h2>
-              <div className="flex flex-wrap gap-3">{STYLES.map((s) => <Chip key={s} label={s} selected={profile.style.includes(s)} onClick={() => toggleMulti('style', s)} />)}</div>
+              <h2 className="text-sm font-semibold text-text mb-3">
+                Play style <span className="text-accent">*</span>{' '}
+                <span className="text-muted font-normal">(select all that apply)</span>
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {STYLES.map((s) => (
+                  <Chip key={s} label={s} selected={profile.style.includes(s)} onClick={() => toggleMulti('style', s)} />
+                ))}
+              </div>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-text mb-3">Language <span className="text-accent">*</span></h2>
-              <div className="flex flex-wrap gap-3">{LANGS.map((l) => <Chip key={l} label={l} selected={profile.language.includes(l)} onClick={() => toggleMulti('language', l)} />)}</div>
+              <h2 className="text-sm font-semibold text-text mb-3">
+                Language <span className="text-accent">*</span>
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {LANGS.map((l) => (
+                  <Chip key={l} label={l} selected={profile.language.includes(l)} onClick={() => toggleMulti('language', l)} />
+                ))}
+              </div>
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-text mb-3">Availability <span className="text-muted font-normal">(optional)</span></h2>
-              <div className="flex flex-wrap gap-3">{SLOTS.map((s) => <Chip key={s} label={s} selected={profile.availability.includes(s)} onClick={() => toggleMulti('availability', s)} />)}</div>
+              <h2 className="text-sm font-semibold text-text mb-3">
+                Availability <span className="text-muted font-normal">(optional)</span>
+              </h2>
+              <div className="flex flex-wrap gap-3">
+                {SLOTS.map((s) => (
+                  <Chip key={s} label={s} selected={profile.availability.includes(s)} onClick={() => toggleMulti('availability', s)} />
+                ))}
+              </div>
             </div>
             <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
-              <input type="checkbox" checked={profile.openIRL} onChange={(e) => setProfile({ openIRL: e.target.checked })} className="accent-[var(--accent)]" />
+              <input
+                type="checkbox"
+                checked={profile.openIRL}
+                onChange={(e) => setProfile({ openIRL: e.target.checked })}
+                className="accent-[var(--accent)]"
+              />
               Open to meeting IRL with local players
             </label>
           </Card>
@@ -367,15 +481,21 @@ export default function OnboardingPage() {
         </div>
       )}
 
-      {/* STEP 4 — Preview matches + save */}
+      {/* STEP 4 — Aperçu des matches + save */}
       {currentStep === 4 && (
         <div className="flex flex-col gap-6">
           <div>
             <h1 className="text-3xl font-black">
-              {compatCount === null ? 'Finding your matches…' : compatCount === 0 ? "You're one of the first! 🚀" : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
+              {compatCount === null
+                ? 'Finding your matches…'
+                : compatCount === 0
+                  ? "You're one of the first! 🚀"
+                  : `${compatCount} player${compatCount > 1 ? 's' : ''} match your vibe 🎮`}
             </h1>
             <p className="mt-2 text-muted text-sm">
-              {compatCount === 0 ? 'The community is growing. Save your profile and be notified when compatible players join.' : "Here's a preview of who you could play with."}
+              {compatCount === 0
+                ? 'The community is growing. Save your profile and be notified when compatible players join.'
+                : "Here's a preview of who you could play with."}
             </p>
           </div>
           {previewMatches.length > 0 && (
@@ -389,16 +509,24 @@ export default function OnboardingPage() {
                   <span className="text-xs border border-accent text-accent rounded-full px-3 py-1">Compatible</span>
                 </Card>
               ))}
-              {compatCount !== null && compatCount > 5 && <p className="text-xs text-muted text-center">+{compatCount - 5} more players waiting…</p>}
+              {compatCount !== null && compatCount > 5 && (
+                <p className="text-xs text-muted text-center">+{compatCount - 5} more players waiting…</p>
+              )}
             </div>
           )}
           <Card className="p-5 border-dashed">
-            <p className="text-sm text-muted">Save your profile to see all your matches and connect with compatible players.</p>
+            <p className="text-sm text-muted">
+              Save your profile to see all your matches and connect with compatible players.
+            </p>
           </Card>
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex justify-between">
             <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
-            <button onClick={handleSave} disabled={loading} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition">
+            <button
+              onClick={handleSave}
+              disabled={loading}
+              className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
+            >
               {loading ? 'Saving…' : 'See my matches 🎮'}
             </button>
           </div>
