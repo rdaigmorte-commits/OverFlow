@@ -7,7 +7,7 @@ import { MatchCard } from '@/components/MatchCard';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
-import { computeMatches, normalizeArray, type Match } from '@/lib/match';
+import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
 
 type ContactInfo = {
   name: string;
@@ -38,7 +38,7 @@ function ContactModal({ contact, onClose }: { contact: ContactInfo; onClose: () 
         {!hasContact ? (
           <div className="mt-5">
             <p className="text-sm text-muted">{contact.name} hasn&apos;t shared any contact info yet.</p>
-            <p className="mt-2 text-sm text-muted">You can still meet them at the next OverFlow IRL event in Utrecht! 🎮</p>
+            <p className="mt-2 text-sm text-muted">You can still connect with them through OverFlow! 🎮</p>
           </div>
         ) : (
           <div className="mt-5 grid gap-3">
@@ -86,6 +86,7 @@ export default function MatchesPage() {
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
+  const [nearMeOnly, setNearMeOnly] = useState(false);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -101,7 +102,7 @@ export default function MatchesPage() {
           profileId:    me.id,
           name:         me.name ?? '',
           age:          me.age ?? '',
-          city:         me.city ?? 'Utrecht',
+          city:         me.city ?? '',
           language:     Array.isArray(me.language) ? me.language : (me.language ? [me.language] : []),
           platform:     normalizeArray(me.platform),
           games:        Array.isArray(me.games) ? me.games : [],
@@ -159,6 +160,16 @@ export default function MatchesPage() {
   const displayProfile = currentProfile ?? profile;
   const hasNoProfile = !loading && !profile.profileId;
   const hasEmail = !!displayProfile.email;
+  const userCity = displayProfile.city || '';
+
+  // Filtre Near me : garde uniquement les joueurs de la même ville si toggle actif
+  const visibleMatches = nearMeOnly && userCity
+    ? matches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity))
+    : matches;
+
+  const nearMeCount = userCity
+    ? matches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity)).length
+    : 0;
 
   if (hasNoProfile) {
     return (
@@ -167,7 +178,7 @@ export default function MatchesPage() {
           <div className="text-5xl">🎮</div>
           <div>
             <h1 className="text-3xl font-black">You haven&apos;t created your profile yet</h1>
-            <p className="mt-3 text-muted max-w-md mx-auto">Create your gamer profile to see players in Utrecht who match your games, style, and availability.</p>
+            <p className="mt-3 text-muted max-w-md mx-auto">Create your gamer profile to find players who match your games, style, and availability.</p>
           </div>
           <Link href="/onboarding" className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Create my profile</Link>
           <p className="text-xs text-muted">Takes less than 2 minutes · No account needed</p>
@@ -185,7 +196,9 @@ export default function MatchesPage() {
       <div className="mb-6 flex items-start justify-between">
         <div>
           <h1 className="text-4xl font-black">Your matches</h1>
-          <p className="mt-2 text-muted">Utrecht · Based on your profile</p>
+          <p className="mt-2 text-muted">
+            {userCity ? `${userCity} · ` : ''}Based on your profile
+          </p>
         </div>
         <button
           onClick={handleSignOut}
@@ -249,9 +262,11 @@ export default function MatchesPage() {
               <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">🚀</span>
-                  <span className="rounded-full border border-green-500/60 bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400">Early OverFlow Tester · Utrecht</span>
+                  <span className="rounded-full border border-green-500/60 bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400">
+                    Early OverFlow Tester{userCity ? ` · ${userCity}` : ''}
+                  </span>
                 </div>
-                <p className="text-sm font-medium text-text">You&apos;re one of the first gamers to join OverFlow in Utrecht.</p>
+                <p className="text-sm font-medium text-text">You&apos;re one of the first gamers to join OverFlow{userCity ? ` in ${userCity}` : ''}.</p>
                 <p className="mt-1 text-sm text-muted">No compatible profile yet — but the community is growing. You&apos;ll be among the first notified when a match appears.</p>
               </div>
 
@@ -271,9 +286,9 @@ export default function MatchesPage() {
                   </>
                 ) : (
                   <>
-                    <p className="mt-2 text-sm text-muted">We&apos;ll email you at <span className="text-text font-medium">{displayProfile.email}</span> when a compatible player joins Utrecht.</p>
+                    <p className="mt-2 text-sm text-muted">We&apos;ll email you at <span className="text-text font-medium">{displayProfile.email}</span> when a compatible player joins{userCity ? ` ${userCity}` : ''}.</p>
                     <ul className="mt-4 grid gap-3 text-sm text-muted">
-                      <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you when a compatible player joins Utrecht.</li>
+                      <li className="flex gap-3"><span className="text-accent font-bold">1</span>We&apos;ll notify you when a compatible player joins.</li>
                       <li className="flex gap-3"><span className="text-accent font-bold">2</span>You&apos;ll be invited to first local test sessions matching your profile.</li>
                       <li className="flex gap-3"><span className="text-accent font-bold">3</span>You can accept or decline every suggestion — nothing is automatic.</li>
                     </ul>
@@ -286,10 +301,44 @@ export default function MatchesPage() {
           {/* matches > 0 */}
           {!loading && !fetchError && matches.length > 0 && (
             <div className="grid gap-5">
-              <p className="text-sm text-muted font-medium">
-                {matches.length} player{matches.length > 1 ? 's' : ''} match your vibe in Utrecht
-              </p>
-              {matches.map((m, index) => (
+
+              {/* Barre de filtres */}
+              <div className="flex items-center justify-between gap-4 flex-wrap">
+                <p className="text-sm text-muted font-medium">
+                  {visibleMatches.length} player{visibleMatches.length !== 1 ? 's' : ''} match your vibe
+                  {nearMeOnly && userCity ? ` in ${userCity}` : ''}
+                </p>
+
+                {/* Toggle Near me — affiché uniquement si l'utilisateur a une ville */}
+                {userCity && (
+                  <button
+                    onClick={() => setNearMeOnly((v) => !v)}
+                    className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
+                      nearMeOnly
+                        ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-400'
+                        : 'border-border bg-panel2 text-muted hover:border-accent hover:text-text'
+                    }`}
+                  >
+                    📍 Near me{nearMeOnly ? '' : ` (${nearMeCount})`}
+                  </button>
+                )}
+              </div>
+
+              {/* Message si filtre Near me actif et 0 résultat */}
+              {nearMeOnly && visibleMatches.length === 0 && (
+                <Card className="p-6 text-center">
+                  <p className="text-sm font-medium text-text">No players found in {userCity} yet.</p>
+                  <p className="mt-1 text-xs text-muted">Try removing the Near me filter to see all compatible players.</p>
+                  <button
+                    onClick={() => setNearMeOnly(false)}
+                    className="mt-4 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-text hover:bg-panel2 transition"
+                  >
+                    Show all matches
+                  </button>
+                </Card>
+              )}
+
+              {visibleMatches.map((m, index) => (
                 <MatchCard
                   key={m.id || `match-${index}`}
                   name={m.name}
@@ -297,6 +346,9 @@ export default function MatchesPage() {
                   platform={normalizeArray(m.platform)}
                   style={normalizeArray(m.profile?.style)}
                   language={normalizeArray(m.language)}
+                  city={m.city}
+                  openIRL={m.openIRL}
+                  isIRLNearby={m.isIRLNearby}
                   fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                   fitReason={m.fitReason}
                   score={m.score}
