@@ -16,7 +16,6 @@ type ContactSituation =
   | { type: 'no_contact'; name: string };
 
 // ─── ContactModal ────────────────────────────────────────────────────────────
-// Le mail n'est JAMAIS affiché dans l'UI — seul le Discord est visible.
 function ContactModal({
   situation,
   onClose,
@@ -112,16 +111,6 @@ function ContactModal({
 // ─── Constants ───────────────────────────────────────────────────────────────
 const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl';
 const PROFILE_FETCH_LIMIT = 200;
-const SENT_KEY = 'overflow_invitations_sent'; // clé localStorage
-
-function getSentInvitations(): Record<string, boolean> {
-  try { return JSON.parse(localStorage.getItem(SENT_KEY) ?? '{}'); } catch { return {}; }
-}
-function markInvitationSent(receiverId: string) {
-  const current = getSentInvitations();
-  current[receiverId] = true;
-  try { localStorage.setItem(SENT_KEY, JSON.stringify(current)); } catch { /* silently fail */ }
-}
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 export default function MatchesPage() {
@@ -137,11 +126,6 @@ export default function MatchesPage() {
   const [nearMeOnly, setNearMeOnly] = useState(false);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
   const [inboundCount, setInboundCount] = useState(0);
-
-  // Charger les invitations déjà envoyées depuis localStorage
-  useEffect(() => {
-    setSentInvitations(getSentInvitations());
-  }, []);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -176,12 +160,24 @@ export default function MatchesPage() {
         hydratedProfile = updated as typeof profile;
       }
 
-      // Compter les demandes entrantes (inbound) pour le badge
+      // Compter les demandes entrantes
       const { count } = await supabase
         .from('match_requests')
         .select('id', { count: 'exact', head: true })
         .eq('receiver_id', profileId);
       setInboundCount(count ?? 0);
+
+      // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
+      const { data: sentData } = await supabase
+        .from('match_requests')
+        .select('receiver_id')
+        .eq('sender_id', profileId);
+
+      if (sentData) {
+        const sentMap: Record<string, boolean> = {};
+        sentData.forEach((r) => { sentMap[r.receiver_id] = true; });
+        setSentInvitations(sentMap);
+      }
 
       const { data: allProfiles, error: allError } = await supabase
         .from('profiles')
@@ -224,17 +220,16 @@ export default function MatchesPage() {
     const senderId = profile.profileId;
     if (!senderId) return;
 
-    // 1. Enregistrer l'intention (anti-spam via contrainte UNIQUE en DB)
+    // 1. Enregistrer en base (anti-spam via contrainte UNIQUE)
     await supabase.from('match_requests').upsert(
       { sender_id: senderId, receiver_id: matchId },
       { onConflict: 'sender_id,receiver_id', ignoreDuplicates: true }
     );
 
-    // 2. Marquer comme envoyé en localStorage
-    markInvitationSent(matchId);
+    // 2. Mettre à jour l'état local (pas de localStorage)
     setSentInvitations((prev) => ({ ...prev, [matchId]: true }));
 
-    // 3. Récupérer UNIQUEMENT le Discord (jamais afficher le mail)
+    // 3. Récupérer le Discord uniquement (jamais afficher le mail)
     const { data, error } = await supabase
       .from('profiles')
       .select('discord, email')
@@ -249,7 +244,6 @@ export default function MatchesPage() {
     if (data.discord) {
       setSituation({ type: 'discord', discord: data.discord, name: matchName });
     } else if (data.email) {
-      // Mail disponible → appel Edge Function côté serveur (l'email n'est JAMAIS exposé au client)
       setSituation({ type: 'mail_only', name: matchName });
       await supabase.functions.invoke('notify-match', {
         body: { sender_id: senderId, receiver_id: matchId },
@@ -311,7 +305,7 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Badge inbound — visible si l'utilisateur n'a pas de contact renseigné */}
+      {/* Badge inbound */}
       {!loading && !hasContact && inboundCount > 0 && (
         <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent/40 bg-accent/5 px-5 py-4">
           <div className="flex items-start gap-3">
