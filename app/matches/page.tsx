@@ -249,9 +249,11 @@ export default function MatchesPage() {
     if (data.discord) {
       setSituation({ type: 'discord', discord: data.discord, name: matchName });
     } else if (data.email) {
-      // Mail disponible → notification côté serveur (on l'affiche JAMAIS)
+      // Mail disponible → appel Edge Function côté serveur (l'email n'est JAMAIS exposé au client)
       setSituation({ type: 'mail_only', name: matchName });
-      // TODO(#43): appeler une Edge Function pour envoyer le mail au destinataire
+      await supabase.functions.invoke('notify-match', {
+        body: { sender_id: senderId, receiver_id: matchId },
+      });
     } else {
       setSituation({ type: 'no_contact', name: matchName });
     }
