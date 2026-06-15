@@ -19,37 +19,70 @@ export default function AuthCallbackPage() {
 
     const hasProfile = Boolean(profile?.profileId);
 
-    if (userEmail) {
-      if (hasProfile) {
-        // Cas "Add email" : on met à jour le profil existant avec l'email + user_id
+    if (hasProfile) {
+      // Cas "Add email" : profil déjà en localStorage, on lie l'email + user_id
+      if (userEmail) {
         await supabase
           .from('profiles')
           .update({ email: userEmail, user_id: userId })
           .eq('id', profile.profileId);
-        // Met à jour le store local pour que hasEmail passe à true immédiatement
         setProfile({ ...profile, email: userEmail });
-      } else {
-        // Cas reconnexion : on lie le compte auth au profil existant par email
+      }
+
+      // Si un autre profil existait déjà avec cet email, on bascule dessus
+      if (userEmail) {
+        const { data } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('email', userEmail)
+          .single();
+        if (data?.id && data.id !== profile.profileId) {
+          setProfile({ profileId: data.id });
+        }
+      }
+
+      router.replace('/matches');
+    } else {
+      // Cas reconnexion : localStorage vide (nouvel onglet / autre appareil)
+      // On cherche le profil en base par email pour le restaurer dans le store
+      if (userEmail) {
+        // 1. Lier le user_id Auth au profil existant
         await supabase
           .from('profiles')
           .update({ user_id: userId })
           .eq('email', userEmail)
           .is('user_id', null);
-      }
-    }
 
-    if (hasProfile) {
-      // Si un autre profil existe pour cet email, on bascule dessus
-      const { data } = await supabase
-        .from('profiles')
-        .select('id')
-        .eq('email', userEmail ?? '')
-        .single();
-      if (data?.id && data.id !== profile.profileId) {
-        setProfile({ profileId: data.id });
+        // 2. Récupérer le profil complet depuis Supabase
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('email', userEmail)
+          .single();
+
+        if (existingProfile) {
+          // 3. Recharger le store avec les données récupérées → localStorage se remplit automatiquement
+          setProfile({
+            profileId:    existingProfile.id,
+            name:         existingProfile.name ?? '',
+            age:          existingProfile.age ?? '',
+            city:         existingProfile.city ?? '',
+            language:     Array.isArray(existingProfile.language) ? existingProfile.language : [],
+            platform:     Array.isArray(existingProfile.platform) ? existingProfile.platform : [],
+            games:        Array.isArray(existingProfile.games) ? existingProfile.games : [],
+            style:        Array.isArray(existingProfile.style) ? existingProfile.style : [],
+            availability: Array.isArray(existingProfile.availability) ? existingProfile.availability : [],
+            openIRL:      existingProfile.open_irl ?? false,
+            consent:      existingProfile.consent ?? false,
+            email:        existingProfile.email ?? '',
+            discord:      existingProfile.discord ?? '',
+          });
+          router.replace('/matches');
+          return;
+        }
       }
-      router.replace('/matches');
-    } else {
+
+      // Aucun profil trouvé pour cet email → vraiment nouvel utilisateur
       router.replace('/onboarding');
     }
   }
