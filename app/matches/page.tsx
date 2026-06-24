@@ -13,7 +13,8 @@ import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib
 type ContactSituation =
   | { type: 'discord'; discord: string; name: string }
   | { type: 'mail_only'; name: string }
-  | { type: 'no_contact'; name: string };
+  | { type: 'no_contact'; name: string }
+  | { type: 'login_required'; name: string };
 
 // ─── ContactModal ────────────────────────────────────────────────────────────
 function ContactModal({
@@ -97,6 +98,21 @@ function ContactModal({
           </div>
         )}
 
+        {situation.type === 'login_required' && (
+          <div className="grid gap-4">
+            <p className="text-sm text-muted">
+              You need an account to invite {situation.name} to play.
+            </p>
+            <Link
+              href="/login"
+              onClick={onClose}
+              className="block w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black text-center hover:opacity-90 transition"
+            >
+              Sign in to invite
+            </Link>
+          </div>
+        )}
+
         <button
           onClick={onClose}
           className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
@@ -160,6 +176,17 @@ export default function MatchesPage() {
         hydratedProfile = updated as typeof profile;
       }
 
+      // Contacts : REVOKE bloque la lecture directe — passer par la RPC si authentifié
+      const { data: { session: authSession } } = await supabase.auth.getSession();
+      if (authSession?.user) {
+        const { data: contacts } = await supabase.rpc('get_my_contacts');
+        if (contacts?.[0]) {
+          const contactPatch = { email: contacts[0].email ?? '', discord: contacts[0].discord ?? '' };
+          setProfile(contactPatch);
+          hydratedProfile = { ...hydratedProfile, ...contactPatch };
+        }
+      }
+
       // Compter les demandes entrantes
       const { count } = await supabase
         .from('match_requests')
@@ -220,6 +247,13 @@ export default function MatchesPage() {
     const senderId = profile.profileId;
     if (!senderId) return;
 
+    // Bloquer les utilisateurs non authentifiés (policy match_requests TO authenticated)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setSituation({ type: 'login_required', name: matchName });
+      return;
+    }
+
     // 1. Enregistrer en base (anti-spam via contrainte UNIQUE)
     await supabase.from('match_requests').upsert(
       { sender_id: senderId, receiver_id: matchId },
@@ -229,21 +263,19 @@ export default function MatchesPage() {
     // 2. Mettre à jour l'état local (pas de localStorage)
     setSentInvitations((prev) => ({ ...prev, [matchId]: true }));
 
-    // 3. Récupérer le Discord uniquement (jamais afficher le mail)
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('discord, email')
-      .eq('id', matchId)
-      .single();
+    // 3. Récupérer le contact via RPC sécurisée (email/discord jamais lus directement)
+    const { data: contactRows, error } = await supabase
+      .rpc('get_match_contact', { target_profile_id: matchId });
 
-    if (error || !data) {
+    const contact = contactRows?.[0];
+    if (error || !contact) {
       setSituation({ type: 'no_contact', name: matchName });
       return;
     }
 
-    if (data.discord) {
-      setSituation({ type: 'discord', discord: data.discord, name: matchName });
-    } else if (data.email) {
+    if (contact.discord) {
+      setSituation({ type: 'discord', discord: contact.discord, name: matchName });
+    } else if (contact.has_email) {
       setSituation({ type: 'mail_only', name: matchName });
       await supabase.functions.invoke('notify-match', {
         body: { sender_id: senderId, receiver_id: matchId },

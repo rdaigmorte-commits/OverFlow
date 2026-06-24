@@ -66,9 +66,14 @@ export default function ProfileEditPage() {
           availability: Array.isArray(data.availability) ? data.availability : [],
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
-          email:        data.email ?? '',
-          discord:      data.discord ?? '',
+          email:        '',
+          discord:      '',
         });
+        // Contacts : REVOKE bloque la lecture directe — passer par la RPC
+        const { data: contacts } = await supabase.rpc('get_my_contacts');
+        if (contacts?.[0]) {
+          setProfile({ email: contacts[0].email ?? '', discord: contacts[0].discord ?? '' });
+        }
       }
 
       // Charge aussi la liste de tous les jeux en DB pour les suggestions

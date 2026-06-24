@@ -29,39 +29,24 @@ export default function AuthCallbackPage() {
         setProfile({ ...profile, email: userEmail });
       }
 
-      // Si un autre profil existait déjà avec cet email, on bascule dessus
+      // Si un autre profil existait déjà avec cet email, on bascule dessus.
+      // SELECT email est révoqué → passe par RPC get_own_profile_id()
       if (userEmail) {
-        const { data } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('email', userEmail)
-          .single();
-        if (data?.id && data.id !== profile.profileId) {
-          setProfile({ profileId: data.id });
+        const { data: ownId } = await supabase.rpc('get_own_profile_id');
+        if (ownId && ownId !== profile.profileId) {
+          setProfile({ profileId: ownId });
         }
       }
 
       router.replace('/matches');
     } else {
       // Cas reconnexion : localStorage vide (nouvel onglet / autre appareil)
-      // On cherche le profil en base par email pour le restaurer dans le store
+      // link_and_get_profile_by_auth() lie user_id + retourne le profil (sans email/discord)
       if (userEmail) {
-        // 1. Lier le user_id Auth au profil existant
-        await supabase
-          .from('profiles')
-          .update({ user_id: userId })
-          .eq('email', userEmail)
-          .is('user_id', null);
-
-        // 2. Récupérer le profil complet depuis Supabase
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('email', userEmail)
-          .single();
+        const { data: rows } = await supabase.rpc('link_and_get_profile_by_auth');
+        const existingProfile = rows?.[0];
 
         if (existingProfile) {
-          // 3. Recharger le store avec les données récupérées → localStorage se remplit automatiquement
           setProfile({
             profileId:    existingProfile.id,
             name:         existingProfile.name ?? '',
@@ -74,8 +59,8 @@ export default function AuthCallbackPage() {
             availability: Array.isArray(existingProfile.availability) ? existingProfile.availability : [],
             openIRL:      existingProfile.open_irl ?? false,
             consent:      existingProfile.consent ?? false,
-            email:        existingProfile.email ?? '',
-            discord:      existingProfile.discord ?? '',
+            email:        userEmail,     // vient de auth.user.email (source fiable)
+            discord:      '',            // chargé via get_my_contacts() sur /matches
           });
           router.replace('/matches');
           return;
