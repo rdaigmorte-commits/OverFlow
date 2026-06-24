@@ -3,52 +3,6 @@ import { useEffect, useState } from 'react';
 import { Card } from '@/components/Card';
 import { supabase } from '@/lib/supabase';
 
-// ─── Password Guard ───────────────────────────────────────────────────────────
-// Mot de passe défini dans .env.local : NEXT_PUBLIC_ADMIN_PASSWORD
-// Simple et sans dépendance Supabase Auth — suffisant pour un POC.
-
-function PasswordGate({ onUnlock }: { onUnlock: () => void }) {
-  const [input, setInput] = useState('');
-  const [error, setError] = useState(false);
-
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const pwd = process.env.NEXT_PUBLIC_ADMIN_PASSWORD;
-    if (input === pwd) {
-      sessionStorage.setItem('admin_unlocked', '1');
-      onUnlock();
-    } else {
-      setError(true);
-      setInput('');
-    }
-  }
-
-  return (
-    <main className="flex min-h-screen items-center justify-center px-6">
-      <div className="w-full max-w-sm flex flex-col gap-6">
-        <div>
-          <h1 className="text-3xl font-black">🔒 Admin access</h1>
-          <p className="mt-2 text-sm text-muted">Enter the admin password to continue.</p>
-        </div>
-        <form onSubmit={handleSubmit} className="flex flex-col gap-3">
-          <input
-            type="password"
-            autoFocus
-            className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-            placeholder="Password"
-            value={input}
-            onChange={(e) => { setInput(e.target.value); setError(false); }}
-          />
-          {error && <p className="text-sm text-red-400">Wrong password. Try again.</p>}
-          <button type="submit" className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">
-            Unlock →
-          </button>
-        </form>
-      </div>
-    </main>
-  );
-}
-
 // ─── Stat Components ──────────────────────────────────────────────────────────
 
 function StatBar({ label, value, max }: { label: string; value: number; max: number }) {
@@ -142,7 +96,7 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
 
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
-function AdminDashboard() {
+export default function AdminPage() {
   const [globals, setGlobals] = useState({ total_profiles: 0, open_irl: 0, consent: 0, new_this_week: 0 });
   const [games, setGames] = useState<any[]>([]);
   const [platforms, setPlatforms] = useState<any[]>([]);
@@ -153,11 +107,18 @@ function AdminDashboard() {
   const [cities, setCities] = useState<any[]>([]);
   const [matchOps, setMatchOps] = useState<MatchOpportunities>({ strong: 0, good: 0, possible: 0 });
   const [loading, setLoading] = useState(true);
+  const [forbidden, setForbidden] = useState(false);
 
   useEffect(() => {
     async function fetchAll() {
-      const [g, gm, pl, st, la, av, ag, ci, mo] = await Promise.all([
-        supabase.rpc('get_global_stats'),
+      const [g] = await Promise.all([supabase.rpc('get_global_stats')]);
+      if (g.error?.code === 'insufficient_privilege' || g.error?.message?.includes('Forbidden')) {
+        setForbidden(true);
+        setLoading(false);
+        return;
+      }
+
+      const [gm, pl, st, la, av, ag, ci, mo] = await Promise.all([
         supabase.rpc('get_game_stats'),
         supabase.rpc('get_platform_stats'),
         supabase.rpc('get_style_stats'),
@@ -167,7 +128,8 @@ function AdminDashboard() {
         supabase.rpc('get_city_stats'),
         supabase.rpc('get_match_opportunities'),
       ]);
-      if (g.data) setGlobals(g.data);
+
+      if (g.data)  setGlobals(g.data);
       if (gm.data) setGames(gm.data);
       if (pl.data) setPlatforms(pl.data);
       if (st.data) setStyles(st.data);
@@ -180,6 +142,18 @@ function AdminDashboard() {
     }
     fetchAll();
   }, []);
+
+  if (forbidden) {
+    return (
+      <main className="flex min-h-screen items-center justify-center px-6">
+        <div className="text-center">
+          <div className="text-4xl mb-4">🔒</div>
+          <h2 className="text-text font-semibold text-xl mb-2">Access denied</h2>
+          <p className="text-muted text-sm">Admin access requires an authenticated admin session.</p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="mx-auto min-h-screen max-w-6xl px-6 py-10">
@@ -211,23 +185,4 @@ function AdminDashboard() {
       </div>
     </main>
   );
-}
-
-// ─── Page Entry Point ─────────────────────────────────────────────────────────
-
-export default function AdminPage() {
-  const [unlocked, setUnlocked] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    // Vérifie si déjà déverrouillé dans cette session navigateur
-    if (sessionStorage.getItem('admin_unlocked') === '1') {
-      setUnlocked(true);
-    } else {
-      setUnlocked(false);
-    }
-  }, []);
-
-  if (unlocked === null) return null; // flash prévention
-  if (!unlocked) return <PasswordGate onUnlock={() => setUnlocked(true)} />;
-  return <AdminDashboard />;
 }
