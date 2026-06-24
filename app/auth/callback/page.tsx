@@ -20,18 +20,32 @@ export default function AuthCallbackPage() {
     const hasProfile = Boolean(profile?.profileId);
 
     if (hasProfile) {
-      // Cas "Add email" : profil déjà en localStorage, on lie l'email + user_id
-      if (userEmail) {
-        await supabase
-          .from('profiles')
-          .update({ email: userEmail, user_id: userId })
-          .eq('id', profile.profileId);
-        setProfile({ ...profile, email: userEmail });
-      }
+      if (userEmail && profile.profileId) {
+        // Liaison par ID de profil via SECURITY DEFINER — pas de dépendance sur
+        // profile.email (retiré de l'onboarding par SEC-02).
+        const { data: rows } = await supabase.rpc('link_profile_to_auth', {
+          profile_id: profile.profileId,
+        });
+        const linked = rows?.[0];
+        if (linked) {
+          setProfile({
+            profileId:    linked.id,
+            name:         linked.name ?? '',
+            age:          linked.age ?? '',
+            city:         linked.city ?? '',
+            language:     Array.isArray(linked.language)     ? linked.language     : [],
+            platform:     Array.isArray(linked.platform)     ? linked.platform     : [],
+            games:        Array.isArray(linked.games)        ? linked.games        : [],
+            style:        Array.isArray(linked.style)        ? linked.style        : [],
+            availability: Array.isArray(linked.availability) ? linked.availability : [],
+            openIRL:      linked.open_irl ?? false,
+            consent:      linked.consent  ?? false,
+            email:        userEmail,
+            discord:      '',
+          });
+        }
 
-      // Si un autre profil existait déjà avec cet email, on bascule dessus.
-      // SELECT email est révoqué → passe par RPC get_own_profile_id()
-      if (userEmail) {
+        // Vérifier si un autre profil appartient déjà à ce compte (cas "Switch profile")
         const { data: ownId } = await supabase.rpc('get_own_profile_id');
         if (ownId && ownId !== profile.profileId) {
           setProfile({ profileId: ownId });
