@@ -162,10 +162,8 @@ export default function OnboardingPage() {
     if (currentStep !== 4) return;
     async function fetchCompatible() {
       if (profile.games.length === 0) { setPreviewMatches([]); setCompatCount(0); return; }
-      const { data } = await supabase
-        .from('profiles')
-        .select('id, name, games')
-        .neq('id', profile.profileId ?? '');
+      const baseQuery = supabase.from('profiles').select('id, name, games');
+      const { data } = await (profile.profileId ? baseQuery.neq('id', profile.profileId) : baseQuery);
       if (!data) { setCompatCount(0); return; }
       const matches = data.filter((p) => {
         const pGames = Array.isArray(p.games) ? p.games : [];

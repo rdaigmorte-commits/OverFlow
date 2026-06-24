@@ -154,14 +154,16 @@ export default function MatchesPage() {
 
       let hydratedProfile = profile;
 
+      // select=* interdit après SEC-02 (REVOKE table-level SELECT) — utiliser les champs publics
       const { data: me, error: meError } = await supabase
         .from('profiles')
-        .select('*')
+        .select(PUBLIC_PROFILE_FIELDS)
         .eq('id', profileId)
         .single();
 
       if (!meError && me) {
         const updated = {
+          ...profile,  // preserve email, discord, consent depuis le store (chargés séparément)
           profileId:    me.id,
           name:         me.name ?? '',
           age:          me.age ?? '',
@@ -172,9 +174,6 @@ export default function MatchesPage() {
           style:        normalizeArray(me.style),
           availability: Array.isArray(me.availability) ? me.availability : [],
           openIRL:      me.open_irl ?? false,
-          consent:      me.consent ?? false,
-          email:        me.email ?? '',
-          discord:      me.discord ?? '',
         };
         setProfile(updated);
         hydratedProfile = updated as typeof profile;

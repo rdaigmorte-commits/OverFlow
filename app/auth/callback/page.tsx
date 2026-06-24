@@ -17,14 +17,17 @@ export default function AuthCallbackPage() {
     handledRef.current = true;
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    const hasProfile = Boolean(profile?.profileId);
+    // Lire l'état courant du store (bypass la closure stale du premier render SSR
+    // où localStorage n'est pas disponible côté serveur → profileId = null).
+    const currentProfile = useOverflowStore.getState().profile;
+    const hasProfile = Boolean(currentProfile?.profileId);
 
     if (hasProfile) {
-      if (userEmail && profile.profileId) {
+      if (userEmail && currentProfile.profileId) {
         // Liaison par ID de profil via SECURITY DEFINER — pas de dépendance sur
         // profile.email (retiré de l'onboarding par SEC-02).
         const { data: rows } = await supabase.rpc('link_profile_to_auth', {
-          profile_id: profile.profileId,
+          profile_id: currentProfile.profileId,
         });
         const linked = rows?.[0];
         if (linked) {
@@ -47,7 +50,7 @@ export default function AuthCallbackPage() {
 
         // Vérifier si un autre profil appartient déjà à ce compte (cas "Switch profile")
         const { data: ownId } = await supabase.rpc('get_own_profile_id');
-        if (ownId && ownId !== profile.profileId) {
+        if (ownId && ownId !== currentProfile.profileId) {
           setProfile({ profileId: ownId });
         }
       }
