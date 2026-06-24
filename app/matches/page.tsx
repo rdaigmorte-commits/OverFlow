@@ -304,6 +304,7 @@ export default function MatchesPage() {
       setSituation({ type: 'mail_only', name: matchName });
       await supabase.functions.invoke('notify-match', {
         body: { sender_id: senderId, receiver_id: matchId },
+        headers: { Authorization: `Bearer ${session.access_token}` },
       });
     } else {
       setSituation({ type: 'no_contact', name: matchName });
