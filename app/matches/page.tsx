@@ -141,7 +141,11 @@ export default function MatchesPage() {
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
-  const [inboundCount, setInboundCount] = useState(0);
+  const [inboundRequests, setInboundRequests] = useState<{
+    id: string;
+    sender_id: string;
+    sender: { id: string; name: string; games: string[] } | null;
+  }[]>([]);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -187,12 +191,13 @@ export default function MatchesPage() {
         }
       }
 
-      // Compter les demandes entrantes
-      const { count } = await supabase
+      // Charger les demandes reçues (pending) avec le profil de l'émetteur
+      const { data: inboundData } = await supabase
         .from('match_requests')
-        .select('id', { count: 'exact', head: true })
-        .eq('receiver_id', profileId);
-      setInboundCount(count ?? 0);
+        .select('id, sender_id, sender:profiles!sender_id(id, name, games)')
+        .eq('receiver_id', profileId)
+        .eq('status', 'pending');
+      setInboundRequests((inboundData ?? []) as typeof inboundRequests);
 
       // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
       const { data: sentData } = await supabase
@@ -235,6 +240,26 @@ export default function MatchesPage() {
     fetchMatches();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile.profileId, retryCount]);
+
+  async function handleAcceptRequest(requestId: string) {
+    const { error } = await supabase
+      .from('match_requests')
+      .update({ status: 'accepted' })
+      .eq('id', requestId);
+    if (!error) {
+      setInboundRequests((prev) => prev.filter((r) => r.id !== requestId));
+    }
+  }
+
+  async function handleDeclineRequest(requestId: string) {
+    const { error } = await supabase
+      .from('match_requests')
+      .update({ status: 'declined' })
+      .eq('id', requestId);
+    if (!error) {
+      setInboundRequests((prev) => prev.filter((r) => r.id !== requestId));
+    }
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -337,26 +362,48 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Badge inbound */}
-      {!loading && !hasContact && inboundCount > 0 && (
-        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent/40 bg-accent/5 px-5 py-4">
-          <div className="flex items-start gap-3">
-            <span className="text-lg leading-none mt-0.5">🎮</span>
-            <div>
-              <p className="text-sm font-medium text-text">
-                {inboundCount} player{inboundCount > 1 ? 's' : ''} want{inboundCount === 1 ? 's' : ''} to play with you
-              </p>
-              <p className="mt-1 text-xs text-muted">
-                Add your Discord or email so they can reach you.
-              </p>
+      {/* Demandes reçues */}
+      {!loading && inboundRequests.length > 0 && (
+        <div className="mb-6 flex flex-col gap-3">
+          <p className="text-sm font-semibold text-text">
+            🎮 {inboundRequests.length} player{inboundRequests.length > 1 ? 's' : ''} want{inboundRequests.length === 1 ? 's' : ''} to play with you
+          </p>
+          {inboundRequests.map((req) => (
+            <div
+              key={req.id}
+              className="flex items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/5 px-5 py-4"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
+                <p className="text-xs text-muted mt-0.5 truncate">
+                  {(req.sender?.games ?? []).slice(0, 3).join(', ')}
+                </p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <button
+                  onClick={() => handleAcceptRequest(req.id)}
+                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
+                >
+                  Accept
+                </button>
+                <button
+                  onClick={() => handleDeclineRequest(req.id)}
+                  className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-panel2 transition"
+                >
+                  Decline
+                </button>
+              </div>
             </div>
-          </div>
-          <Link
-            href="/profile/edit"
-            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
-          >
-            Add contact
-          </Link>
+          ))}
+          {!hasContact && (
+            <p className="text-xs text-muted px-1">
+              Add your Discord in{' '}
+              <Link href="/profile/edit" className="text-accent underline underline-offset-2 hover:opacity-80 transition">
+                your profile
+              </Link>
+              {' '}so players can reach you after you accept.
+            </p>
+          )}
         </div>
       )}
 

@@ -69,6 +69,7 @@ export default function OnboardingPage() {
   const [loading, setLoading]           = useState(false);
   const [hydrating, setHydrating]       = useState(true);
   const [error, setError]               = useState<string | null>(null);
+  const [consentGiven, setConsentGiven] = useState(false);
   const [gameCounts, setGameCounts]     = useState<GameCount>({});
   const [countsLoaded, setCountsLoaded] = useState(false);
   const [compatCount, setCompatCount]   = useState<number | null>(null);
@@ -209,7 +210,7 @@ export default function OnboardingPage() {
       style:        profile.style,
       availability: profile.availability,
       open_irl:     profile.openIRL,
-      consent:      true,
+      consent:      consentGiven,
     };
     let data: { id: string } | null = null;
     let dbError: { message?: string; code?: string } | null = null;
@@ -228,7 +229,7 @@ export default function OnboardingPage() {
     }
     setLoading(false);
     if (dbError || !data) { setError('Something went wrong. Please try again.'); return false; }
-    setProfile({ profileId: data.id, consent: true });
+    setProfile({ profileId: data.id, consent: consentGiven });
     return true;
   }
 
@@ -253,6 +254,10 @@ export default function OnboardingPage() {
   }
 
   async function handleSave() {
+    if (!consentGiven) {
+      setError('Please accept the contact sharing agreement to continue.');
+      return;
+    }
     const ok = await saveProfile();
     if (ok) router.push('/matches');
   }
@@ -519,6 +524,23 @@ export default function OnboardingPage() {
               Save your profile to see all your matches and connect with compatible players.
             </p>
           </Card>
+
+          {/* Consentement explicite — exigence RGPD */}
+          <div className="rounded-xl border border-border bg-panel p-5">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={consentGiven}
+                onChange={(e) => { setConsentGiven(e.target.checked); setError(null); }}
+                className="mt-0.5 accent-[var(--accent)]"
+              />
+              <span className="text-sm text-muted leading-relaxed">
+                I agree that OverFlow may share my Discord or email with players whose play request I&apos;ve accepted.{' '}
+                <span className="text-text">Your contact is only shared after you accept — never automatically.</span>
+              </span>
+            </label>
+          </div>
+
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex justify-between">
             <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>

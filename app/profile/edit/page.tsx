@@ -152,7 +152,7 @@ export default function ProfileEditPage() {
       style:        profile.style,
       availability: profile.availability,
       open_irl:     profile.openIRL,
-      consent:      true,
+      consent:      profile.consent,
       email:        profile.email || null,
       discord:      profile.discord || null,
     };
@@ -392,6 +392,20 @@ export default function ProfileEditPage() {
               onChange={(e) => setProfile({ discord: e.target.value })}
             />
           </div>
+
+          {/* Consentement au partage de contact */}
+          <label className="flex items-start gap-3 cursor-pointer pt-1">
+            <input
+              type="checkbox"
+              checked={profile.consent}
+              onChange={(e) => setProfile({ consent: e.target.checked })}
+              className="mt-0.5 accent-[var(--accent)]"
+            />
+            <span className="text-sm text-muted leading-relaxed">
+              I agree that OverFlow may share my Discord or email with players whose play request I&apos;ve accepted.{' '}
+              <span className="text-text">Only shared after you accept — never automatically.</span>
+            </span>
+          </label>
         </section>
 
         {error && <p className="text-sm text-red-400 -mt-4">{error}</p>}
