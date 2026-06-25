@@ -21,12 +21,12 @@ const PLATFORMS = [
   { label: 'Mobile',      emoji: '📱' },
 ];
 const LANGS = [
-  { label: 'English', emoji: '🇬🇧' },
-  { label: 'Dutch',   emoji: '🇳🇱' },
-  { label: 'French',  emoji: '🇫🇷' },
-  { label: 'Spanish', emoji: '🇪🇸' },
-  { label: 'German',  emoji: '🇩🇪' },
-  { label: 'Italian', emoji: '🇮🇹' },
+  { label: 'English', badge: 'EN' },
+  { label: 'Dutch',   badge: 'NL' },
+  { label: 'French',  badge: 'FR' },
+  { label: 'Spanish', badge: 'ES' },
+  { label: 'German',  badge: 'DE' },
+  { label: 'Italian', badge: 'IT' },
 ];
 const SLOTS = [
   { label: 'Weekday evenings', emoji: '🌙' },
@@ -323,7 +323,7 @@ export default function OnboardingPage() {
       games:        profile.games,
       style:        profile.style,
       availability: profile.availability,
-      open_irl:     profile.openIRL,
+      open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      consentGiven,
       looking_for:  profile.lookingFor,
     };
@@ -623,16 +623,6 @@ export default function OnboardingPage() {
                   ))}
                 </div>
               </div>
-              {/* IRL */}
-              <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={profile.openIRL}
-                  onChange={(e) => setProfile({ openIRL: e.target.checked })}
-                  className="accent-[var(--accent)]"
-                />
-                Open to meeting up with local players
-              </label>
             </Card>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <div className="flex justify-between">
@@ -668,7 +658,7 @@ export default function OnboardingPage() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {LANGS.map((l) => (
-                    <Chip key={l.label} label={`${l.emoji} ${l.label}`} selected={profile.language.includes(l.label)} onClick={() => toggleMulti('language', l.label)} />
+                    <Chip key={l.label} label={`${l.badge} ${l.label}`} selected={profile.language.includes(l.label)} onClick={() => toggleMulti('language', l.label)} />
                   ))}
                 </div>
               </div>
