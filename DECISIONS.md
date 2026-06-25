@@ -4,6 +4,14 @@
 
 ---
 
+## 2026-06-25 (session 2)
+
+- Badges texte (EN, NL, FR…) à la place des emojis drapeaux dans les chips langue · Les emojis drapeaux ne s'affichent pas sur Windows — cible principale du POC Utrecht.
+- `open_irl` dérivé depuis `looking_for` (valeurs store : `'irl'` / `'both'`) · Supprime la redondance UX avec la question "You're here to…" au step 3. La colonne reste en base.
+- Règle "push après chaque livraison US" ajoutée à CLAUDE.md · L'agent PO lit le dépôt GitHub pour rédiger les US — il doit voir le code à jour.
+
+---
+
 ## 2026-06-18
 
 - Scinder US-SEC-04 (#48) en deux : SEC-05 (admin RPCs) + SEC-06 (gate UI) · SEC-06 est P2, déjà couvert par forbidden state côté client pour l'instant.

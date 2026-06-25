@@ -70,3 +70,6 @@ _(mis à jour à chaque « Fin de session »)_
   DATA-01 #52 (tracking funnel onboarding_events : start/complete/abandon), GEO-01 #70 (question binaire
   Utrecht step 1, badge accent MatchCard, slot IrlEventBlock), ONB-02 #71 (polish steps 2–5 : StyleCard,
   émojis, IRL checkbox déplacée, consentement). Hook notification son (Hand) configuré dans ~/.claude/settings.json.
+- 2026-06-25 (session 2) — US-ONB-04 #73 livrée : badges texte langues (EN/NL/FR…) à la place des
+  drapeaux emoji (non rendus Windows), checkbox open_irl supprimée du step 3, open_irl dérivé
+  automatiquement depuis looking_for dans saveProfile(). Règle push-après-US ajoutée à CLAUDE.md.
