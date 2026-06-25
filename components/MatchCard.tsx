@@ -70,7 +70,7 @@ export function MatchCard({
   const styles    = normalizeArray(style);
 
   return (
-    <div className={`rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
+    <div className={`card-hover rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
@@ -144,7 +144,7 @@ export function MatchCard({
         ) : (
           <button
             onClick={onRequestMatch}
-            className="w-full rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+            className="btn-primary-new w-full px-5 py-3 text-sm"
           >
             Let&apos;s play 🎮
           </button>

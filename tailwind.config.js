@@ -4,18 +4,20 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        bg: '#0a0a0a',
-        panel: '#121212',
-        panel2: '#181818',
-        text: '#f4f4f5',
-        muted: '#a1a1aa',
-        accent: '#ff7a00',
-        accent2: '#ff9f1a',
-        border: 'rgba(255,255,255,0.08)',
+        bg:      '#0d0f14',
+        panel:   '#161a23',
+        panel2:  '#1e2330',
+        text:    '#f0f2f7',
+        muted:   '#7a8299',
+        accent:  '#7c6ef9',
+        accent2: '#f97066',
+        accent3: '#34d399',
+        border:  'rgba(255,255,255,0.08)',
+        error:   '#f87171',
       },
       boxShadow: {
-        glow: '0 0 0 1px rgba(255,122,0,0.25), 0 0 30px rgba(255,122,0,0.10)',
-      }
+        glow: '0 0 0 1px rgba(124,110,249,0.25), 0 0 30px rgba(124,110,249,0.10)',
+      },
     },
   },
   plugins: [],

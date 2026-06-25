@@ -21,7 +21,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
   const styles    = toArray(style);
 
   return (
-    <div className="rounded-2xl border border-orange-500/50 bg-orange-500/5 overflow-hidden">
+    <div className="rounded-2xl border border-accent/30 bg-accent/5 overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
@@ -33,14 +33,14 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
           {openIRL && (
             <span className="rounded-full border border-green-500/40 bg-green-500/10 px-3 py-1 text-xs font-bold text-green-400">IRL ✓</span>
           )}
-          <span className="rounded-full border border-orange-500/40 bg-orange-500/15 px-3 py-1 text-xs font-bold text-orange-400">
+          <span className="rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
             👤 My profile
           </span>
         </div>
       </div>
 
       {/* Séparateur */}
-      <div className="border-t border-orange-500/20 mx-5" />
+      <div className="border-t border-accent/20 mx-5" />
 
       {/* Tags */}
       <div className="px-5 py-3 flex flex-wrap gap-2">
@@ -67,13 +67,13 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
       </div>
 
       {/* Séparateur */}
-      <div className="border-t border-orange-500/20 mx-5" />
+      <div className="border-t border-accent/20 mx-5" />
 
       {/* CTA Edit — pointe maintenant vers /profile/edit */}
       <div className="px-5 py-4">
         <Link
           href="/profile/edit"
-          className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-orange-500/60 hover:text-orange-400 transition"
+          className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-accent/60 hover:text-accent transition"
         >
           ✏️ Edit my profile
         </Link>

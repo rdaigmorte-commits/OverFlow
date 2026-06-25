@@ -1,7 +1,6 @@
 'use client';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
-import { Button } from '@/components/Button';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
@@ -43,6 +42,15 @@ const WHY_ITEMS = [
     desc: 'The goal is a session IRL. OverFlow is the bridge between online profiles and real play.',
     tag: 'IRL ready',
   },
+];
+
+const AVATAR_EMOJIS = ['🎮', '🕹️', '🃏', '⚔️', '🏆', '🎲', '🖥️'];
+const AVATAR_GRADIENTS = [
+  'linear-gradient(135deg,#667eea,#764ba2)',
+  'linear-gradient(135deg,#f97066,#f59e0b)',
+  'linear-gradient(135deg,#34d399,#059669)',
+  'linear-gradient(135deg,#60a5fa,#7c3aed)',
+  'linear-gradient(135deg,#fb7185,#e879f9)',
 ];
 
 interface Props {
@@ -151,7 +159,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
           </h1>
 
           {loadingProfile ? (
-            <div className="rounded-2xl border border-orange-500/50 bg-orange-500/5 p-5 flex flex-col gap-3">
+            <div className="rounded-2xl border border-accent/30 bg-accent/5 p-5 flex flex-col gap-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="h-4 w-full rounded bg-panel2 animate-pulse" />
               ))}
@@ -173,7 +181,9 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
           </p>
 
           <div>
-            <Link href="/matches"><Button>See my matches</Button></Link>
+            <Link href="/matches" className="btn-primary-new px-6 py-3 text-sm">
+              See my matches
+            </Link>
           </div>
         </section>
       </main>
@@ -186,21 +196,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
   return (
     <>
       <style>{`
-        :root { --of-green: #4ade80; --of-green-dim: rgba(74,222,128,0.12); }
-
-        .of-dots {
-          position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background-image: radial-gradient(circle, rgba(255,255,255,0.07) 1px, transparent 1px);
-          background-size: 28px 28px;
-          -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-          mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.4) 60%, transparent 100%);
-        }
-        .of-glow {
-          position: fixed; top: -20%; left: -10%; width: 65vw; height: 65vw;
-          border-radius: 50%;
-          background: radial-gradient(circle, rgba(255,122,0,0.055) 0%, rgba(255,122,0,0.01) 45%, transparent 70%);
-          filter: blur(60px); pointer-events: none; z-index: 0;
-        }
         @keyframes of-up {
           from { opacity: 0; transform: translateY(20px); }
           to   { opacity: 1; transform: translateY(0); }
@@ -218,7 +213,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
         }
         .of-sweep {
           display: inline-block;
-          background: linear-gradient(90deg, #ff7a00 30%, #ffcc88 50%, #ff7a00 70%);
+          background: linear-gradient(90deg, var(--accent) 30%, #b8affe 50%, var(--accent) 70%);
           background-size: 200% auto;
           -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
           animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
@@ -234,34 +229,34 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
         }
         .of-why.of-on { opacity: 1; transform: translateY(0); }
         @keyframes of-dot {
-          0%,100% { box-shadow: 0 0 0 0   rgba(74,222,128,0.7); }
-          50%      { box-shadow: 0 0 0 5px rgba(74,222,128,0);   }
+          0%,100% { box-shadow: 0 0 0 0   rgba(52,211,153,0.7); }
+          50%      { box-shadow: 0 0 0 5px rgba(52,211,153,0);   }
         }
-        .of-dot { background-color: var(--of-green); animation: of-dot 2s ease-in-out infinite; }
+        .of-dot { background-color: var(--accent3); animation: of-dot 2s ease-in-out infinite; }
         .of-tag {
           display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
           border-radius: 999px; font-size: 0.65rem; font-weight: 600;
           letter-spacing: 0.08em; text-transform: uppercase;
-          color: var(--of-green); background: var(--of-green-dim);
-          border: 1px solid rgba(74,222,128,0.2);
+          color: var(--accent3); background: rgba(52,211,153,0.12);
+          border: 1px solid rgba(52,211,153,0.2);
         }
-        .of-green { color: var(--of-green); }
-        .of-cta {
-          transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s cubic-bezier(0.16,1,0.3,1);
+        .of-dots {
+          position: fixed; inset: 0; z-index: 0; pointer-events: none;
+          background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+          background-size: 30px 30px;
+          -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.3) 55%, transparent 100%);
+          mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.3) 55%, transparent 100%);
         }
-        .of-cta:hover {
-          transform: scale(1.04) translateY(-1px);
-          box-shadow: 0 0 32px 6px rgba(255,122,0,0.25), 0 4px 16px rgba(0,0,0,0.4);
-        }
-        .of-cta:active { transform: scale(0.97); }
       `}</style>
 
       <div className="of-dots" aria-hidden="true" />
-      <div className="of-glow" aria-hidden="true" />
+      <div className="blob blob-1" aria-hidden="true" />
+      <div className="blob blob-2" aria-hidden="true" />
+      <div className="blob blob-3" aria-hidden="true" />
 
       <main
         className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10"
-        style={{ backgroundColor: '#0a0a0a', zIndex: 1 }}
+        style={{ backgroundColor: 'var(--bg)', zIndex: 1 }}
       >
         <header className="relative z-10 flex items-center justify-between py-2">
           <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
@@ -286,27 +281,54 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             </div>
 
             <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl`}>
-              Find your teammates.<br />
-              <span className={v ? 'of-sweep' : 'text-accent'}>Play together.</span>
+              Real people.<br />
+              <span className={v ? 'of-sweep' : 'text-accent'}>Real sessions.</span>
             </h1>
 
             <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
-              OverFlow connects gamers in Utrecht — same games, same schedule, real meetups.<br />
-              No feed, no algorithm. Just people who want to play.
+              OverFlow connects <strong className="text-text">gamers in Utrecht</strong> who actually want to meet up —
+              same games, same vibe, same city.<br />
+              No feed. No algorithm. Just <strong className="text-text">real humans</strong> who want to play.
             </p>
 
+            {/* Rangée d'avatars */}
+            <div className={`${v ? 'of-r2' : 'opacity-0'} mt-6 flex items-center`}>
+              <div className="flex">
+                {AVATAR_EMOJIS.slice(0, 5).map((emoji, i) => (
+                  <div
+                    key={i}
+                    className="w-9 h-9 rounded-full border-2 border-[var(--bg)] flex items-center justify-center text-lg -ml-2 first:ml-0 transition-transform hover:-translate-y-1"
+                    style={{ background: AVATAR_GRADIENTS[i], zIndex: 5 - i }}
+                  >
+                    {emoji}
+                  </div>
+                ))}
+                {playerCount !== null && playerCount > 5 && (
+                  <div className="w-9 h-9 rounded-full border-2 border-[var(--bg)] -ml-2 bg-panel flex items-center justify-center text-xs font-bold text-muted">
+                    +{playerCount - 5}
+                  </div>
+                )}
+              </div>
+              {playerCount !== null && playerCount > 0 && (
+                <div className="ml-4 text-sm text-muted leading-tight">
+                  <span className="block font-semibold text-text">{playerCount} joueurs actifs</span>
+                  ont rejoint ce mois-ci
+                </div>
+              )}
+            </div>
+
             <div className={`${v ? 'of-r3' : 'opacity-0'} mt-10 flex flex-wrap items-center gap-4`}>
-              <Link href="/onboarding">
-                <Button className="of-cta px-8 py-4 text-base font-bold">Find my teammates</Button>
+              <Link href="/onboarding" className="btn-primary-new px-8 py-4 text-base font-bold">
+                Find my teammates
               </Link>
             </div>
 
             <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted`}>
-              <span className="of-green font-semibold">✓ Free</span>
+              <span className="font-semibold text-accent3">✓ Free</span>
               <span className="text-border">·</span>
-              <span className="of-green font-semibold">✓ No account needed</span>
+              <span className="font-semibold text-accent3">✓ No account needed</span>
               <span className="text-border">·</span>
-              <span className="of-green font-semibold">✓ Utrecht</span>
+              <span className="font-semibold text-accent3">✓ Utrecht</span>
             </p>
 
             {topGames.length > 0 && (
@@ -337,7 +359,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             {WHY_ITEMS.map((item, i) => (
               <div
                 key={item.title}
-                className={`of-why${whyReveal.visible ? ' of-on' : ''}`}
+                className={`of-why card-hover rounded-2xl border border-border bg-panel p-6${whyReveal.visible ? ' of-on' : ''}`}
                 style={{ transitionDelay: `${i * 130}ms` }}
               >
                 <div className="mb-3 flex items-center gap-2">

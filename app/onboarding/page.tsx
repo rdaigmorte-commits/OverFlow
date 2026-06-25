@@ -24,8 +24,8 @@ function ProgressBar({ step }: { step: number }) {
       </div>
       <div className="h-1.5 w-full rounded-full bg-panel2">
         <div
-          className="h-1.5 rounded-full bg-accent transition-all duration-300"
-          style={{ width: `${(step / TOTAL_STEPS) * 100}%` }}
+          className="h-1.5 rounded-full transition-all duration-300"
+          style={{ width: `${(step / TOTAL_STEPS) * 100}%`, background: 'linear-gradient(90deg, var(--accent), #9b8bf8)' }}
         />
       </div>
     </div>
@@ -39,7 +39,7 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
       onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition ${
         selected
-          ? 'border-accent bg-accent text-black font-semibold'
+          ? 'border-accent bg-accent/20 text-accent font-semibold'
           : 'border-border bg-panel2 text-text hover:border-accent'
       }`}
     >
@@ -320,7 +320,7 @@ export default function OnboardingPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           <button
             onClick={handleNext}
-            className="self-end rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+            className="self-end btn-primary-new px-6 py-3 text-sm"
           >Next →</button>
         </div>
       )}
@@ -411,7 +411,7 @@ export default function OnboardingPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex justify-between">
             <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
-            <button onClick={handleNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Next →</button>
+            <button onClick={handleNext} className="btn-primary-new px-6 py-3 text-sm">Next →</button>
           </div>
         </div>
       )}
@@ -479,7 +479,7 @@ export default function OnboardingPage() {
           {error && <p className="text-sm text-red-400">{error}</p>}
           <div className="flex justify-between">
             <button onClick={goBack} className="rounded-xl border border-border px-5 py-3 text-sm font-semibold text-text hover:bg-panel2 transition">← Back</button>
-            <button onClick={handleNext} className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Next →</button>
+            <button onClick={handleNext} className="btn-primary-new px-6 py-3 text-sm">Next →</button>
           </div>
         </div>
       )}
@@ -545,7 +545,7 @@ export default function OnboardingPage() {
             <button
               onClick={handleSave}
               disabled={loading}
-              className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
+              className="btn-primary-new px-6 py-3 text-sm disabled:pointer-events-none"
             >
               {loading ? 'Saving…' : 'See my matches 🎮'}
             </button>
