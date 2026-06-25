@@ -1,5 +1,5 @@
 import React from 'react';
 
-export function Card({ children, className = '' }: React.PropsWithChildren<{ className?: string }>) {
-  return <div className={`rounded-2xl border border-border bg-panel shadow-glow ${className}`}>{children}</div>;
+export function Card({ children, className = '', style }: React.PropsWithChildren<{ className?: string; style?: React.CSSProperties }>) {
+  return <div className={`rounded-2xl border border-border bg-panel shadow-glow ${className}`} style={style}>{children}</div>;
 }

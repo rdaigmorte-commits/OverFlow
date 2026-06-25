@@ -7,14 +7,15 @@ type Profile = {
   age: string;
   city: string;
   language: string[];
-  platform: string[];   // multi-choix désormais
+  platform: string[];
   games: string[];
-  style: string[];      // multi-choix désormais
+  style: string[];
   availability: string[];
   openIRL: boolean;
   consent: boolean;
   email: string;
   discord: string;
+  lookingFor: 'online' | 'irl' | 'both';
 };
 
 type State = {
@@ -38,7 +39,7 @@ const initialProfile: Profile = {
   profileId: getSavedProfileId(),
   name: '',
   age: '',
-  city: 'Utrecht',
+  city: '',
   language: [],
   platform: [],
   games: [],
@@ -48,6 +49,7 @@ const initialProfile: Profile = {
   consent: false,
   email: '',
   discord: '',
+  lookingFor: 'both',
 };
 
 export const useOverflowStore = create<State>((set) => ({
