@@ -126,7 +126,10 @@ export default function OnboardingPage() {
   const [previewMatches, setPreviewMatches] = useState<{ id: string; name: string; games: string[] }[]>([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [direction, setDirection]       = useState<'next' | 'prev'>('next');
-  const suggestionsRef = useRef<HTMLDivElement>(null);
+  const suggestionsRef  = useRef<HTMLDivElement>(null);
+  const sessionId       = useRef<string>(crypto.randomUUID());
+  const completedRef    = useRef(false);
+  const currentStepRef  = useRef(currentStep);
 
   const allGamesSorted = Object.entries(gameCounts)
     .sort(([, a], [, b]) => b - a)
@@ -148,6 +151,19 @@ export default function OnboardingPage() {
     );
 
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
+
+  // ── Tracking funnel ─────────────────────────────────────────────────────
+  function track(step: number, action: 'start' | 'complete' | 'abandon') {
+    supabase.from('onboarding_events').insert({ session_id: sessionId.current, step, action });
+  }
+
+  useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+
+  useEffect(() => {
+    track(1, 'start');
+    return () => { if (!completedRef.current) track(currentStepRef.current, 'abandon'); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // ── Hydratation ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -300,6 +316,7 @@ export default function OnboardingPage() {
   function handleNext() {
     const err = validateStep();
     if (err) { setError(err); return; }
+    track(currentStep, 'complete');
     setDirection('next');
     goNext();
   }
@@ -315,7 +332,11 @@ export default function OnboardingPage() {
       return;
     }
     const ok = await saveProfile();
-    if (ok) router.push('/matches');
+    if (ok) {
+      track(5, 'complete');
+      completedRef.current = true;
+      router.push('/matches');
+    }
   }
 
   const backBtn = (
