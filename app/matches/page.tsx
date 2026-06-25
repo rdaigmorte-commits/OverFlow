@@ -196,7 +196,7 @@ export default function MatchesPage() {
         .select('id, sender_id, sender:profiles!sender_id(id, name, games)')
         .eq('receiver_id', profileId)
         .eq('status', 'pending');
-      setInboundRequests((inboundData ?? []) as typeof inboundRequests);
+      setInboundRequests((inboundData ?? []) as unknown as typeof inboundRequests);
 
       // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
       const { data: sentData } = await supabase
