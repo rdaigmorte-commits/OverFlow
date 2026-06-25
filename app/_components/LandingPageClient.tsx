@@ -89,7 +89,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
     setLoadingProfile(true);
     supabase
       .from('profiles')
-      .select('*')
+      .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent')
       .eq('id', profileId)
       .single()
       .then(({ data, error }) => {
@@ -106,8 +106,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             availability: Array.isArray(data.availability) ? data.availability : [],
             openIRL: data.open_irl ?? false,
             consent: data.consent ?? false,
-            email: data.email ?? '',
-            discord: data.discord ?? '',
           });
         }
         setLoadingProfile(false);
@@ -122,7 +120,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
       if (!session?.user) return;
       const { data } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent')
         .eq('user_id', session.user.id)
         .single();
       if (data) {
@@ -138,8 +136,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
           availability: Array.isArray(data.availability) ? data.availability : [],
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
-          email:        data.email ?? '',
-          discord:      data.discord ?? '',
         });
       }
     });
