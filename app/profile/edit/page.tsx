@@ -235,7 +235,7 @@ export default function ProfileEditPage() {
             </label>
             <input
               className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-              placeholder="e.g. Utrecht, Amsterdam, Paris…"
+              placeholder="Your city (optional)"
               value={profile.city}
               onChange={(e) => setProfile({ city: e.target.value })}
             />

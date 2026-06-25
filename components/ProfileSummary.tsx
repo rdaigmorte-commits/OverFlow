@@ -27,7 +27,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <div className="flex items-center gap-2">
           <span className="text-xl font-black text-text">{name || 'Your profile'}</span>
-          <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">{city || 'Utrecht'}</span>
+          <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">{city || 'your city'}</span>
         </div>
         <div className="flex items-center gap-2">
           {openIRL && (

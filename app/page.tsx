@@ -22,15 +22,13 @@ export default async function Page() {
 
     const { count } = await supabase
       .from('profiles')
-      .select('id', { count: 'exact', head: true })
-      .ilike('city', '%utrecht%');
+      .select('id', { count: 'exact', head: true });
 
     if (typeof count === 'number') playerCount = count;
 
     const { data } = await supabase
       .from('profiles')
-      .select('games')
-      .ilike('city', '%utrecht%');
+      .select('games');
 
     if (data && data.length > 0) {
       const freq: Record<string, number> = {};
