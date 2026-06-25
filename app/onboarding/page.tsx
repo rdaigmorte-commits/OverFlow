@@ -6,11 +6,34 @@ import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
 
-const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
-const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
-const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
-const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
-const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
+const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
+const STYLES = [
+  { label: 'Competitive', emoji: '🏆' },
+  { label: 'Co-op',       emoji: '🤝' },
+  { label: 'Casual',      emoji: '🛋️' },
+  { label: 'Roleplay',    emoji: '🎭' },
+];
+const PLATFORMS = [
+  { label: 'PC',          emoji: '🖥️' },
+  { label: 'PlayStation', emoji: '🎮' },
+  { label: 'Xbox',        emoji: '🎮' },
+  { label: 'Switch',      emoji: '🎮' },
+  { label: 'Mobile',      emoji: '📱' },
+];
+const LANGS = [
+  { label: 'English', emoji: '🇬🇧' },
+  { label: 'Dutch',   emoji: '🇳🇱' },
+  { label: 'French',  emoji: '🇫🇷' },
+  { label: 'Spanish', emoji: '🇪🇸' },
+  { label: 'German',  emoji: '🇩🇪' },
+  { label: 'Italian', emoji: '🇮🇹' },
+];
+const SLOTS = [
+  { label: 'Weekday evenings', emoji: '🌙' },
+  { label: 'Friday night',     emoji: '🎉' },
+  { label: 'Weekend day',      emoji: '☀️' },
+  { label: 'Weekend evening',  emoji: '🌆' },
+];
 const TOTAL_STEPS = 5;
 
 const STEP_LABELS = [
@@ -78,6 +101,23 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
         </span>
       )}
       {label}
+    </button>
+  );
+}
+
+function StyleCard({ emoji, label, selected, onClick }: { emoji: string; label: string; selected: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-5 transition ${
+        selected
+          ? 'border-accent bg-accent/10 text-accent'
+          : 'border-border bg-panel2 text-text hover:border-accent/50'
+      }`}
+    >
+      <span className="text-3xl">{emoji}</span>
+      <span className="text-sm font-semibold">{label}</span>
     </button>
   );
 }
@@ -571,12 +611,28 @@ export default function OnboardingPage() {
                 <h2 className="text-sm font-semibold text-text mb-3">
                   Your play style <span className="text-accent">*</span>
                 </h2>
-                <div className="flex flex-wrap gap-3">
+                <div className="grid grid-cols-2 gap-3">
                   {STYLES.map((s) => (
-                    <Chip key={s} label={s} selected={profile.style.includes(s)} onClick={() => toggleMulti('style', s)} />
+                    <StyleCard
+                      key={s.label}
+                      emoji={s.emoji}
+                      label={s.label}
+                      selected={profile.style.includes(s.label)}
+                      onClick={() => toggleMulti('style', s.label)}
+                    />
                   ))}
                 </div>
               </div>
+              {/* IRL */}
+              <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={profile.openIRL}
+                  onChange={(e) => setProfile({ openIRL: e.target.checked })}
+                  className="accent-[var(--accent)]"
+                />
+                Open to meeting up with local players
+              </label>
             </Card>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <div className="flex justify-between">
@@ -602,7 +658,7 @@ export default function OnboardingPage() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {PLATFORMS.map((p) => (
-                    <Chip key={p} label={p} selected={profile.platform.includes(p)} onClick={() => toggleMulti('platform', p)} />
+                    <Chip key={p.label} label={`${p.emoji} ${p.label}`} selected={profile.platform.includes(p.label)} onClick={() => toggleMulti('platform', p.label)} />
                   ))}
                 </div>
               </div>
@@ -612,7 +668,7 @@ export default function OnboardingPage() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {LANGS.map((l) => (
-                    <Chip key={l} label={l} selected={profile.language.includes(l)} onClick={() => toggleMulti('language', l)} />
+                    <Chip key={l.label} label={`${l.emoji} ${l.label}`} selected={profile.language.includes(l.label)} onClick={() => toggleMulti('language', l.label)} />
                   ))}
                 </div>
               </div>
@@ -622,19 +678,10 @@ export default function OnboardingPage() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {SLOTS.map((s) => (
-                    <Chip key={s} label={s} selected={profile.availability.includes(s)} onClick={() => toggleMulti('availability', s)} />
+                    <Chip key={s.label} label={`${s.emoji} ${s.label}`} selected={profile.availability.includes(s.label)} onClick={() => toggleMulti('availability', s.label)} />
                   ))}
                 </div>
               </div>
-              <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={profile.openIRL}
-                  onChange={(e) => setProfile({ openIRL: e.target.checked })}
-                  className="accent-[var(--accent)]"
-                />
-                Open to meeting up with local players
-              </label>
             </Card>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <div className="flex justify-between">
@@ -700,8 +747,7 @@ export default function OnboardingPage() {
                   className="mt-0.5 accent-[var(--accent)]"
                 />
                 <span className="text-sm text-muted leading-relaxed">
-                  I agree that OverFlow may share my Discord or email with players whose play request I&apos;ve accepted.{' '}
-                  <span className="text-text">Your contact is only shared after you accept — never automatically.</span>
+                  I agree to share my gaming profile (nickname, games, play style, availability) with other players on OverFlow for matching purposes.
                 </span>
               </label>
             </div>
