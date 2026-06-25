@@ -17,6 +17,8 @@ Tailwind · Supabase (SDK + SSR) · cible de déploiement : Vercel (non configur
 - **PM (humain)** — priorisation et stratégie. Arbitre, tranche les P0, décide du lancement.
 - **PO (Claude en chat)** — owner du backlog : structure, rédige, maintient les US, signale les dérives.
 - **DEV (toi, Claude Code)** — exécution dans le repo + tenue du backlog GitHub.
+  → Après chaque livraison d'US (commit), pusher immédiatement sur GitHub (`git push origin main`).
+  L'agent PO se base sur le dépôt GitHub pour rédiger les US — il doit toujours avoir la version à jour.
 
 ## Gouvernance — garde-fous permanents
 1. **Stop + rapport avant écriture.** Pour toute opération à effet de bord (modif de code,
