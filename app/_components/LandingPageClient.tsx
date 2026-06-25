@@ -115,6 +115,37 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mounted, profile.profileId]);
 
+  // Fallback : si localStorage vide mais session auth active, retrouve le profil via user_id
+  useEffect(() => {
+    if (!mounted || profile.profileId) return;
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session?.user) return;
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', session.user.id)
+        .single();
+      if (data) {
+        setProfile({
+          profileId:    data.id,
+          name:         data.name ?? '',
+          age:          data.age ?? '',
+          city:         data.city ?? 'Utrecht',
+          language:     Array.isArray(data.language) ? data.language : (data.language ? [data.language] : []),
+          platform:     normalizeArray(data.platform),
+          games:        Array.isArray(data.games) ? data.games : [],
+          style:        normalizeArray(data.style),
+          availability: Array.isArray(data.availability) ? data.availability : [],
+          openIRL:      data.open_irl ?? false,
+          consent:      data.consent ?? false,
+          email:        data.email ?? '',
+          discord:      data.discord ?? '',
+        });
+      }
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, profile.profileId]);
+
   async function handleSignOut() {
     setSigningOut(true);
     await supabase.auth.signOut();
