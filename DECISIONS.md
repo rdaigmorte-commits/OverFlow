@@ -13,6 +13,18 @@
 
 ---
 
+## 2026-06-25
+
+- Compteur landing (app/page.tsx) sans filtre `.ilike('city', '%utrecht%')` · App rendue city-agnostic (US-CITY-01) — affiche tous les joueurs, pas seulement Utrecht.
+- `looking_for TEXT DEFAULT 'both'` ajouté à la table profiles · Nouvelle donnée de qualification sans migration destructive pour profils existants.
+- Table `onboarding_events` (session_id UUID, step, action) pour tracking funnel · session_id non lié au profileId — minimisation RGPD. Appels fire-and-forget (non bloquants).
+- Question binaire "Are you based in Utrecht?" en step 1 plutôt que champ texte libre · Qualification intentionnelle du marché Utrecht pour le POC ; city reste stockée en TEXT libre.
+- `profile/edit/page.tsx` laissé hors scope du polish émojis (US-ONB-02 #71) · Dette assumée : inconsistance visuelle onboarding vs edit, à traiter dans une US ultérieure.
+- Checkbox open_irl déplacée du step 4 au step 3 (vibe) · Cohérence sémantique : l'intention IRL relève du profil joueur (vibe), pas du setup technique.
+- Consentement step 5 sans mention Discord/email · Ces données ne sont pas encore collectées à ce stade — consentement sur données inexistantes = non-conforme RGPD.
+
+---
+
 ## 2026-06-24
 
 - Utiliser `useOverflowStore.getState()` dans `handleSession` (auth/callback) plutôt que la closure React · Next.js App Router rend côté serveur avec `profileId = null` (pas de localStorage) ; le `useEffect` capture cette closure vide avant que Zustand ne rehydrate. `getState()` bypass le cycle de rendu et lit l'état mémoire synchrone.

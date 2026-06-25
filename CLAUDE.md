@@ -63,7 +63,8 @@ Quand le PM écrit **"Fin de session"**, exécute dans l'ordre :
 
 ## État courant
 _(mis à jour à chaque « Fin de session »)_
-- 2026-06-24 — US-SEC-03/04/05/07 validées. 3 régressions P0 corrigées : stale closure
-  auth/callback (mauvaise branche hasProfile), select=* bloqué post-SEC-02 sur /matches,
-  neq vide en onboarding. Script gen-magiclink.mjs ajouté (contournement Resend test mode).
-  Cahier de recette (CAS A + CAS B) prêt à dérouler — SERVICE_ROLE_KEY à poser dans .env.local.
+- 2026-06-25 — 5 US livrées et fermées : ONB-02 #68 (refonte conversationnelle onboarding 5 étapes,
+  looking_for, slides, animations), CITY-01 #69 (débranding Utrecht — 0 occurrence restante en .ts/.tsx),
+  DATA-01 #52 (tracking funnel onboarding_events : start/complete/abandon), GEO-01 #70 (question binaire
+  Utrecht step 1, badge accent MatchCard, slot IrlEventBlock), ONB-02 #71 (polish steps 2–5 : StyleCard,
+  émojis, IRL checkbox déplacée, consentement). Hook notification son (Hand) configuré dans ~/.claude/settings.json.
