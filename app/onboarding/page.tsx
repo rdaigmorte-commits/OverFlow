@@ -124,6 +124,7 @@ export default function OnboardingPage() {
   const [countsLoaded, setCountsLoaded] = useState(false);
   const [compatCount, setCompatCount]   = useState<number | null>(null);
   const [previewMatches, setPreviewMatches] = useState<{ id: string; name: string; games: string[] }[]>([]);
+  const [isUtrecht, setIsUtrecht]       = useState<boolean | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [direction, setDirection]       = useState<'next' | 'prev'>('next');
   const suggestionsRef  = useRef<HTMLDivElement>(null);
@@ -176,11 +177,13 @@ export default function OnboardingPage() {
         .eq('id', profileId)
         .single();
       if (!error && data) {
+        const city = data.city ?? '';
+        setIsUtrecht(city === 'Utrecht' ? true : city ? false : null);
         setProfile({
           profileId:    data.id,
           name:         data.name ?? '',
           age:          data.age ?? '',
-          city:         data.city ?? '',
+          city,
           language:     normalizeLanguage(data.language),
           platform:     normalizeArray(data.platform),
           games:        Array.isArray(data.games) ? data.games : [],
@@ -242,6 +245,12 @@ export default function OnboardingPage() {
     }
     fetchCompatible();
   }, [currentStep, profile.games, profile.profileId]);
+
+  // ── Geo choice ───────────────────────────────────────────────────────────
+  function handleGeoChoice(utrecht: boolean) {
+    setIsUtrecht(utrecht);
+    setProfile({ city: utrecht ? 'Utrecht' : '' });
+  }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
   const toggleMulti = (
@@ -381,12 +390,41 @@ export default function OnboardingPage() {
                 value={profile.age}
                 onChange={(e) => setProfile({ age: e.target.value })}
               />
-              <input
-                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-                placeholder="Your city (optional)"
-                value={profile.city}
-                onChange={(e) => setProfile({ city: e.target.value })}
-              />
+              <div className="flex flex-col gap-3">
+                <label className="text-sm font-medium text-text">Are you based in Utrecht?</label>
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => handleGeoChoice(true)}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-semibold transition ${
+                      isUtrecht === true
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-border bg-panel2 text-text hover:border-accent/50'
+                    }`}
+                  >
+                    Yes 📍
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleGeoChoice(false)}
+                    className={`flex-1 rounded-xl border-2 py-3 text-sm font-semibold transition ${
+                      isUtrecht === false
+                        ? 'border-accent bg-accent/10 text-accent'
+                        : 'border-border bg-panel2 text-text hover:border-accent/50'
+                    }`}
+                  >
+                    No, somewhere else
+                  </button>
+                </div>
+                {isUtrecht === false && (
+                  <input
+                    className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+                    placeholder="Your city (optional)"
+                    value={profile.city}
+                    onChange={(e) => setProfile({ city: e.target.value })}
+                  />
+                )}
+              </div>
             </Card>
             {error && <p className="text-sm text-red-400">{error}</p>}
             <button onClick={handleNext} className="self-end btn-primary-new px-6 py-3 text-sm">

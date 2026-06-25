@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Card } from '@/components/Card';
+import { IrlEventBlock } from '@/components/IrlEventBlock';
 import { MatchCard } from '@/components/MatchCard';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { supabase } from '@/lib/supabase';
@@ -548,6 +549,10 @@ export default function MatchesPage() {
               ))}
             </div>
           )}
+
+          {/* Slot IRL Utrecht — US-ACT-01 #53 */}
+          {displayProfile.city === 'Utrecht' && <IrlEventBlock />}
+
         </section>
 
       </div>

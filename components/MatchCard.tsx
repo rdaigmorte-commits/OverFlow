@@ -79,9 +79,9 @@ export function MatchCard({
           {(city || isIRLNearby || openIRL) && (
             <div className="flex items-center gap-2 flex-wrap">
               {city && (
-                <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">
-                  📍 {city}
-                </span>
+                city === 'Utrecht'
+                  ? <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">📍 Utrecht</span>
+                  : <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">📍 {city}</span>
               )}
               {isIRLNearby ? (
                 <span className="rounded-full border border-emerald-400/60 bg-emerald-400/15 px-2 py-0.5 text-xs font-bold text-emerald-400 animate-pulse">
