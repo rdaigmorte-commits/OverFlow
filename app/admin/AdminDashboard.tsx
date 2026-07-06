@@ -51,7 +51,7 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
   const tiers = [
     { label: 'Strong fit (80%+)', value: data.strong, color: 'bg-accent' },
     { label: 'Good fit (60–79%)', value: data.good, color: 'bg-accent2' },
-    { label: 'Possible (40–59%)', value: data.possible, color: 'bg-border' },
+    { label: 'Possible (40–59%)', value: data.possible, color: 'bg-muted' },
   ];
 
   return (
