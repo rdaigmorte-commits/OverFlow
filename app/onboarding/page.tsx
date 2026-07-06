@@ -432,7 +432,7 @@ export default function OnboardingPage() {
                 onChange={(e) => setProfile({ age: e.target.value })}
               />
               <div className="flex flex-col gap-3">
-                <label className="text-sm font-medium text-text">Are you based in Utrecht?</label>
+                <label className="text-sm font-medium text-text">Are you based in Utrecht? <span className="text-accent">*</span></label>
                 <div className="flex gap-3">
                   <button
                     type="button"
