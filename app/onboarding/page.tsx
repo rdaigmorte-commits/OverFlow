@@ -353,6 +353,7 @@ export default function OnboardingPage() {
 
   function validateStep(): string | null {
     if (currentStep === 1 && !profile.name.trim()) return 'Please enter your name or nickname.';
+    if (currentStep === 1 && isUtrecht === null) return 'Please tell us if you\'re based in Utrecht.';
     if (currentStep === 2 && profile.games.length === 0) return 'Please select at least one game.';
     if (currentStep === 3 && profile.style.length === 0) return 'Please select at least one play style.';
     if (currentStep === 4) {
