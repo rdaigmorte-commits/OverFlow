@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LANG_BADGE } from '@/lib/match';
+import { LANG_FLAG } from '@/lib/match';
 
 type Props = {
   name: string;
@@ -56,8 +56,9 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
           </span>
         ))}
         {language.map((l) => (
-          <span key={l} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            {LANG_BADGE[l] ?? l.slice(0, 2).toUpperCase()} {l}
+          <span key={l} className="inline-flex items-center gap-1.5 rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
+            <span className={`fi fi-${LANG_FLAG[l] ?? 'un'}`} />
+            {l}
           </span>
         ))}
         {styles.map((s) => (

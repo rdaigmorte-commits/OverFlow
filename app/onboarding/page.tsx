@@ -21,12 +21,12 @@ const PLATFORMS = [
   { label: 'Mobile',      emoji: '📱' },
 ];
 const LANGS = [
-  { label: 'English', badge: 'EN' },
-  { label: 'Dutch',   badge: 'NL' },
-  { label: 'French',  badge: 'FR' },
-  { label: 'Spanish', badge: 'ES' },
-  { label: 'German',  badge: 'DE' },
-  { label: 'Italian', badge: 'IT' },
+  { label: 'English', badge: 'EN', flag: 'gb' },
+  { label: 'Dutch',   badge: 'NL', flag: 'nl' },
+  { label: 'French',  badge: 'FR', flag: 'fr' },
+  { label: 'Spanish', badge: 'ES', flag: 'es' },
+  { label: 'German',  badge: 'DE', flag: 'de' },
+  { label: 'Italian', badge: 'IT', flag: 'it' },
 ];
 const SLOTS = [
   { label: 'Weekday evenings', emoji: '🌙' },
@@ -83,7 +83,7 @@ function ProgressBar({ step }: { step: number }) {
   );
 }
 
-function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: boolean; onClick: () => void }) {
   return (
     <button
       key={selected ? 'selected' : 'unselected'}
@@ -658,7 +658,12 @@ export default function OnboardingPage() {
                 </h2>
                 <div className="flex flex-wrap gap-3">
                   {LANGS.map((l) => (
-                    <Chip key={l.label} label={`${l.badge} ${l.label}`} selected={profile.language.includes(l.label)} onClick={() => toggleMulti('language', l.label)} />
+                    <Chip
+                      key={l.label}
+                      label={<><span className={`fi fi-${l.flag} mr-1.5`} />{l.label}</>}
+                      selected={profile.language.includes(l.label)}
+                      onClick={() => toggleMulti('language', l.label)}
+                    />
                   ))}
                 </div>
               </div>

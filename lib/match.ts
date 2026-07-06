@@ -3,6 +3,11 @@ export const LANG_BADGE: Record<string, string> = {
   Spanish: 'ES', German: 'DE', Italian: 'IT',
 };
 
+export const LANG_FLAG: Record<string, string> = {
+  English: 'gb', Dutch: 'nl', French: 'fr',
+  Spanish: 'es', German: 'de', Italian: 'it',
+};
+
 // Normalise language en string[] quelle que soit la source Supabase.
 export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
   if (!lang) return [];
