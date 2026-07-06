@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { LANG_BADGE } from '@/lib/match';
 
 type Props = {
   name: string;
@@ -56,7 +57,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
         ))}
         {language.map((l) => (
           <span key={l} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            🌍 {l}
+            {LANG_BADGE[l] ?? l.slice(0, 2).toUpperCase()} {l}
           </span>
         ))}
         {styles.map((s) => (

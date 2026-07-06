@@ -1,3 +1,8 @@
+export const LANG_BADGE: Record<string, string> = {
+  English: 'EN', Dutch: 'NL', French: 'FR',
+  Spanish: 'ES', German: 'DE', Italian: 'IT',
+};
+
 // Normalise language en string[] quelle que soit la source Supabase.
 export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
   if (!lang) return [];
