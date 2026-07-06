@@ -10,6 +10,96 @@ import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
 
+// ─── MatchesDisconnectedState ────────────────────────────────────────────────
+function MatchesDisconnectedState() {
+  const [email, setEmail] = useState('');
+  const [sent, setSent] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) {
+      setError(error.status === 429
+        ? 'Too many attempts. Please wait a few minutes and try again.'
+        : 'Something went wrong. Please try again.');
+    } else {
+      setSent(true);
+    }
+    setLoading(false);
+  }
+
+  return (
+    <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
+        <div className="text-5xl">🎮</div>
+        <div>
+          <h1 className="text-3xl font-black">Your matches are waiting</h1>
+          <p className="mt-3 text-muted max-w-md mx-auto">
+            Sign in with your email to access your profile and see who&apos;s ready to play.
+          </p>
+        </div>
+
+        {sent ? (
+          <div className="w-full max-w-sm rounded-2xl border border-border bg-panel p-8 text-center">
+            <div className="text-4xl mb-4">📬</div>
+            <h2 className="text-xl font-semibold text-text mb-2">Check your inbox!</h2>
+            <p className="text-sm text-muted">
+              We sent a magic link to <span className="font-medium text-text">{email}</span>.<br />
+              Click it to access your matches — no password needed.
+            </p>
+            <button
+              onClick={() => setSent(false)}
+              className="mt-6 text-xs text-muted underline hover:text-text"
+            >
+              Wrong email? Try again
+            </button>
+          </div>
+        ) : (
+          <form
+            onSubmit={handleSubmit}
+            className="w-full max-w-sm rounded-2xl border border-border bg-panel p-8 flex flex-col gap-4"
+          >
+            <div className="flex flex-col gap-2 text-left">
+              <label htmlFor="ml-email" className="text-sm font-medium text-text">Email address</label>
+              <input
+                id="ml-email"
+                type="email"
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="bg-panel2 border border-border rounded-lg px-4 py-3 text-text placeholder-muted text-sm focus:outline-none focus:border-accent transition"
+              />
+            </div>
+            {error && <p className="text-error text-sm text-left">{error}</p>}
+            <button
+              type="submit"
+              disabled={loading || !email}
+              className="btn-primary-new w-full py-3 text-sm disabled:pointer-events-none"
+            >
+              {loading ? 'Sending…' : 'Send magic link 🔗'}
+            </button>
+          </form>
+        )}
+
+        <p className="text-xs text-muted">
+          No account yet?{' '}
+          <Link href="/onboarding" className="text-accent underline underline-offset-2 hover:opacity-80">
+            Create your profile
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
+
 // ─── Types ───────────────────────────────────────────────────────────────────
 type ContactSituation =
   | { type: 'discord'; discord: string; name: string }
@@ -142,11 +232,20 @@ export default function MatchesPage() {
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [inboundRequests, setInboundRequests] = useState<{
     id: string;
     sender_id: string;
     sender: { id: string; name: string; games: string[] } | null;
   }[]>([]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session?.user);
+      setAuthChecked(true);
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchMatches() {
@@ -326,6 +425,16 @@ export default function MatchesPage() {
     : 0;
 
   if (hasNoProfile) {
+    if (!authChecked) {
+      return (
+        <main className="mx-auto min-h-screen max-w-5xl px-6 py-10 flex items-center justify-center">
+          <p className="text-muted text-sm">Loading…</p>
+        </main>
+      );
+    }
+    if (!isAuthenticated) {
+      return <MatchesDisconnectedState />;
+    }
     return (
       <main className="mx-auto min-h-screen max-w-5xl px-6 py-10">
         <div className="flex flex-col items-center justify-center min-h-[60vh] text-center gap-6">
