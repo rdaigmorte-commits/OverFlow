@@ -26,9 +26,9 @@ const BADGE_MIN_PLAYERS = 10;
 const WHY_ITEMS = [
   {
     icon: '📍',
-    title: 'Local only',
-    desc: 'Not a global feed. Every profile you see is someone you could actually meet.',
-    tag: 'Local',
+    title: 'Utrecht only',
+    desc: 'Not a global feed. Every profile you see is someone you could actually meet in Utrecht.',
+    tag: 'Utrecht',
   },
   {
     icon: '🎮',
@@ -297,23 +297,23 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               {showBadge ? (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
                   <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
-                  <span>{playerCount} local gamers</span>
+                  <span>{playerCount} gamers · Utrecht</span>
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
                   <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
-                  <span>Local matchmaking</span>
+                  <span>Utrecht · Local matchmaking</span>
                 </span>
               )}
             </div>
 
             <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl`}>
-              Real people.<br />
-              <span className={v ? 'of-sweep' : 'text-accent'}>Real sessions.</span>
+              Find your teammates.<br />
+              <span className={v ? 'of-sweep' : 'text-accent'}>Play together.</span>
             </h1>
 
             <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
-              OverFlow connects <strong className="text-text">gamers in your city</strong> who actually want to meet up —
+              OverFlow connects <strong className="text-text">gamers in Utrecht</strong> who actually want to meet up —
               same games, same vibe, same area.<br />
               No feed. No algorithm. Just <strong className="text-text">real humans</strong> who want to play.
             </p>
@@ -338,8 +338,8 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               </div>
               {playerCount !== null && playerCount > 0 && (
                 <div className="ml-4 text-sm text-muted leading-tight">
-                  <span className="block font-semibold text-text">{playerCount} joueurs actifs</span>
-                  ont rejoint ce mois-ci
+                  <span className="block font-semibold text-text">{playerCount} active players</span>
+                  already in Utrecht
                 </div>
               )}
             </div>
@@ -355,10 +355,10 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               <span className="text-border">·</span>
               <span className="font-semibold text-accent3">✓ No account needed</span>
               <span className="text-border">·</span>
-              <span className="font-semibold text-accent3">✓ Local</span>
+              <span className="font-semibold text-accent3">✓ Utrecht only</span>
             </p>
 
-            {topGames.length > 0 && (
+            {topGames.length >= 4 && (
               <p className={`${v ? 'of-r5' : 'opacity-0'} mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted`}>
                 <span className="text-border">Most played ·</span>
                 {topGames.map((g, i) => (
