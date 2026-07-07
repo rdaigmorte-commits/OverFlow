@@ -25,37 +25,47 @@ const BADGE_MIN_PLAYERS = 10;
 
 const WHY_ITEMS = [
   {
-    icon: '📍',
-    title: 'Utrecht only',
-    desc: 'Not a global feed. Every profile you see is someone you could actually meet in Utrecht.',
-    tag: 'Utrecht',
+    shape: 'circle' as const,
+    bg: '#F1ECFF', border: '#E2D8FF', iconBg: '#7C5CFF',
+    title: 'Local only',
+    desc: 'Not a global feed — everyone you see is someone you could actually meet.',
   },
   {
-    icon: '🎮',
-    title: 'Same games, same vibe',
+    shape: 'triangle' as const,
+    bg: '#FFF6DE', border: '#FBE9B8', iconBg: '#FFC83D',
+    title: 'Smart match',
     desc: 'Matched by games, playstyle, language and schedule — not just location.',
-    tag: 'Smart match',
   },
   {
-    icon: '🤝',
+    shape: 'square' as const,
+    bg: '#E7F8E4', border: '#C9F0C1', iconBg: '#46C93A',
     title: 'Real meetups',
-    desc: 'The goal is a session IRL. OverFlow is the bridge between online profiles and real play.',
-    tag: 'IRL ready',
+    desc: 'The goal is a session together — the bridge from online profiles to real play.',
   },
 ];
 
-const AVATAR_EMOJIS = ['🎮', '🕹️', '🃏', '⚔️', '🏆', '🎲', '🖥️'];
-const AVATAR_GRADIENTS = [
-  'linear-gradient(135deg,#667eea,#764ba2)',
-  'linear-gradient(135deg,#f97066,#f59e0b)',
-  'linear-gradient(135deg,#34d399,#059669)',
-  'linear-gradient(135deg,#60a5fa,#7c3aed)',
-  'linear-gradient(135deg,#fb7185,#e879f9)',
+const PATH_STEPS = [
+  { n: 1, bg: '#7C5CFF', shadow: '#5E42D6', title: 'Create your profile', desc: 'Games, style, schedule' },
+  { n: 2, bg: '#FFC83D', shadow: '#E0A016', title: 'Match on vibe', desc: 'Players in your city' },
+  { n: 3, bg: '#46C93A', shadow: '#2E9E24', title: 'Play together', desc: 'Online or IRL' },
+];
+
+const SQUAD_CARDS = [
+  { initials: 'JV', bg: 'linear-gradient(135deg,#7C5CFF,#9D86FF)', shadow: 'rgba(124,92,255,.6)', top: '20px', left: '40px', right: 'auto', bottom: 'auto', size: 152, font: 52, anim: 'of-bob 4s' },
+  { initials: 'MK', bg: 'linear-gradient(135deg,#FFC83D,#FFB01F)', shadow: 'rgba(255,176,31,.6)', top: '122px', left: 'auto', right: '24px', bottom: 'auto', size: 122, font: 42, anim: 'of-bob3 5s' },
+  { initials: 'TB', bg: 'linear-gradient(135deg,#38BDF8,#0EA5E9)', shadow: 'rgba(14,165,233,.6)', top: 'auto', left: '66px', right: 'auto', bottom: '4px', size: 106, font: 36, anim: 'of-bob2 4.4s' },
+];
+
+const MARQUEE_ITEMS = [
+  { label: 'MATCH', glyph: '○', color: '#FF6B6B' },
+  { label: 'PLAY', glyph: '✕', color: '#38BDF8' },
+  { label: 'MEET', glyph: '△', color: '#46C93A' },
+  { label: 'REPEAT', glyph: '□', color: '#7C5CFF' },
 ];
 
 interface Props {
   playerCount: number | null;
-  topGames: string[];
+  topGames: { name: string; count: number }[];
 }
 
 export function LandingPageClient({ playerCount, topGames }: Props) {
@@ -232,19 +242,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
         .of-r2 { animation: of-up 0.6s 0.30s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r3 { animation: of-up 0.6s 0.45s cubic-bezier(0.16,1,0.3,1) both; }
         .of-r4 { animation: of-up 0.6s 0.60s cubic-bezier(0.16,1,0.3,1) both; }
-        .of-r5 { animation: of-up 0.6s 0.72s cubic-bezier(0.16,1,0.3,1) both; }
-        .of-r6 { animation: of-up 0.6s 0.84s cubic-bezier(0.16,1,0.3,1) both; }
-        @keyframes of-sweep {
-          from { background-position: 200% center; }
-          to   { background-position:   0% center; }
-        }
-        .of-sweep {
-          display: inline-block;
-          background: linear-gradient(90deg, var(--accent) 30%, #b8affe 50%, var(--accent) 70%);
-          background-size: 200% auto;
-          -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
-          animation: of-sweep 2s 0.55s cubic-bezier(0.16,1,0.3,1) both;
-        }
         .of-why, .of-why * {
           background-image: none !important;
           -webkit-background-clip: unset !important; background-clip: unset !important;
@@ -256,148 +253,243 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
         }
         .of-why.of-on { opacity: 1; transform: translateY(0); }
         @keyframes of-dot {
-          0%,100% { box-shadow: 0 0 0 0   rgba(52,211,153,0.7); }
-          50%      { box-shadow: 0 0 0 5px rgba(52,211,153,0);   }
+          0%,100% { box-shadow: 0 0 0 0   rgba(70,201,58,0.7); }
+          50%      { box-shadow: 0 0 0 5px rgba(70,201,58,0);   }
         }
         .of-dot { background-color: var(--accent3); animation: of-dot 2s ease-in-out infinite; }
-        .of-tag {
-          display: inline-flex; align-items: center; gap: 5px; padding: 2px 8px;
-          border-radius: 999px; font-size: 0.65rem; font-weight: 600;
-          letter-spacing: 0.08em; text-transform: uppercase;
-          color: var(--accent3); background: rgba(52,211,153,0.12);
-          border: 1px solid rgba(52,211,153,0.2);
-        }
         .of-dots {
           position: fixed; inset: 0; z-index: 0; pointer-events: none;
-          background-image: radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px);
+          background-image: radial-gradient(circle, rgba(27,27,35,0.06) 1px, transparent 1px);
           background-size: 30px 30px;
           -webkit-mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.3) 55%, transparent 100%);
           mask-image: linear-gradient(to bottom, black 0%, rgba(0,0,0,0.3) 55%, transparent 100%);
         }
+        @keyframes of-bob  { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-14px); } }
+        @keyframes of-bob2 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+        @keyframes of-bob3 { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+        @keyframes of-wob  { 0%,100% { transform: rotate(0deg); } 50% { transform: rotate(12deg); } }
+        @keyframes of-ping { 0% { box-shadow: 0 0 0 0 rgba(255,107,107,.5); } 100% { box-shadow: 0 0 0 14px rgba(255,107,107,0); } }
+        .of-shape { position: absolute; pointer-events: none; }
+        @keyframes of-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .of-marquee-track { display: inline-flex; animation: of-marquee 22s linear infinite; white-space: nowrap; }
+        @keyframes of-dash { from { background-position: 0 0; } to { background-position: 40px 0; } }
+        .of-path-line {
+          background-image: radial-gradient(circle, #C9C1B0 2px, transparent 2px);
+          background-size: 20px 6px; background-repeat: repeat-x;
+          animation: of-dash 1.2s linear infinite;
+        }
+        @keyframes of-walk { from { left: 8%; } to { left: 88%; } }
+        .of-path-walker { animation: of-walk 6s ease-in-out infinite alternate; }
+        .of-lift { transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s ease; }
+        .of-lift:hover { transform: translateY(-4px); }
       `}</style>
 
       <div className="of-dots" aria-hidden="true" />
-      <div className="blob blob-1" aria-hidden="true" />
-      <div className="blob blob-2" aria-hidden="true" />
-      <div className="blob blob-3" aria-hidden="true" />
 
       <main
         className="relative mx-auto flex min-h-screen w-full max-w-6xl flex-col px-6 py-10"
-        style={{ backgroundColor: 'var(--bg)', zIndex: 1 }}
+        style={{ backgroundColor: '#FDFBF6', zIndex: 1 }}
       >
+        {/* ── NAV ─────────────────────────────────────────────────── */}
         <header className="relative z-10 flex items-center justify-between py-2">
-          <div className="text-xl font-bold tracking-[0.24em] text-accent">OVERFLOW</div>
-          <div className="text-sm text-muted">Local · Free</div>
+          <div className="flex items-center gap-3">
+            <div className="text-xl font-bold tracking-[-0.02em] text-accent">
+              Over<span className="text-text">Flow</span>
+            </div>
+            <div className="hidden sm:flex items-center gap-2 pl-1" aria-hidden="true">
+              <span className="inline-block h-3 w-3 rounded-full border-[3px]" style={{ borderColor: '#FF6B6B' }} />
+              <svg width="14" height="13"><line x1="2" y1="2" x2="12" y2="11" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" /><line x1="12" y1="2" x2="2" y2="11" stroke="#38BDF8" strokeWidth="3" strokeLinecap="round" /></svg>
+              <svg width="14" height="13"><polygon points="7,2 13,11 1,11" fill="none" stroke="#46C93A" strokeWidth="3" strokeLinejoin="round" /></svg>
+              <span className="inline-block h-3 w-3 rounded-[3px] border-[3px]" style={{ borderColor: '#7C5CFF' }} />
+            </div>
+          </div>
+          <span className="inline-flex items-center rounded-full bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-accent">
+            Free · Local
+          </span>
         </header>
 
-        <section className="relative z-10 flex flex-1 flex-col justify-center py-16 lg:py-24">
-          <div className="max-w-3xl">
+        {/* ── HERO ────────────────────────────────────────────────── */}
+        <section className="relative z-10 grid flex-1 items-center gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+          <div>
 
             <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
-              {showBadge ? (
-                <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
-                  <span>{playerCount} gamers · Utrecht</span>
-                </span>
-              ) : (
-                <span className="inline-flex items-center gap-2 rounded-full border border-border bg-panel px-4 py-2 text-xs uppercase tracking-[0.2em] text-accent">
-                  <span className="of-dot inline-block h-1.5 w-1.5 rounded-full" />
-                  <span>Utrecht · Local matchmaking</span>
-                </span>
-              )}
+              <span className="inline-flex items-center gap-2 rounded-full border-2 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em]" style={{ borderColor: '#B9EBB0', background: '#E7F8E4', color: '#2E9E24' }}>
+                <span className="of-dot inline-block h-2 w-2 rounded-full" />
+                <span>{showBadge ? `${playerCount} gamers near you` : 'Utrecht · Local matchmaking'}</span>
+              </span>
             </div>
 
-            <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.08] tracking-tight text-text md:text-7xl`}>
-              Find your teammates.<br />
-              <span className={v ? 'of-sweep' : 'text-accent'}>Play together.</span>
+            <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.05] tracking-tight text-text md:text-7xl`}>
+              Find your <span style={{ color: 'var(--accent)' }}>squad.</span><br />
+              Play <span className="relative inline-block" style={{ color: 'var(--accent3)' }}>
+                IRL.
+                <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded" style={{ background: '#C9F5C2' }} />
+              </span>
             </h1>
 
             <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
-              OverFlow connects <strong className="text-text">gamers in Utrecht</strong> who actually want to meet up —
-              same games, same vibe, same area.<br />
-              No feed. No algorithm. Just <strong className="text-text">real humans</strong> who want to play.
+              Same games, same city, same vibe. OverFlow connects you with players who actually want to team up —
+              no feed, no algorithm, just real people who want to play.
             </p>
 
-            {/* Rangée d'avatars */}
-            <div className={`${v ? 'of-r2' : 'opacity-0'} mt-6 flex items-center`}>
-              <div className="flex">
-                {AVATAR_EMOJIS.slice(0, 5).map((emoji, i) => (
-                  <div
-                    key={i}
-                    className="w-9 h-9 rounded-full border-2 border-[var(--bg)] flex items-center justify-center text-lg -ml-2 first:ml-0 transition-transform hover:-translate-y-1"
-                    style={{ background: AVATAR_GRADIENTS[i], zIndex: 5 - i }}
-                  >
-                    {emoji}
-                  </div>
-                ))}
-                {playerCount !== null && playerCount > 5 && (
-                  <div className="w-9 h-9 rounded-full border-2 border-[var(--bg)] -ml-2 bg-panel flex items-center justify-center text-xs font-bold text-muted">
-                    +{playerCount - 5}
-                  </div>
-                )}
-              </div>
-              {playerCount !== null && playerCount > 0 && (
-                <div className="ml-4 text-sm text-muted leading-tight">
-                  <span className="block font-semibold text-text">{playerCount} active players</span>
-                  already in Utrecht
-                </div>
-              )}
-            </div>
-
-            <div className={`${v ? 'of-r3' : 'opacity-0'} mt-10 flex flex-wrap items-center gap-4`}>
+            <div className={`${v ? 'of-r3' : 'opacity-0'} mt-8 flex flex-wrap items-center gap-4`}>
               <Link href="/onboarding" className="btn-primary-new px-8 py-4 text-base font-bold">
-                Find my teammates
+                Start — it&apos;s free
               </Link>
+              <span className="text-sm leading-tight text-muted">
+                No account needed<br />Ready in 2 min
+              </span>
             </div>
 
-            <p className={`${v ? 'of-r4' : 'opacity-0'} mt-5 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted`}>
-              <span className="font-semibold text-accent3">✓ Free</span>
-              <span className="text-border">·</span>
-              <span className="font-semibold text-accent3">✓ No account needed</span>
-              <span className="text-border">·</span>
-              <span className="font-semibold text-accent3">✓ Utrecht only</span>
-            </p>
-
-            {topGames.length >= 4 && (
-              <p className={`${v ? 'of-r5' : 'opacity-0'} mt-3 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs text-muted`}>
-                <span className="text-border">Most played ·</span>
-                {topGames.map((g, i) => (
-                  <span key={g} className="flex items-center gap-1.5">
-                    <span className="text-text/70">{g}</span>
-                    {i < topGames.length - 1 && <span className="text-border">·</span>}
-                  </span>
-                ))}
+            {playerCount !== null && playerCount > 0 && (
+              <p className={`${v ? 'of-r4' : 'opacity-0'} mt-6 text-sm text-muted`}>
+                <span className="font-semibold text-text">{playerCount} active players</span> already in Utrecht
               </p>
             )}
 
-            <p className={`${v ? 'of-r6' : 'opacity-0'} mt-6 text-xs text-muted`}>
+            <p className={`${v ? 'of-r4' : 'opacity-0'} mt-3 text-xs text-muted`}>
               Already have a profile?{' '}
               <Link href="/login" className="text-accent underline underline-offset-2 hover:opacity-80 transition">
                 Recover access →
               </Link>
             </p>
+          </div>
 
+          {/* Decorative squad visual */}
+          <div className="relative hidden h-[350px] lg:block" aria-hidden="true">
+            <svg width="60" height="56" className="of-shape" style={{ top: '4px', left: '30%', animation: 'of-bob2 5s ease-in-out infinite' }}>
+              <polygon points="30,6 55,50 5,50" fill="none" stroke="#46C93A" strokeWidth="7" strokeLinejoin="round" />
+            </svg>
+            <span className="of-shape rounded-full" style={{ top: '150px', left: '2px', width: 38, height: 38, border: '7px solid #FF6B6B', animation: 'of-bob 4.2s ease-in-out infinite' }} />
+            <span className="of-shape rounded-lg" style={{ top: '60px', right: '-6px', width: 34, height: 34, border: '7px solid #7C5CFF', animation: 'of-wob 5s ease-in-out infinite' }} />
+            <svg width="46" height="46" className="of-shape" style={{ bottom: '40px', right: '6%', animation: 'of-bob3 4.6s ease-in-out infinite' }}>
+              <line x1="8" y1="8" x2="38" y2="38" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
+              <line x1="38" y1="8" x2="8" y2="38" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
+            </svg>
+
+            {SQUAD_CARDS.map((c) => (
+              <div
+                key={c.initials}
+                className="of-shape flex items-center justify-center rounded-[38px]"
+                style={{
+                  top: c.top, left: c.left, right: c.right, bottom: c.bottom,
+                  width: c.size, height: c.size, background: c.bg,
+                  boxShadow: `0 18px 40px -12px ${c.shadow}`,
+                  animation: `${c.anim} ease-in-out infinite`,
+                }}
+              >
+                <span className="font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)', fontSize: c.font }}>{c.initials}</span>
+              </div>
+            ))}
+
+            <div
+              className="of-shape rounded-2xl border-2 bg-white px-3 py-2 text-sm font-extrabold"
+              style={{ top: '0px', right: '16%', borderColor: '#EFEAE0', color: 'var(--accent3)', boxShadow: '0 10px 24px -10px rgba(27,27,35,.25)', animation: 'of-bob 3.6s ease-in-out infinite' }}
+            >
+              ✓ Match!
+            </div>
           </div>
         </section>
 
-        <section ref={whyReveal.ref} className="relative z-10 border-t border-border py-16">
-          <p className="mb-10 text-xs uppercase tracking-[0.25em] text-muted">Why OverFlow?</p>
-          <div className="grid gap-10 sm:grid-cols-3">
-            {WHY_ITEMS.map((item, i) => (
-              <div
-                key={item.title}
-                className={`of-why card-hover rounded-2xl border border-border bg-panel p-6${whyReveal.visible ? ' of-on' : ''}`}
-                style={{ transitionDelay: `${i * 130}ms` }}
-              >
-                <div className="mb-3 flex items-center gap-2">
-                  <span className="text-xl leading-none">{item.icon}</span>
-                  <span className="of-tag">{item.tag}</span>
+        {/* ── MARQUEE ─────────────────────────────────────────────── */}
+        <section className="relative z-10 -mx-6 overflow-hidden border-y-2 py-3" style={{ background: '#F1ECFF', borderColor: '#E2D8FF' }} aria-hidden="true">
+          <div className="of-marquee-track">
+            {[0, 1].map((rep) => (
+              <span key={rep} className="flex items-center gap-2 pr-2 font-medium tracking-[0.1em] text-text" style={{ fontFamily: 'var(--font-fredoka)', fontSize: 14 }}>
+                {Array.from({ length: 4 }, (_, i) => (
+                  <span key={i} className="flex items-center gap-2">
+                    {MARQUEE_ITEMS.map((m) => (
+                      <span key={m.label} className="flex items-center gap-2">
+                        {m.label}
+                        <span style={{ color: m.color }}>{m.glyph}</span>
+                      </span>
+                    ))}
+                  </span>
+                ))}
+              </span>
+            ))}
+          </div>
+        </section>
+
+        {/* ── MOST PLAYED ─────────────────────────────────────────── */}
+        {topGames.length >= 4 && (
+          <section className="relative z-10 flex flex-wrap items-center gap-3 py-6">
+            <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Most played</span>
+            {topGames.map((g) => (
+              <span key={g.name} className="inline-flex items-center gap-2 rounded-full border border-border bg-panel2 px-3.5 py-1.5 text-sm font-semibold text-text">
+                {g.name}
+                {g.count > 0 && <span className="font-bold" style={{ color: '#2E9E24' }}>{g.count}</span>}
+              </span>
+            ))}
+          </section>
+        )}
+
+        {/* ── GAMIFIED PATH ───────────────────────────────────────── */}
+        <section className="relative z-10 -mx-6 mt-4 rounded-[28px] px-8 py-12" style={{ background: '#F4EFE4' }}>
+          <p className="mb-9 text-center text-2xl font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>
+            How it works — 3 levels
+          </p>
+          <div className="relative mx-auto flex max-w-3xl items-start justify-between">
+            <div className="of-path-line absolute left-[8%] right-[8%] top-9 h-1.5 rounded-full" />
+            <div className="of-path-walker absolute top-7 h-6.5 w-6.5 rounded-full" style={{ width: 26, height: 26, background: 'var(--accent3)', boxShadow: '0 0 0 6px rgba(70,201,58,.2)' }} />
+            {PATH_STEPS.map((s) => (
+              <div key={s.n} className="relative z-10 flex w-1/3 flex-col items-center gap-3">
+                <div
+                  className="flex items-center justify-center rounded-full text-white"
+                  style={{ width: 76, height: 76, background: s.bg, boxShadow: `0 6px 0 ${s.shadow}`, fontFamily: 'var(--font-fredoka)', fontWeight: 700, fontSize: 30 }}
+                >
+                  {s.n}
                 </div>
-                <h3 className="mb-2 text-sm font-bold text-text">{item.title}</h3>
-                <p className="text-sm leading-6 text-muted">{item.desc}</p>
+                <span className="text-base font-bold text-text">{s.title}</span>
+                <span className="text-center text-sm text-muted">{s.desc}</span>
               </div>
             ))}
           </div>
+        </section>
+
+        {/* ── WHY CARDS ───────────────────────────────────────────── */}
+        <section ref={whyReveal.ref} className="relative z-10 py-16">
+          <div className="grid gap-5 sm:grid-cols-3">
+            {WHY_ITEMS.map((item, i) => (
+              <div
+                key={item.title}
+                className={`of-why of-lift rounded-[22px] border-2 p-6${whyReveal.visible ? ' of-on' : ''}`}
+                style={{ background: item.bg, borderColor: item.border, transitionDelay: `${i * 130}ms` }}
+              >
+                <div className="mb-4 flex h-[52px] w-[52px] items-center justify-center rounded-2xl" style={{ background: item.iconBg }}>
+                  {item.shape === 'circle' && <span className="h-5 w-5 rounded-full border-[5px] border-white" />}
+                  {item.shape === 'triangle' && (
+                    <svg width="24" height="22"><polygon points="12,3 22,19 2,19" fill="none" stroke="#fff" strokeWidth="5" strokeLinejoin="round" /></svg>
+                  )}
+                  {item.shape === 'square' && <span className="h-[18px] w-[18px] rounded-[5px] border-[5px] border-white" />}
+                </div>
+                <h3 className="mb-2 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>{item.title}</h3>
+                <p className="text-sm leading-6" style={{ color: '#6B6B76' }}>{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* ── FOOTER CTA ──────────────────────────────────────────── */}
+        <section
+          className="relative z-10 mb-6 flex flex-col items-start gap-6 overflow-hidden rounded-[26px] p-10 sm:flex-row sm:items-center sm:justify-between"
+          style={{ background: 'linear-gradient(135deg,#7C5CFF,#9D86FF)' }}
+        >
+          <svg width="70" height="66" className="of-shape opacity-20" style={{ top: '-14px', right: '200px' }} aria-hidden="true">
+            <polygon points="35,8 64,60 6,60" fill="none" stroke="#fff" strokeWidth="8" strokeLinejoin="round" />
+          </svg>
+          <span className="of-shape rounded-full opacity-20" style={{ bottom: '-16px', right: '120px', width: 60, height: 60, border: '8px solid #fff' }} aria-hidden="true" />
+          <div className="relative z-10">
+            <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)' }}>Ready to find your squad?</h2>
+            <p className="mt-2 text-sm text-white/85">
+              {playerCount !== null && playerCount > 0
+                ? `Join ${playerCount} players near you. It only takes 2 minutes.`
+                : 'It only takes 2 minutes to get started.'}
+            </p>
+          </div>
+          <Link href="/onboarding" className="relative z-10 rounded-2xl bg-white px-8 py-4 text-lg font-semibold text-accent shadow-[0_6px_0_rgba(0,0,0,0.18)] transition active:translate-y-1 active:shadow-[0_1px_0_rgba(0,0,0,0.18)]" style={{ fontFamily: 'var(--font-fredoka)' }}>
+            Start now →
+          </Link>
         </section>
 
       </main>

@@ -16,7 +16,7 @@ module.exports = {
         error:   '#f87171',
       },
       boxShadow: {
-        glow: '0 0 0 1px rgba(124,110,249,0.25), 0 0 30px rgba(124,110,249,0.10)',
+        glow: '0 0 0 1px rgba(124,92,255,0.25), 0 0 30px rgba(124,92,255,0.10)',
       },
     },
   },

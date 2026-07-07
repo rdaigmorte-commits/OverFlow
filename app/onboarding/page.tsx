@@ -91,12 +91,12 @@ function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: 
       onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition-colors relative ${
         selected
-          ? 'border-accent bg-accent text-black font-semibold chip-selected'
-          : 'border-border bg-panel2 text-text hover:border-accent'
+          ? 'chip-selected font-semibold'
+          : 'chip-unselected hover:border-accent'
       }`}
     >
       {selected && (
-        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-accent text-[10px] text-black font-black">
+        <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-white text-[10px] text-[#2E9E24] font-black">
           ✓
         </span>
       )}
@@ -467,7 +467,7 @@ export default function OnboardingPage() {
                 )}
               </div>
             </Card>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <button onClick={handleNext} className="self-end btn-primary-new px-6 py-3 text-sm">
               Let&apos;s go →
             </button>
@@ -500,7 +500,7 @@ export default function OnboardingPage() {
                   {extraSelectedGames.map((g) => (
                     <span
                       key={g}
-                      className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold"
+                      className="inline-flex items-center gap-2 rounded-full chip-selected px-4 py-2 text-sm font-semibold"
                     >
                       {g}
                       <button
@@ -559,7 +559,7 @@ export default function OnboardingPage() {
                   : null;
               })()}
             </Card>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-between">
               {backBtn}
               <button onClick={handleNext} className="btn-primary-new px-6 py-3 text-sm">Next →</button>
@@ -590,7 +590,7 @@ export default function OnboardingPage() {
                         onClick={() => setProfile({ lookingFor: opt.value })}
                         className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
                           selected
-                            ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(124,110,249,0.2)]'
+                            ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(124,92,255,0.2)]'
                             : 'border-border bg-panel2 hover:border-accent/50 hover:scale-[1.02]'
                         }`}
                       >
@@ -625,7 +625,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
             </Card>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-between">
               {backBtn}
               <button onClick={handleNext} className="btn-primary-new px-6 py-3 text-sm">Next →</button>
@@ -679,7 +679,7 @@ export default function OnboardingPage() {
                 </div>
               </div>
             </Card>
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-between">
               {backBtn}
               <button onClick={handleNext} className="btn-primary-new px-6 py-3 text-sm">Almost there →</button>
@@ -748,7 +748,7 @@ export default function OnboardingPage() {
               </label>
             </div>
 
-            {error && <p className="text-sm text-red-400">{error}</p>}
+            {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-between">
               {backBtn}
               <button

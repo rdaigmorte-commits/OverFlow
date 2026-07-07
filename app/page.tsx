@@ -3,7 +3,13 @@ import { LandingPageClient } from './_components/LandingPageClient';
 
 export const revalidate = 3600;
 
-const FALLBACK_GAMES = ['Valorant', 'CS2', 'Minecraft', 'EA FC', 'League of Legends'];
+const FALLBACK_GAMES: { name: string; count: number }[] = [
+  { name: 'Valorant', count: 0 },
+  { name: 'CS2', count: 0 },
+  { name: 'Minecraft', count: 0 },
+  { name: 'EA FC', count: 0 },
+  { name: 'League of Legends', count: 0 },
+];
 
 function createAnonClient() {
   return createServerClient(
@@ -15,7 +21,7 @@ function createAnonClient() {
 
 export default async function Page() {
   let playerCount: number | null = null;
-  let topGames: string[] = FALLBACK_GAMES;
+  let topGames: { name: string; count: number }[] = FALLBACK_GAMES;
 
   try {
     const supabase = createAnonClient();
@@ -40,7 +46,7 @@ export default async function Page() {
       const computed = Object.entries(freq)
         .sort((a, b) => b[1] - a[1])
         .slice(0, 5)
-        .map(([g]) => g);
+        .map(([g, count]) => ({ name: g, count }));
       if (computed.length > 0) topGames = computed;
     }
   } catch {
