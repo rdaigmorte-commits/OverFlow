@@ -4,73 +4,73 @@
 @import 'flag-icons/css/flag-icons.min.css';
 
 :root {
-  color-scheme: dark;
-  --bg:      #0d0f14;
-  --panel:   #161a23;
-  --panel2:  #1e2330;
-  --border:  rgba(255,255,255,0.08);
-  --text:    #f0f2f7;
-  --muted:   #7a8299;
-  --accent:  #7c6ef9;
-  --accent2: #f97066;
-  --accent3: #34d399;
-  --glow1:   rgba(124,110,249,0.18);
-  --glow2:   rgba(249,112,102,0.12);
+  --bg:      #E9E5DD;
+  --panel:   #FDFBF6;
+  --panel2:  #FFFFFF;
+  --border:  #E5DECB;
+  --text:    #1B1B23;
+  --muted:   #8A8578;
+  --accent:  #7C5CFF;
+  --accent2: #FFC83D;
+  --accent3: #46C93A;
 }
 
 html, body { height: 100%; }
 body {
   margin: 0;
-  background: #0d0f14;
-  color: #f0f2f7;
-  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #E9E5DD;
+  color: #1B1B23;
+  font-family: var(--font-jakarta), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 * { box-sizing: border-box; }
 a { color: inherit; text-decoration: none; }
 
-/* ── Blobs animés ──────────────────────────────────────────────────────────── */
-.blob {
-  position: fixed; border-radius: 50%;
-  filter: blur(90px); opacity: 0.55; pointer-events: none; z-index: 0;
-  animation: blob-drift 9s ease-in-out infinite alternate;
-}
-.blob-1 {
-  width: 55vw; height: 55vw; top: -18%; left: -12%;
-  background: radial-gradient(circle, var(--glow1), transparent 70%);
-}
-.blob-2 {
-  width: 40vw; height: 40vw; top: 20%; right: -10%;
-  background: radial-gradient(circle, var(--glow2), transparent 70%);
-  animation-duration: 12s; animation-delay: -4s;
-}
-.blob-3 {
-  width: 30vw; height: 30vw; bottom: 5%; left: 30%;
-  background: radial-gradient(circle, rgba(52,211,153,0.08), transparent 70%);
-  animation-duration: 10s; animation-delay: -2s;
-}
-@keyframes blob-drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(3%, 4%) scale(1.06); }
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-fredoka), ui-sans-serif, system-ui, sans-serif;
+  font-weight: 700;
 }
 
-/* ── Bouton CTA primaire ───────────────────────────────────────────────────── */
+/* ── Bouton CTA primaire (3D) ──────────────────────────────────────────────── */
 .btn-primary-new {
   display: inline-flex; align-items: center; justify-content: center;
-  background: linear-gradient(135deg, var(--accent), #9b8bf8);
-  box-shadow: 0 0 30px rgba(124,110,249,0.3), 0 4px 16px rgba(0,0,0,0.3);
-  border-radius: 14px;
+  background: #46C93A;
   color: #fff;
   font-weight: 600;
-  transition: transform 0.2s cubic-bezier(0.16,1,0.3,1), box-shadow 0.2s ease;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #2E9E24;
+  transition: transform 0.12s, box-shadow 0.12s;
 }
-.btn-primary-new:hover {
-  transform: scale(1.04) translateY(-2px);
-  box-shadow: 0 0 40px rgba(124,110,249,0.45), 0 8px 24px rgba(0,0,0,0.4);
-}
-.btn-primary-new:active { transform: scale(0.97); }
-.btn-primary-new:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+.btn-primary-new:hover { transform: translateY(1px); box-shadow: 0 4px 0 #2E9E24; }
+.btn-primary-new:active { transform: translateY(4px); box-shadow: 0 1px 0 #2E9E24; }
+.btn-primary-new:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #2E9E24; }
 
-/* ── Chip micro-bounce ─────────────────────────────────────────────────────── */
+.btn-yellow {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #FFC83D;
+  color: #7a4d00;
+  font-weight: 600;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #E0A016;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-yellow:hover { transform: translateY(1px); box-shadow: 0 4px 0 #E0A016; }
+.btn-yellow:active { transform: translateY(4px); box-shadow: 0 1px 0 #E0A016; }
+.btn-yellow:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #E0A016; }
+
+.btn-purple {
+  display: inline-flex; align-items: center; justify-content: center;
+  background: #7C5CFF;
+  color: #fff;
+  font-weight: 600;
+  border-radius: 14px;
+  box-shadow: 0 5px 0 #5B3FD6;
+  transition: transform 0.12s, box-shadow 0.12s;
+}
+.btn-purple:hover { transform: translateY(1px); box-shadow: 0 4px 0 #5B3FD6; }
+.btn-purple:active { transform: translateY(4px); box-shadow: 0 1px 0 #5B3FD6; }
+.btn-purple:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: 0 5px 0 #5B3FD6; }
+
+/* ── Chips ─────────────────────────────────────────────────────────────────── */
 @keyframes chip-pop {
   0%   { transform: scale(1); }
   40%  { transform: scale(1.12); }
@@ -78,6 +78,14 @@ a { color: inherit; text-decoration: none; }
 }
 .chip-selected {
   animation: chip-pop 0.25s cubic-bezier(0.16,1,0.3,1) both;
+  background: #46C93A;
+  color: #fff;
+  border: 1px solid #2E9E24;
+}
+.chip-unselected {
+  background: #F4EFE4;
+  border: 1px solid #E5DECB;
+  color: #1B1B23;
 }
 
 /* ── Slide transitions onboarding ──────────────────────────────────────────── */
