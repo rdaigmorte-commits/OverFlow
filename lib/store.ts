@@ -15,6 +15,16 @@ type Profile = {
   consent: boolean;
   email: string;
   discord: string;
+  psnHandle: string;
+  steamHandle: string;
+  otherContact: string;
+  otherContactLabel: string;
+  shareDiscord: boolean;
+  shareEmailContact: boolean;
+  sharePsn: boolean;
+  shareSteam: boolean;
+  shareOther: boolean;
+  contactShareConsent: boolean;
   lookingFor: 'online' | 'irl' | 'both';
 };
 
@@ -49,6 +59,16 @@ const initialProfile: Profile = {
   consent: false,
   email: '',
   discord: '',
+  psnHandle: '',
+  steamHandle: '',
+  otherContact: '',
+  otherContactLabel: '',
+  shareDiscord: true,
+  shareEmailContact: true,
+  sharePsn: true,
+  shareSteam: true,
+  shareOther: true,
+  contactShareConsent: false,
   lookingFor: 'both',
 };
 

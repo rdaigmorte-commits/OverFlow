@@ -140,11 +140,29 @@ function MatchesDisconnectedState() {
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
+type RevealedField = { label: string; value: string };
+
 type ContactSituation =
   | { type: 'discord'; discord: string; name: string }
   | { type: 'mail_only'; name: string }
   | { type: 'no_contact'; name: string }
-  | { type: 'login_required'; name: string };
+  | { type: 'login_required'; name: string }
+  | { type: 'revealed'; name: string; contacts: RevealedField[] };
+
+// Construit la liste des champs révélés à partir de get_match_contact() —
+// seuls les champs non-null passent (mutual accepted + share_* + consent).
+function extractRevealedFields(contact: {
+  discord: string | null; email: string | null; psn: string | null; steam: string | null;
+  other_contact: string | null; other_contact_label: string | null;
+}): RevealedField[] {
+  const fields: RevealedField[] = [];
+  if (contact.discord)       fields.push({ label: 'Discord', value: contact.discord });
+  if (contact.email)         fields.push({ label: 'Email',   value: contact.email });
+  if (contact.psn)           fields.push({ label: 'PSN',     value: contact.psn });
+  if (contact.steam)         fields.push({ label: 'Steam',   value: contact.steam });
+  if (contact.other_contact) fields.push({ label: contact.other_contact_label || 'Other', value: contact.other_contact });
+  return fields;
+}
 
 // ─── ContactModal ────────────────────────────────────────────────────────────
 function ContactModal({
@@ -173,7 +191,9 @@ function ContactModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-xl font-bold">🎮 Let&apos;s play with {situation.name}</h2>
+          <h2 className="text-xl font-bold">
+            {situation.type === 'revealed' ? `🎮 Match confirmed with ${situation.name}!` : `🎮 Let's play with ${situation.name}`}
+          </h2>
           <button
             onClick={onClose}
             className="text-muted hover:text-text text-xl leading-none"
@@ -228,6 +248,34 @@ function ContactModal({
           </div>
         )}
 
+        {situation.type === 'revealed' && (
+          <div className="grid gap-3">
+            <p className="text-sm text-muted">
+              You both clicked &quot;Let&apos;s play&quot; — here&apos;s how to reach {situation.name}:
+            </p>
+            {situation.contacts.length === 0 ? (
+              <p className="rounded-xl border border-border bg-panel2 px-4 py-3 text-sm text-muted">
+                {situation.name} hasn&apos;t shared any contact details yet.
+              </p>
+            ) : (
+              situation.contacts.map((c) => (
+                <div key={c.label} className="flex items-center justify-between rounded-xl border border-border bg-panel2 px-4 py-3">
+                  <div>
+                    <div className="text-xs text-muted uppercase tracking-widest mb-1">{c.label}</div>
+                    <div className="text-sm font-medium text-text">{c.value}</div>
+                  </div>
+                  <button
+                    onClick={() => copy(c.value)}
+                    className="ml-4 shrink-0 rounded-lg border border-border px-3 py-2 text-xs font-semibold transition hover:bg-panel2"
+                  >
+                    {copied ? '✓ Copied' : 'Copy'}
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
+        )}
+
         {situation.type === 'login_required' && (
           <div className="grid gap-4">
             <p className="text-sm text-muted">
@@ -270,11 +318,13 @@ type SentRequest = {
 function InvitationsPanel({
   received,
   sent,
+  revealedByReceiver,
   onAccept,
   onDecline,
 }: {
   received: ReceivedRequest[];
   sent: SentRequest[];
+  revealedByReceiver: Record<string, RevealedField[]>;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
 }) {
@@ -332,23 +382,37 @@ function InvitationsPanel({
         <p className="text-xs text-muted px-1">No pending invitations right now.</p>
       )}
 
-      {tab === 'sent' && sent.map((req) => (
-        <div
-          key={req.id}
-          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-panel2 px-5 py-4"
-        >
-          <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
-          {req.status === 'accepted' ? (
-            <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">
-              ✓ Accepted · Discord shared
-            </span>
-          ) : (
-            <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
-              ⏳ Pending
-            </span>
-          )}
-        </div>
-      ))}
+      {tab === 'sent' && sent.map((req) => {
+        const revealed = revealedByReceiver[req.receiver_id];
+        return (
+          <div
+            key={req.id}
+            className="flex flex-col gap-2 rounded-xl border border-border bg-panel2 px-5 py-4"
+          >
+            <div className="flex items-center justify-between gap-4">
+              <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+              {req.status === 'accepted' ? (
+                <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">
+                  ✓ Accepted
+                </span>
+              ) : (
+                <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
+                  ⏳ Pending
+                </span>
+              )}
+            </div>
+            {req.status === 'accepted' && revealed && revealed.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {revealed.map((c) => (
+                  <span key={c.label} className="rounded-full bg-panel border border-border px-3 py-1 text-xs font-medium text-text">
+                    {c.label}: {c.value}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+        );
+      })}
       {tab === 'sent' && sent.length === 0 && (
         <p className="text-xs text-muted px-1">You haven&apos;t sent any invitations yet.</p>
       )}
@@ -376,9 +440,29 @@ export default function MatchesPage() {
   const [tailVisibleCount, setTailVisibleCount] = useState(TAIL_PAGE_SIZE);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
+  const [revealedByReceiver, setRevealedByReceiver] = useState<Record<string, RevealedField[]>>({});
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
+
+  // Révèle automatiquement les contacts des invitations envoyées déjà acceptées
+  // (onglet Sent) — sans que l'utilisateur ait à recliquer quoi que ce soit.
+  useEffect(() => {
+    const toFetch = sentRequests.filter(
+      (r) => r.status === 'accepted' && !(r.receiver_id in revealedByReceiver)
+    );
+    if (toFetch.length === 0) return;
+    toFetch.forEach(async (r) => {
+      const { data: contactRows } = await supabase
+        .rpc('get_match_contact', { target_profile_id: r.receiver_id });
+      const contact = contactRows?.[0];
+      setRevealedByReceiver((prev) => ({
+        ...prev,
+        [r.receiver_id]: contact ? extractRevealedFields(contact) : [],
+      }));
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sentRequests]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -482,12 +566,25 @@ export default function MatchesPage() {
   }, [profile.profileId, retryCount]);
 
   async function handleAcceptRequest(requestId: string) {
+    const request = inboundRequests.find((r) => r.id === requestId);
     const { error } = await supabase
       .from('match_requests')
       .update({ status: 'accepted' })
       .eq('id', requestId);
     if (!error) {
       setInboundRequests((prev) => prev.filter((r) => r.id !== requestId));
+
+      // Révélation immédiate — plus besoin de re-cliquer "Let's play" pour la voir.
+      if (request?.sender_id) {
+        const { data: contactRows } = await supabase
+          .rpc('get_match_contact', { target_profile_id: request.sender_id });
+        const contact = contactRows?.[0];
+        setSituation({
+          type: 'revealed',
+          name: request.sender?.name ?? 'this player',
+          contacts: contact ? extractRevealedFields(contact) : [],
+        });
+      }
     }
   }
 
@@ -624,6 +721,7 @@ export default function MatchesPage() {
           <InvitationsPanel
             received={inboundRequests}
             sent={sentRequests}
+            revealedByReceiver={revealedByReceiver}
             onAccept={handleAcceptRequest}
             onDecline={handleDeclineRequest}
           />

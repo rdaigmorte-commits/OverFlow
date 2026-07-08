@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
+import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
@@ -47,6 +48,7 @@ export default function ProfileEditPage() {
   const [allGamesInDB, setAllGamesInDB] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+  const consentAtLoad = useRef(false);
 
   // ── Session — un profil lié à un compte (post Magic Link) ne peut être
   // sauvegardé que par une session authentifiée (RLS profiles.user_id) ──────
@@ -84,11 +86,30 @@ export default function ProfileEditPage() {
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
           email:        '',
           discord:      '',
+          psnHandle:    '',
+          steamHandle:  '',
+          otherContact: '',
+          otherContactLabel: '',
         });
         // Contacts : REVOKE bloque la lecture directe — passer par la RPC
         const { data: contacts } = await supabase.rpc('get_my_contacts');
-        if (contacts?.[0]) {
-          setProfile({ email: contacts[0].email ?? '', discord: contacts[0].discord ?? '' });
+        const c = contacts?.[0];
+        if (c) {
+          setProfile({
+            email:              c.email ?? '',
+            discord:            c.discord ?? '',
+            psnHandle:          c.psn_handle ?? '',
+            steamHandle:        c.steam_handle ?? '',
+            otherContact:       c.other_contact ?? '',
+            otherContactLabel:  c.other_contact_label ?? '',
+            shareDiscord:       c.share_discord ?? true,
+            shareEmailContact:  c.share_email_contact ?? true,
+            sharePsn:           c.share_psn ?? true,
+            shareSteam:         c.share_steam ?? true,
+            shareOther:         c.share_other ?? true,
+            contactShareConsent: c.contact_share_consent ?? false,
+          });
+          consentAtLoad.current = c.contact_share_consent ?? false;
         }
       }
 
@@ -155,8 +176,17 @@ export default function ProfileEditPage() {
     if (profile.platform.length === 0) { setError('Please select at least one platform.'); return; }
     if (profile.style.length === 0)    { setError('Please select at least one play style.'); return; }
     if (profile.language.length === 0) { setError('Please select at least one language.'); return; }
+    const hasAnyContact = !!(
+      profile.discord.trim() || profile.email.trim() || profile.psnHandle.trim() ||
+      profile.steamHandle.trim() || profile.otherContact.trim()
+    );
+    if (hasAnyContact && !profile.contactShareConsent) {
+      setError('Please agree to share your contact details, or clear them to skip this.');
+      return;
+    }
 
     setLoading(true);
+    const consentChanged = profile.contactShareConsent !== consentAtLoad.current;
     const payload = {
       name:         profile.name,
       age:          profile.age || null,
@@ -169,8 +199,19 @@ export default function ProfileEditPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      profile.consent,
       looking_for:  profile.lookingFor,
-      email:        profile.email || null,
-      discord:      profile.discord || null,
+      email:                profile.email || null,
+      discord:              profile.discord || null,
+      psn_handle:           profile.psnHandle || null,
+      steam_handle:         profile.steamHandle || null,
+      other_contact:        profile.otherContact || null,
+      other_contact_label:  profile.otherContactLabel || null,
+      share_discord:        profile.shareDiscord,
+      share_email_contact:  profile.shareEmailContact,
+      share_psn:            profile.sharePsn,
+      share_steam:          profile.shareSteam,
+      share_other:          profile.shareOther,
+      contact_share_consent:    profile.contactShareConsent,
+      ...(consentChanged ? { contact_share_consent_at: profile.contactShareConsent ? new Date().toISOString() : null } : {}),
     };
 
     // update() plutôt qu'upsert() : ON CONFLICT DO UPDATE exige un SELECT
@@ -416,49 +457,13 @@ export default function ProfileEditPage() {
           </div>
         </section>
 
-        {/* Section : Infos de contact */}
+        {/* Section : Contact settings */}
         <section className="rounded-2xl border border-border bg-panel p-6 flex flex-col gap-5">
           <div>
-            <h2 className="text-base font-bold text-text">📬 Contact info</h2>
-            <p className="mt-1 text-xs text-muted">Used for match notifications. Never displayed publicly.</p>
+            <h2 className="text-base font-bold text-text">📬 Contact settings</h2>
+            <p className="mt-1 text-xs text-muted">Never shown publicly — only revealed on a mutual match.</p>
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text">
-              Email <span className="text-muted text-xs">(optional)</span>
-            </label>
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-              placeholder="you@example.com"
-              type="email"
-              value={profile.email}
-              onChange={(e) => setProfile({ email: e.target.value })}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-text">
-              Discord <span className="text-muted text-xs">(optional)</span>
-            </label>
-            <input
-              className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-              placeholder="yourhandle#1234"
-              value={profile.discord}
-              onChange={(e) => setProfile({ discord: e.target.value })}
-            />
-          </div>
-
-          {/* Consentement au partage de contact */}
-          <label className="flex items-start gap-3 cursor-pointer pt-1">
-            <input
-              type="checkbox"
-              checked={profile.consent}
-              onChange={(e) => setProfile({ consent: e.target.checked })}
-              className="mt-0.5 accent-[var(--accent)]"
-            />
-            <span className="text-sm text-muted leading-relaxed">
-              I agree that OverFlow may share my Discord or email with players whose play request I&apos;ve accepted.{' '}
-              <span className="text-text">Only shared after you accept — never automatically.</span>
-            </span>
-          </label>
+          <ContactFieldsEditor values={profile} onChange={setProfile} />
         </section>
 
         {error && (

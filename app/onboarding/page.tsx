@@ -7,6 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
 import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
+import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
 const STYLES = Object.entries(STYLE_TO_CLASS).map(([value, rpg]) => ({ value, rpg }));
@@ -243,6 +244,26 @@ export default function OnboardingPage() {
           consent:      data.consent ?? false,
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
         });
+        // Identifiants de contact : colonnes non lisibles directement (protégées
+        // depuis SEC-02) — passer par la RPC, qui ne renvoie rien si anonyme.
+        const { data: contacts } = await supabase.rpc('get_my_contacts');
+        const c = contacts?.[0];
+        if (c) {
+          setProfile({
+            discord:            c.discord ?? '',
+            email:              c.email ?? '',
+            psnHandle:          c.psn_handle ?? '',
+            steamHandle:        c.steam_handle ?? '',
+            otherContact:       c.other_contact ?? '',
+            otherContactLabel:  c.other_contact_label ?? '',
+            shareDiscord:       c.share_discord ?? true,
+            shareEmailContact:  c.share_email_contact ?? true,
+            sharePsn:           c.share_psn ?? true,
+            shareSteam:         c.share_steam ?? true,
+            shareOther:         c.share_other ?? true,
+            contactShareConsent: c.contact_share_consent ?? false,
+          });
+        }
       }
       setHydrating(false);
     }
@@ -336,6 +357,19 @@ export default function OnboardingPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      consentGiven,
       looking_for:  profile.lookingFor,
+      discord:              profile.discord || null,
+      email:                profile.email || null,
+      psn_handle:           profile.psnHandle || null,
+      steam_handle:         profile.steamHandle || null,
+      other_contact:        profile.otherContact || null,
+      other_contact_label:  profile.otherContactLabel || null,
+      share_discord:        profile.shareDiscord,
+      share_email_contact:  profile.shareEmailContact,
+      share_psn:            profile.sharePsn,
+      share_steam:          profile.shareSteam,
+      share_other:          profile.shareOther,
+      contact_share_consent:    profile.contactShareConsent,
+      contact_share_consent_at: profile.contactShareConsent ? new Date().toISOString() : null,
     };
     let data: { id: string } | null = null;
     let dbError: { message?: string; code?: string } | null = null;
@@ -392,7 +426,15 @@ export default function OnboardingPage() {
 
   async function handleSave() {
     if (!consentGiven) {
-      setError('Please accept the contact sharing agreement to continue.');
+      setError('Please accept the profile sharing agreement to continue.');
+      return;
+    }
+    const hasAnyContact = !!(
+      profile.discord.trim() || profile.email.trim() || profile.psnHandle.trim() ||
+      profile.steamHandle.trim() || profile.otherContact.trim()
+    );
+    if (hasAnyContact && !profile.contactShareConsent) {
+      setError('Please agree to share your contact details, or clear them to skip this step.');
       return;
     }
     const ok = await saveProfile();
@@ -761,6 +803,15 @@ export default function OnboardingPage() {
                 </span>
               </label>
             </div>
+
+            <Card className="p-5">
+              <h2 className="text-base font-bold text-text mb-1">How can compatible players reach you?</h2>
+              <p className="text-xs text-muted mb-4">All optional — add at least one so matches can reach you.</p>
+              <ContactFieldsEditor
+                values={profile}
+                onChange={(patch) => { setProfile(patch); setError(null); }}
+              />
+            </Card>
 
             {error && <p className="text-sm text-error">{error}</p>}
             <div className="flex justify-between">
