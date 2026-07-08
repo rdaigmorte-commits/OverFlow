@@ -1,6 +1,5 @@
-import { normalizeArray, LANG_FLAG } from '@/lib/match';
 import { CompatibilityRing } from '@/components/CompatibilityRing';
-import { getRpgClass, getFitTier } from '@/lib/rpgClass';
+import { getRpgClass, getFitTier, TIER_STYLE, FIT_REASON_ICON, type FitReasonKind } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 
 type MatchCardProps = {
@@ -19,148 +18,102 @@ type MatchCardProps = {
   onRequestMatch: () => void;
 };
 
-const fitConfig = {
-  'Strong fit': {
-    badge: '🟢 Strong fit',
-    border: 'border-accent3/40',
-    bg: 'bg-accent3/8',
-    badgeBg: 'bg-accent3/20 text-[#2E9E24] border-accent3/40',
-  },
-  'Good fit': {
-    badge: '🟡 Good fit',
-    border: 'border-accent2/50',
-    bg: 'bg-accent2/10',
-    badgeBg: 'bg-accent2/25 text-[#B77900] border-accent2/50',
-  },
-  'Worth reaching out': {
-    badge: '⚪ Worth reaching out',
-    border: 'border-border',
-    bg: 'bg-panel',
-    badgeBg: 'bg-panel2 text-muted border-border',
-  },
+const cardTint = {
+  strong: { border: 'border-accent3/40', bg: 'bg-accent3/8' },
+  good:   { border: 'border-accent2/50', bg: 'bg-accent2/10' },
+  other:  { border: 'border-border',     bg: 'bg-panel' },
 };
 
-function parseFitReasonToBullets(fitReason: string): { emoji: string; text: string }[] {
+function getInitials(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return '?';
+  if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
+  return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function parseFitReasonToIcons(fitReason: string): { kind: FitReasonKind; text: string }[] {
   const parts = fitReason.split(' · ');
   return parts.map((part) => {
-    if (part.startsWith('plays '))         return { emoji: '🎮', text: `Both play ${part.replace('plays ', '')}` };
-    if (part.startsWith('same platform'))  return { emoji: '🖥️', text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('same playstyle')) return { emoji: '⚡', text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('speaks '))        return { emoji: '🌍', text: `Speaks ${part.replace('speaks ', '')}` };
-    if (part.startsWith('available '))     return { emoji: '📅', text: `Both free ${part.replace('available ', '')}` };
-    if (part.startsWith('same city'))      return { emoji: '📍', text: part.charAt(0).toUpperCase() + part.slice(1) };
-    return { emoji: '✅', text: part };
+    if (part.startsWith('plays '))         return { kind: 'games' as const,         text: `Plays ${part.replace('plays ', '')}` };
+    if (part.startsWith('same platform'))  return { kind: 'platformStyle' as const, text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('same playstyle')) return { kind: 'platformStyle' as const, text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('speaks '))        return { kind: 'language' as const,      text: `Speaks ${part.replace('speaks ', '')}` };
+    if (part.startsWith('available '))     return { kind: 'availability' as const,  text: `Free ${part.replace('available ', '')}` };
+    if (part.startsWith('same city'))      return { kind: 'city' as const,          text: part.charAt(0).toUpperCase() + part.slice(1) };
+    return { kind: 'games' as const, text: part };
   });
 }
 
 export function MatchCard({
   name,
-  games,
-  platform,
   style,
-  language,
   city,
   openIRL,
   isIRLNearby,
-  fitLabel,
   fitReason,
   score,
   invitationSent = false,
   onRequestMatch,
 }: MatchCardProps) {
-  const config   = fitConfig[fitLabel] ?? fitConfig['Worth reaching out'];
-  const bullets  = parseFitReasonToBullets(fitReason);
-  const platforms = normalizeArray(platform);
-  const styles    = normalizeArray(style);
-  const rpgClass  = getRpgClass(style);
-  const percent   = Math.round((score / 110) * 100);
-  const tier      = getFitTier(score);
+  const rpgClass = getRpgClass(style);
+  const percent  = Math.round((score / 110) * 100);
+  const tier     = getFitTier(score);
+  const tint     = cardTint[tier];
+  const style_   = TIER_STYLE[tier];
+  const reasons  = parseFitReasonToIcons(fitReason).slice(0, 2);
 
   return (
-    <div className={`card-hover rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
+    <div className={`card-hover rounded-2xl border ${tint.border} ${tint.bg} overflow-hidden`}>
 
       {/* Header */}
-      <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
-        <div className="flex items-center gap-3 min-w-0">
-          <CompatibilityRing percent={percent} tier={tier} />
-          <div className="flex flex-col gap-1 min-w-0">
-            <div className="flex items-center gap-2 min-w-0">
-              <span className="text-xl font-black text-text truncate">{name}</span>
-              {rpgClass && (
-                <span
-                  className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
-                  style={{ background: rpgClass.bg, color: rpgClass.color }}
-                >
-                  <ShapeIcon shape={rpgClass.icon} color={rpgClass.color} size={12} />
-                  {rpgClass.name}
-                </span>
-              )}
-            </div>
-            {(city || isIRLNearby || openIRL) && (
-              <div className="flex items-center gap-2 flex-wrap">
-                {city && (
-                  city === 'Utrecht'
-                    ? <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">📍 Utrecht</span>
-                    : <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">📍 {city}</span>
-                )}
-                {isIRLNearby ? (
-                  <span className="rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
-                    📍 Nearby · IRL ready
-                  </span>
-                ) : openIRL ? (
-                  <span className="rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
-                    🤝 Down to play
-                  </span>
-                ) : null}
-              </div>
+      <div className="flex items-center gap-3 px-5 pt-4 pb-3">
+        <div
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl text-lg font-bold text-white"
+          style={{ fontFamily: 'var(--font-fredoka)', background: `linear-gradient(135deg, ${style_.avatarFrom}, ${style_.avatarTo})` }}
+        >
+          {getInitials(name)}
+        </div>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-xl font-black text-text truncate">{name}</span>
+            {isIRLNearby && (
+              <span className="shrink-0 rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
+                📍 IRL ready
+              </span>
+            )}
+            {!isIRLNearby && openIRL && (
+              <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
+                🤝 Down to play
+              </span>
             )}
           </div>
+          {rpgClass && (
+            <span
+              className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold"
+              style={{ background: rpgClass.bg, color: rpgClass.color }}
+            >
+              <ShapeIcon shape={rpgClass.icon} color={rpgClass.color} size={11} />
+              {rpgClass.name}{city ? ` · ${city}` : ''}
+            </span>
+          )}
         </div>
-        <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${config.badgeBg}`}>
-          {config.badge}
-        </span>
+        <CompatibilityRing percent={percent} tier={tier} />
       </div>
 
       <div className="border-t border-border/50 mx-5" />
 
-      {/* Tags profil */}
-      <div className="px-5 py-3 flex flex-wrap gap-2">
-        {games.map((g) => (
-          <span key={g} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">🎮 {g}</span>
-        ))}
-        {platforms.map((p) => (
-          <span key={p} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">🖥️ {p}</span>
-        ))}
-        {styles.map((s) => (
-          <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">⚡ {s}</span>
-        ))}
-        {language.map((l) => (
-          <span key={l} className="inline-flex items-center gap-1.5 rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            <span className={`fi fi-${LANG_FLAG[l] ?? 'un'}`} />
-            {l}
-          </span>
+      {/* Why you match — 2 lignes max */}
+      <div className="px-5 py-3 flex flex-col gap-1.5">
+        {reasons.map((r, i) => (
+          <div key={i} className="flex items-center gap-2 text-sm text-text">
+            <ShapeIcon shape={FIT_REASON_ICON[r.kind].shape} color={FIT_REASON_ICON[r.kind].color} size={14} />
+            <span>{r.text}</span>
+          </div>
         ))}
       </div>
-
-      <div className="border-t border-border/50 mx-5" />
-
-      {/* Why you match */}
-      <div className="px-5 py-3">
-        <p className="text-xs font-semibold text-muted uppercase tracking-widest mb-2">Why you match</p>
-        <ul className="flex flex-col gap-1">
-          {bullets.map((b, i) => (
-            <li key={i} className="flex items-center gap-2 text-sm text-text">
-              <span>{b.emoji}</span>
-              <span>{b.text}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="border-t border-border/50 mx-5" />
 
       {/* CTA */}
-      <div className="px-5 py-4">
+      <div className="px-5 pb-4">
         {invitationSent ? (
           <div className="w-full rounded-xl border border-accent3/40 bg-accent3/10 px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
             Invitation sent ✓

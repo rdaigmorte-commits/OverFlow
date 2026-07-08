@@ -12,23 +12,22 @@ import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
 import { getFitTier } from '@/lib/rpgClass';
 
-const RANKED_PAGE_SIZE = 8;
-const TOP_PICKS_COUNT = 3;
+const GRID_PAGE_SIZE = 6;
+const TAIL_PAGE_SIZE = 10;
 
-// ─── RankedRow ───────────────────────────────────────────────────────────────
-function RankedRow({
-  rank,
+// ─── CompactMatchRow ─────────────────────────────────────────────────────────
+// Traitement réduit pour le tier "Worth reaching out" — moins prioritaire, pas de carte complète.
+function CompactMatchRow({
   match,
   invitationSent,
   onRequestMatch,
-}: { rank: number; match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
+}: { match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
   const percent = Math.round((match.score / 110) * 100);
   const tier = getFitTier(match.score);
   const reason = match.fitReason.split(' · ')[0];
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-panel2 px-4 py-3">
-      <span className="w-5 shrink-0 text-center text-xs font-bold text-muted">#{rank}</span>
       <CompatibilityRing percent={percent} tier={tier} size={36} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text truncate">{match.name}</p>
@@ -373,7 +372,8 @@ export default function MatchesPage() {
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
-  const [rankedVisibleCount, setRankedVisibleCount] = useState(RANKED_PAGE_SIZE);
+  const [gridVisibleCount, setGridVisibleCount] = useState(GRID_PAGE_SIZE);
+  const [tailVisibleCount, setTailVisibleCount] = useState(TAIL_PAGE_SIZE);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
@@ -735,7 +735,11 @@ export default function MatchesPage() {
                 </p>
                 {userCity && (
                   <button
-                    onClick={() => { setNearMeOnly((v) => !v); setRankedVisibleCount(RANKED_PAGE_SIZE); }}
+                    onClick={() => {
+                      setNearMeOnly((v) => !v);
+                      setGridVisibleCount(GRID_PAGE_SIZE);
+                      setTailVisibleCount(TAIL_PAGE_SIZE);
+                    }}
                     className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                       nearMeOnly
                         ? 'border-accent3/60 bg-accent3/15 text-[#2E9E24]'
@@ -761,18 +765,16 @@ export default function MatchesPage() {
               )}
 
               {visibleMatches.length > 0 && (() => {
-                const topPicks = visibleMatches.slice(0, TOP_PICKS_COUNT);
-                const rest = visibleMatches.slice(TOP_PICKS_COUNT);
+                const priority = visibleMatches.filter((m) => getFitTier(m.score) !== 'other');
+                const tail     = visibleMatches.filter((m) => getFitTier(m.score) === 'other');
                 return (
                   <>
-                    <div>
-                      {rest.length > 0 && (
-                        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">🔥 Top picks</p>
-                      )}
-                      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
-                        {topPicks.map((m, index) => (
-                          <div key={m.id || `top-${index}`} className="w-[320px] shrink-0 snap-start">
+                    {priority.length > 0 && (
+                      <div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {priority.slice(0, gridVisibleCount).map((m, index) => (
                             <MatchCard
+                              key={m.id || `grid-${index}`}
                               name={m.name}
                               games={m.games ?? []}
                               platform={normalizeArray(m.platform)}
@@ -787,31 +789,38 @@ export default function MatchesPage() {
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}
                             />
-                          </div>
-                        ))}
+                          ))}
+                        </div>
+                        {gridVisibleCount < priority.length && (
+                          <button
+                            onClick={() => setGridVisibleCount((c) => c + GRID_PAGE_SIZE)}
+                            className="mt-4 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+                          >
+                            Show more ({priority.length - gridVisibleCount} more)
+                          </button>
+                        )}
                       </div>
-                    </div>
+                    )}
 
-                    {rest.length > 0 && (
+                    {tail.length > 0 && (
                       <div>
-                        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">All matches — ranked</p>
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">Worth reaching out</p>
                         <div className="grid gap-2">
-                          {rest.slice(0, rankedVisibleCount).map((m, index) => (
-                            <RankedRow
-                              key={m.id || `ranked-${index}`}
-                              rank={index + 1 + TOP_PICKS_COUNT}
+                          {tail.slice(0, tailVisibleCount).map((m, index) => (
+                            <CompactMatchRow
+                              key={m.id || `tail-${index}`}
                               match={m}
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}
                             />
                           ))}
                         </div>
-                        {rankedVisibleCount < rest.length && (
+                        {tailVisibleCount < tail.length && (
                           <button
-                            onClick={() => setRankedVisibleCount((c) => c + RANKED_PAGE_SIZE)}
+                            onClick={() => setTailVisibleCount((c) => c + TAIL_PAGE_SIZE)}
                             className="mt-4 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
                           >
-                            Show more ({rest.length - rankedVisibleCount} more)
+                            Show more ({tail.length - tailVisibleCount} more)
                           </button>
                         )}
                       </div>
