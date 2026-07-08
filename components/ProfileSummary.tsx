@@ -22,7 +22,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
   const styles    = toArray(style);
 
   return (
-    <div className="rounded-2xl border border-accent/30 bg-accent/5 overflow-hidden">
+    <div className="rounded-2xl border border-accentSoftBorder bg-accentSoft overflow-hidden">
 
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
@@ -32,16 +32,16 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
         </div>
         <div className="flex items-center gap-2">
           {openIRL && (
-            <span className="rounded-full border border-accent3/40 bg-accent3/10 px-3 py-1 text-xs font-bold text-[#2E9E24]">🤝 Down to play</span>
+            <span className="rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">🤝 Down to play</span>
           )}
-          <span className="rounded-full border border-accent/40 bg-accent/15 px-3 py-1 text-xs font-bold text-accent">
+          <span className="rounded-full border border-accentSoftBorder bg-accentSoft px-3 py-1 text-xs font-bold text-accent">
             👤 My profile
           </span>
         </div>
       </div>
 
       {/* Séparateur */}
-      <div className="border-t border-accent/20 mx-5" />
+      <div className="border-t border-accentSoftBorder mx-5" />
 
       {/* Tags */}
       <div className="px-5 py-3 flex flex-wrap gap-2">
@@ -69,7 +69,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
       </div>
 
       {/* Séparateur */}
-      <div className="border-t border-accent/20 mx-5" />
+      <div className="border-t border-accentSoftBorder mx-5" />
 
       {/* CTA Edit — pointe maintenant vers /profile/edit */}
       <div className="px-5 py-4">

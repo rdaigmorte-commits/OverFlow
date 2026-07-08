@@ -27,14 +27,14 @@ function CompactMatchRow({
   const reason = match.fitReason.split(' · ')[0];
 
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-border bg-panel2 px-4 py-3">
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
       <CompatibilityRing percent={percent} tier={tier} size={36} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text truncate">{match.name}</p>
         <p className="text-xs text-muted truncate">{reason}</p>
       </div>
       {invitationSent ? (
-        <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-3 py-1.5 text-xs font-semibold text-[#2E9E24]">
+        <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1.5 text-xs font-semibold text-[#2E9E24]">
           Sent ✓
         </span>
       ) : (
@@ -222,7 +222,7 @@ function ContactModal({
             <p className="text-sm text-muted">
               {situation.name} hasn&apos;t shared contact info yet.
             </p>
-            <div className="rounded-xl border border-accent2/50 bg-accent2/10 px-4 py-3 text-sm text-muted">
+            <div className="rounded-xl border border-accent2SoftBorder bg-accent2Soft px-4 py-3 text-sm text-muted">
               ⚠️ We&apos;ll notify them that players want to connect — this might nudge them to add their Discord or email.
             </div>
           </div>
@@ -282,19 +282,19 @@ function InvitationsPanel({
 
   return (
     <div className="mb-6 flex flex-col gap-3">
-      <div className="inline-flex w-fit rounded-full border border-border bg-panel2 p-1">
+      <div className="inline-flex w-fit rounded-xl border border-border bg-[#F1ECE1] p-1 gap-1">
         <button
           onClick={() => setTab('received')}
-          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-            tab === 'received' ? 'bg-accent text-white' : 'text-muted hover:text-text'
+          className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition ${
+            tab === 'received' ? 'bg-white text-text shadow-sm' : 'bg-transparent text-muted hover:text-text'
           }`}
         >
           📬 Received ({received.length})
         </button>
         <button
           onClick={() => setTab('sent')}
-          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
-            tab === 'sent' ? 'bg-accent text-white' : 'text-muted hover:text-text'
+          className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition ${
+            tab === 'sent' ? 'bg-white text-text shadow-sm' : 'bg-transparent text-muted hover:text-text'
           }`}
         >
           Sent ({sent.length})
@@ -304,7 +304,7 @@ function InvitationsPanel({
       {tab === 'received' && received.map((req) => (
         <div
           key={req.id}
-          className="flex items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/5 px-5 py-4"
+          className="flex items-center justify-between gap-4 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
         >
           <div className="min-w-0">
             <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
@@ -339,11 +339,11 @@ function InvitationsPanel({
         >
           <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
           {req.status === 'accepted' ? (
-            <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-3 py-1 text-xs font-bold text-[#2E9E24]">
+            <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">
               ✓ Accepted · Discord shared
             </span>
           ) : (
-            <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
+            <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
               ⏳ Pending
             </span>
           )}
@@ -641,7 +641,7 @@ export default function MatchesPage() {
 
       {/* Bandeau no-email */}
       {!loading && !hasEmail && (
-        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2/50 bg-accent2/10 px-5 py-4">
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2SoftBorder bg-accent2Soft px-5 py-4">
           <div className="flex items-start gap-3">
             <span className="text-lg leading-none mt-0.5">⚠️</span>
             <div>
@@ -687,10 +687,10 @@ export default function MatchesPage() {
 
           {!loading && !fetchError && matches.length === 0 && (
             <div className="grid gap-5">
-              <div className="rounded-2xl border border-accent3/40 bg-accent3/10 px-6 py-5">
+              <div className="rounded-2xl border border-accent3SoftBorder bg-accent3Soft px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">🚀</span>
-                  <span className="rounded-full border border-accent3/60 bg-accent3/20 px-3 py-1 text-xs font-bold text-[#2E9E24]">
+                  <span className="rounded-full border border-accent3SoftBorder bg-white px-3 py-1 text-xs font-bold text-[#2E9E24]">
                     Early OverFlow Tester{userCity ? ` · ${userCity}` : ''}
                   </span>
                 </div>
@@ -742,7 +742,7 @@ export default function MatchesPage() {
                     }}
                     className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                       nearMeOnly
-                        ? 'border-accent3/60 bg-accent3/15 text-[#2E9E24]'
+                        ? 'border-accent3SoftBorder bg-accent3Soft text-[#2E9E24]'
                         : 'border-border bg-panel2 text-muted hover:border-accent hover:text-text'
                     }`}
                   >

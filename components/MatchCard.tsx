@@ -18,12 +18,6 @@ type MatchCardProps = {
   onRequestMatch: () => void;
 };
 
-const cardTint = {
-  strong: { border: 'border-accent3/40', bg: 'bg-accent3/8' },
-  good:   { border: 'border-accent2/50', bg: 'bg-accent2/10' },
-  other:  { border: 'border-border',     bg: 'bg-panel' },
-};
-
 function getInitials(name: string): string {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return '?';
@@ -58,12 +52,14 @@ export function MatchCard({
   const rpgClass = getRpgClass(style);
   const percent  = Math.round((score / 110) * 100);
   const tier     = getFitTier(score);
-  const tint     = cardTint[tier];
   const style_   = TIER_STYLE[tier];
   const reasons  = parseFitReasonToIcons(fitReason).slice(0, 2);
 
   return (
-    <div className={`card-hover rounded-2xl border ${tint.border} ${tint.bg} overflow-hidden`}>
+    <div
+      className="card-hover rounded-2xl border overflow-hidden"
+      style={{ borderColor: style_.cardBorder, background: `linear-gradient(165deg, ${style_.cardBgFrom}, #FDFBF6)` }}
+    >
 
       {/* Header */}
       <div className="flex items-center gap-3 px-5 pt-4 pb-3">
@@ -77,12 +73,12 @@ export function MatchCard({
           <div className="flex items-center gap-2 min-w-0">
             <span className="text-xl font-black text-text truncate">{name}</span>
             {isIRLNearby && (
-              <span className="shrink-0 rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
+              <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
                 📍 IRL ready
               </span>
             )}
             {!isIRLNearby && openIRL && (
-              <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
+              <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
                 🤝 Down to play
               </span>
             )}
@@ -115,7 +111,7 @@ export function MatchCard({
       {/* CTA */}
       <div className="px-5 pb-4">
         {invitationSent ? (
-          <div className="w-full rounded-xl border border-accent3/40 bg-accent3/10 px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
+          <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
             Invitation sent ✓
           </div>
         ) : (
