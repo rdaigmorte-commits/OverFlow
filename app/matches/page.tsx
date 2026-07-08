@@ -6,9 +6,49 @@ import { Card } from '@/components/Card';
 import { IrlEventBlock } from '@/components/IrlEventBlock';
 import { MatchCard } from '@/components/MatchCard';
 import { ProfileSummary } from '@/components/ProfileSummary';
+import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
+import { getFitTier } from '@/lib/rpgClass';
+
+const RANKED_PAGE_SIZE = 8;
+const TOP_PICKS_COUNT = 3;
+
+// ─── RankedRow ───────────────────────────────────────────────────────────────
+function RankedRow({
+  rank,
+  match,
+  invitationSent,
+  onRequestMatch,
+}: { rank: number; match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
+  const percent = Math.round((match.score / 110) * 100);
+  const tier = getFitTier(match.score);
+  const reason = match.fitReason.split(' · ')[0];
+
+  return (
+    <div className="flex items-center gap-3 rounded-xl border border-border bg-panel2 px-4 py-3">
+      <span className="w-5 shrink-0 text-center text-xs font-bold text-muted">#{rank}</span>
+      <CompatibilityRing percent={percent} tier={tier} size={36} />
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-semibold text-text truncate">{match.name}</p>
+        <p className="text-xs text-muted truncate">{reason}</p>
+      </div>
+      {invitationSent ? (
+        <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-3 py-1.5 text-xs font-semibold text-[#2E9E24]">
+          Sent ✓
+        </span>
+      ) : (
+        <button
+          onClick={onRequestMatch}
+          className="shrink-0 rounded-full bg-accent px-3 py-1.5 text-xs font-semibold text-white hover:opacity-90 transition"
+        >
+          Let&apos;s play
+        </button>
+      )}
+    </div>
+  );
+}
 
 // ─── MatchesDisconnectedState ────────────────────────────────────────────────
 function MatchesDisconnectedState() {
@@ -333,6 +373,7 @@ export default function MatchesPage() {
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
+  const [rankedVisibleCount, setRankedVisibleCount] = useState(RANKED_PAGE_SIZE);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
@@ -694,7 +735,7 @@ export default function MatchesPage() {
                 </p>
                 {userCity && (
                   <button
-                    onClick={() => setNearMeOnly((v) => !v)}
+                    onClick={() => { setNearMeOnly((v) => !v); setRankedVisibleCount(RANKED_PAGE_SIZE); }}
                     className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                       nearMeOnly
                         ? 'border-accent3/60 bg-accent3/15 text-[#2E9E24]'
@@ -719,24 +760,65 @@ export default function MatchesPage() {
                 </Card>
               )}
 
-              {visibleMatches.map((m, index) => (
-                <MatchCard
-                  key={m.id || `match-${index}`}
-                  name={m.name}
-                  games={m.games ?? []}
-                  platform={normalizeArray(m.platform)}
-                  style={normalizeArray(m.profile?.style)}
-                  language={normalizeArray(m.language)}
-                  city={m.city}
-                  openIRL={m.openIRL}
-                  isIRLNearby={m.isIRLNearby}
-                  fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
-                  fitReason={m.fitReason}
-                  score={m.score}
-                  invitationSent={!!sentInvitations[m.id]}
-                  onRequestMatch={() => handleLetsPlay(m.id, m.name)}
-                />
-              ))}
+              {visibleMatches.length > 0 && (() => {
+                const topPicks = visibleMatches.slice(0, TOP_PICKS_COUNT);
+                const rest = visibleMatches.slice(TOP_PICKS_COUNT);
+                return (
+                  <>
+                    <div>
+                      {rest.length > 0 && (
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">🔥 Top picks</p>
+                      )}
+                      <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory">
+                        {topPicks.map((m, index) => (
+                          <div key={m.id || `top-${index}`} className="w-[320px] shrink-0 snap-start">
+                            <MatchCard
+                              name={m.name}
+                              games={m.games ?? []}
+                              platform={normalizeArray(m.platform)}
+                              style={normalizeArray(m.profile?.style)}
+                              language={normalizeArray(m.language)}
+                              city={m.city}
+                              openIRL={m.openIRL}
+                              isIRLNearby={m.isIRLNearby}
+                              fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
+                              fitReason={m.fitReason}
+                              score={m.score}
+                              invitationSent={!!sentInvitations[m.id]}
+                              onRequestMatch={() => handleLetsPlay(m.id, m.name)}
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {rest.length > 0 && (
+                      <div>
+                        <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">All matches — ranked</p>
+                        <div className="grid gap-2">
+                          {rest.slice(0, rankedVisibleCount).map((m, index) => (
+                            <RankedRow
+                              key={m.id || `ranked-${index}`}
+                              rank={index + 1 + TOP_PICKS_COUNT}
+                              match={m}
+                              invitationSent={!!sentInvitations[m.id]}
+                              onRequestMatch={() => handleLetsPlay(m.id, m.name)}
+                            />
+                          ))}
+                        </div>
+                        {rankedVisibleCount < rest.length && (
+                          <button
+                            onClick={() => setRankedVisibleCount((c) => c + RANKED_PAGE_SIZE)}
+                            className="mt-4 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+                          >
+                            Show more ({rest.length - rankedVisibleCount} more)
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
             </div>
           )}
 
