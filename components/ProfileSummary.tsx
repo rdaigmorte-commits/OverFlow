@@ -32,7 +32,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
         </div>
         <div className="flex items-center gap-2">
           {openIRL && (
-            <span className="rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">🤝 Down to play</span>
+            <span className="rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">📍 Down to meet</span>
           )}
           <span className="rounded-full border border-accentSoftBorder bg-accentSoft px-3 py-1 text-xs font-bold text-accent">
             👤 My profile

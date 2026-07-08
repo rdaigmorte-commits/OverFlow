@@ -9,7 +9,6 @@ type MatchCardProps = {
   style: string[];
   language: string[];
   city?: string;
-  openIRL?: boolean;
   isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   fitReason: string;
@@ -42,7 +41,6 @@ export function MatchCard({
   name,
   style,
   city,
-  openIRL,
   isIRLNearby,
   fitReason,
   score,
@@ -74,12 +72,7 @@ export function MatchCard({
             <span className="text-xl font-black text-text truncate">{name}</span>
             {isIRLNearby && (
               <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
-                📍 IRL ready
-              </span>
-            )}
-            {!isIRLNearby && openIRL && (
-              <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
-                🤝 Down to play
+                📍 Down to meet
               </span>
             )}
           </div>

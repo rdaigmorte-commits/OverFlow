@@ -781,7 +781,6 @@ export default function MatchesPage() {
                               style={normalizeArray(m.profile?.style)}
                               language={normalizeArray(m.language)}
                               city={m.city}
-                              openIRL={m.openIRL}
                               isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                               fitReason={m.fitReason}
