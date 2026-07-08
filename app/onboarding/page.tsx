@@ -5,14 +5,11 @@ import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray } from '@/lib/match';
+import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
+import { ShapeIcon } from '@/components/ShapeIcon';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
-const STYLES = [
-  { label: 'Competitive', emoji: '🏆' },
-  { label: 'Co-op',       emoji: '🤝' },
-  { label: 'Casual',      emoji: '🛋️' },
-  { label: 'Roleplay',    emoji: '🎭' },
-];
+const STYLES = Object.entries(STYLE_TO_CLASS).map(([value, rpg]) => ({ value, rpg }));
 const PLATFORMS = [
   { label: 'PC',          emoji: '🖥️' },
   { label: 'PlayStation', emoji: '🎮' },
@@ -110,19 +107,27 @@ function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: 
   );
 }
 
-function StyleCard({ emoji, label, selected, onClick }: { emoji: string; label: string; selected: boolean; onClick: () => void }) {
+function StyleCard({
+  value, rpg, selected, onClick,
+}: { value: string; rpg: RpgClass; selected: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
       onClick={onClick}
       className={`flex flex-col items-center justify-center gap-2 rounded-2xl border-2 p-5 transition ${
-        selected
-          ? 'border-accent bg-accent/10 text-accent'
-          : 'border-border bg-panel2 text-text hover:border-accent/50'
+        selected ? 'border-accent bg-accent/10' : 'border-border bg-panel2 hover:border-accent/50'
       }`}
     >
-      <span className="text-3xl">{emoji}</span>
-      <span className="text-sm font-semibold">{label}</span>
+      <div
+        className="flex h-11 w-11 items-center justify-center rounded-2xl"
+        style={{ background: rpg.bg }}
+      >
+        <ShapeIcon shape={rpg.icon} color={rpg.color} size={22} />
+      </div>
+      <span className="text-sm font-bold" style={{ fontFamily: 'var(--font-fredoka)', color: selected ? rpg.color : undefined }}>
+        {rpg.name}
+      </span>
+      <span className="text-xs text-muted">{value}</span>
     </button>
   );
 }
@@ -615,16 +620,16 @@ export default function OnboardingPage() {
               {/* style */}
               <div>
                 <h2 className="text-sm font-semibold text-text mb-3">
-                  Your play style <span className="text-accent">*</span>
+                  Your class <span className="text-accent">*</span>
                 </h2>
                 <div className="grid grid-cols-2 gap-3">
                   {STYLES.map((s) => (
                     <StyleCard
-                      key={s.label}
-                      emoji={s.emoji}
-                      label={s.label}
-                      selected={profile.style.includes(s.label)}
-                      onClick={() => toggleMulti('style', s.label)}
+                      key={s.value}
+                      value={s.value}
+                      rpg={s.rpg}
+                      selected={profile.style.includes(s.value)}
+                      onClick={() => toggleMulti('style', s.value)}
                     />
                   ))}
                 </div>
