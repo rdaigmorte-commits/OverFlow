@@ -1,4 +1,7 @@
 import { normalizeArray, LANG_FLAG } from '@/lib/match';
+import { CompatibilityRing } from '@/components/CompatibilityRing';
+import { getRpgClass, getFitTier } from '@/lib/rpgClass';
+import { ShapeIcon } from '@/components/ShapeIcon';
 
 type MatchCardProps = {
   name: string;
@@ -61,6 +64,7 @@ export function MatchCard({
   isIRLNearby,
   fitLabel,
   fitReason,
+  score,
   invitationSent = false,
   onRequestMatch,
 }: MatchCardProps) {
@@ -68,32 +72,49 @@ export function MatchCard({
   const bullets  = parseFitReasonToBullets(fitReason);
   const platforms = normalizeArray(platform);
   const styles    = normalizeArray(style);
+  const rpgClass  = getRpgClass(style);
+  const percent   = Math.round((score / 110) * 100);
+  const tier      = getFitTier(score);
 
   return (
     <div className={`card-hover rounded-2xl border ${config.border} ${config.bg} overflow-hidden`}>
 
       {/* Header */}
       <div className="flex items-start justify-between gap-3 px-5 pt-4 pb-3">
-        <div className="flex flex-col gap-1 min-w-0">
-          <span className="text-xl font-black text-text truncate">{name}</span>
-          {(city || isIRLNearby || openIRL) && (
-            <div className="flex items-center gap-2 flex-wrap">
-              {city && (
-                city === 'Utrecht'
-                  ? <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">📍 Utrecht</span>
-                  : <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">📍 {city}</span>
+        <div className="flex items-center gap-3 min-w-0">
+          <CompatibilityRing percent={percent} tier={tier} />
+          <div className="flex flex-col gap-1 min-w-0">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-xl font-black text-text truncate">{name}</span>
+              {rpgClass && (
+                <span
+                  className="inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-bold"
+                  style={{ background: rpgClass.bg, color: rpgClass.color }}
+                >
+                  <ShapeIcon shape={rpgClass.icon} color={rpgClass.color} size={12} />
+                  {rpgClass.name}
+                </span>
               )}
-              {isIRLNearby ? (
-                <span className="rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
-                  📍 Nearby · IRL ready
-                </span>
-              ) : openIRL ? (
-                <span className="rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
-                  🤝 Down to play
-                </span>
-              ) : null}
             </div>
-          )}
+            {(city || isIRLNearby || openIRL) && (
+              <div className="flex items-center gap-2 flex-wrap">
+                {city && (
+                  city === 'Utrecht'
+                    ? <span className="rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-xs font-semibold text-accent">📍 Utrecht</span>
+                    : <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">📍 {city}</span>
+                )}
+                {isIRLNearby ? (
+                  <span className="rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
+                    📍 Nearby · IRL ready
+                  </span>
+                ) : openIRL ? (
+                  <span className="rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
+                    🤝 Down to play
+                  </span>
+                ) : null}
+              </div>
+            )}
+          </div>
         </div>
         <span className={`shrink-0 rounded-full border px-3 py-1 text-xs font-bold ${config.badgeBg}`}>
           {config.badge}
