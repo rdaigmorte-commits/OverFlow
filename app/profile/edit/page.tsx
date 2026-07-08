@@ -182,13 +182,15 @@ export default function ProfileEditPage() {
 
     setLoading(false);
     if (dbError) {
+      console.error('[profile/edit] upsert failed:', dbError);
       // Un profil déjà lié à un compte (Magic Link) ne peut être sauvegardé
       // que par une session authentifiée — cas le plus probable d'un 403 ici.
       if (!isAuthenticated) {
         setNeedsLogin(true);
         setError('Your session has expired. Please sign in to save changes to this profile.');
       } else {
-        setError('Something went wrong. Please try again.');
+        // POC : message brut affiché pour diagnostiquer plus vite un 403 inattendu.
+        setError(`Something went wrong. Please try again. (${dbError.message})`);
       }
       return;
     }
