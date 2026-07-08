@@ -125,9 +125,9 @@ function StyleCard({
         <ShapeIcon shape={rpg.icon} color={rpg.color} size={22} />
       </div>
       <span className="text-sm font-bold" style={{ fontFamily: 'var(--font-fredoka)', color: selected ? rpg.color : undefined }}>
-        {rpg.name}
+        {value}
       </span>
-      <span className="text-xs text-muted">{value}</span>
+      <span className="text-xs text-muted">{rpg.name}</span>
     </button>
   );
 }
