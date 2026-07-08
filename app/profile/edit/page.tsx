@@ -11,6 +11,11 @@ const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
 const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
 const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
 const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
+const LOOKING_FOR_OPTIONS = [
+  { value: 'online' as const, icon: '🏠', title: 'Play online',  desc: 'Regular sessions, no pressure' },
+  { value: 'irl'    as const, icon: '🍺', title: 'Meet IRL',    desc: 'Find people in your city' },
+  { value: 'both'   as const, icon: '⚡',  title: 'Both',        desc: 'Online first, IRL if it clicks' },
+];
 
 function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
   return (
@@ -59,7 +64,7 @@ export default function ProfileEditPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('*')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for')
         .eq('id', profileId)
         .single();
 
@@ -76,6 +81,7 @@ export default function ProfileEditPage() {
           availability: Array.isArray(data.availability) ? data.availability : [],
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
+          lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
           email:        '',
           discord:      '',
         });
@@ -161,8 +167,9 @@ export default function ProfileEditPage() {
       games:        profile.games,
       style:        profile.style,
       availability: profile.availability,
-      open_irl:     profile.openIRL,
+      open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      profile.consent,
+      looking_for:  profile.lookingFor,
       email:        profile.email || null,
       discord:      profile.discord || null,
     };
@@ -372,15 +379,35 @@ export default function ProfileEditPage() {
               ))}
             </div>
           </div>
-          <label className="flex items-center gap-3 text-sm text-muted cursor-pointer">
-            <input
-              type="checkbox"
-              checked={profile.openIRL}
-              onChange={(e) => setProfile({ openIRL: e.target.checked })}
-              className="accent-[var(--accent)]"
-            />
-            Open to meeting IRL with local players
-          </label>
+          <div>
+            <h3 className="text-sm font-semibold text-text mb-3">You&apos;re here to…</h3>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+              {LOOKING_FOR_OPTIONS.map((opt) => {
+                const selected = profile.lookingFor === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setProfile({ lookingFor: opt.value })}
+                    className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
+                      selected
+                        ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(124,92,255,0.2)]'
+                        : 'border-border bg-panel2 hover:border-accent/50 hover:scale-[1.02]'
+                    }`}
+                  >
+                    <div className="text-3xl mb-3">{opt.icon}</div>
+                    <div className="font-bold text-text text-sm mb-1">{opt.title}</div>
+                    <div className="text-xs text-muted leading-relaxed">{opt.desc}</div>
+                    {selected && (
+                      <div className="mt-3 text-xs font-semibold text-accent animate-[chip-pop_0.25s_ease_both]">
+                        ✓ Selected
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </section>
 
         {/* Section : Infos de contact */}
