@@ -158,7 +158,6 @@ export default function ProfileEditPage() {
 
     setLoading(true);
     const payload = {
-      id:           profile.profileId,
       name:         profile.name,
       age:          profile.age || null,
       city:         profile.city || null,
@@ -174,15 +173,20 @@ export default function ProfileEditPage() {
       discord:      profile.discord || null,
     };
 
+    // update() plutôt qu'upsert() : ON CONFLICT DO UPDATE exige un SELECT
+    // table-level sur profiles, révoqué par SEC-02 (anon/authenticated n'ont
+    // que des GRANT colonne) — l'upsert renvoie systématiquement 403 ici,
+    // qu'on soit connecté ou non, profil lié ou non.
     const { error: dbError } = await supabase
       .from('profiles')
-      .upsert(payload, { onConflict: 'id' })
+      .update(payload)
+      .eq('id', profile.profileId)
       .select('id')
       .single();
 
     setLoading(false);
     if (dbError) {
-      console.error('[profile/edit] upsert failed:', dbError);
+      console.error('[profile/edit] update failed:', dbError);
       // Un profil déjà lié à un compte (Magic Link) ne peut être sauvegardé
       // que par une session authentifiée — cas le plus probable d'un 403 ici.
       if (!isAuthenticated) {

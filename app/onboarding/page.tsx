@@ -340,9 +340,13 @@ export default function OnboardingPage() {
     let data: { id: string } | null = null;
     let dbError: { message?: string; code?: string } | null = null;
     if (profile.profileId) {
+      // update() plutôt qu'upsert() : ON CONFLICT DO UPDATE exige un SELECT
+      // table-level sur profiles, révoqué par SEC-02 (anon/authenticated
+      // n'ont que des GRANT colonne) — l'upsert renvoie systématiquement 403.
       ({ data, error: dbError } = await supabase
         .from('profiles')
-        .upsert({ id: profile.profileId, ...basePayload }, { onConflict: 'id' })
+        .update(basePayload)
+        .eq('id', profile.profileId)
         .select('id')
         .single());
     } else {
