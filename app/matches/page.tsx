@@ -215,6 +215,108 @@ function ContactModal({
   );
 }
 
+// ─── InvitationsPanel ────────────────────────────────────────────────────────
+type ReceivedRequest = {
+  id: string;
+  sender_id: string;
+  sender: { id: string; name: string; games: string[] } | null;
+};
+type SentRequest = {
+  id: string;
+  receiver_id: string;
+  status: string;
+  receiver: { id: string; name: string } | null;
+};
+
+function InvitationsPanel({
+  received,
+  sent,
+  onAccept,
+  onDecline,
+}: {
+  received: ReceivedRequest[];
+  sent: SentRequest[];
+  onAccept: (id: string) => void;
+  onDecline: (id: string) => void;
+}) {
+  const [tab, setTab] = useState<'received' | 'sent'>('received');
+
+  return (
+    <div className="mb-6 flex flex-col gap-3">
+      <div className="inline-flex w-fit rounded-full border border-border bg-panel2 p-1">
+        <button
+          onClick={() => setTab('received')}
+          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+            tab === 'received' ? 'bg-accent text-white' : 'text-muted hover:text-text'
+          }`}
+        >
+          📬 Received ({received.length})
+        </button>
+        <button
+          onClick={() => setTab('sent')}
+          className={`rounded-full px-4 py-1.5 text-xs font-semibold transition ${
+            tab === 'sent' ? 'bg-accent text-white' : 'text-muted hover:text-text'
+          }`}
+        >
+          Sent ({sent.length})
+        </button>
+      </div>
+
+      {tab === 'received' && received.map((req) => (
+        <div
+          key={req.id}
+          className="flex items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/5 px-5 py-4"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
+            <p className="text-xs text-muted mt-0.5 truncate">
+              {(req.sender?.games ?? []).slice(0, 3).join(', ')}
+            </p>
+          </div>
+          <div className="flex gap-2 shrink-0">
+            <button
+              onClick={() => onAccept(req.id)}
+              className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
+            >
+              Accept
+            </button>
+            <button
+              onClick={() => onDecline(req.id)}
+              className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-panel2 transition"
+            >
+              Decline
+            </button>
+          </div>
+        </div>
+      ))}
+      {tab === 'received' && received.length === 0 && (
+        <p className="text-xs text-muted px-1">No pending invitations right now.</p>
+      )}
+
+      {tab === 'sent' && sent.map((req) => (
+        <div
+          key={req.id}
+          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-panel2 px-5 py-4"
+        >
+          <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+          {req.status === 'accepted' ? (
+            <span className="shrink-0 rounded-full border border-accent3/40 bg-accent3/10 px-3 py-1 text-xs font-bold text-[#2E9E24]">
+              ✓ Accepted · Discord shared
+            </span>
+          ) : (
+            <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
+              ⏳ Pending
+            </span>
+          )}
+        </div>
+      ))}
+      {tab === 'sent' && sent.length === 0 && (
+        <p className="text-xs text-muted px-1">You haven&apos;t sent any invitations yet.</p>
+      )}
+    </div>
+  );
+}
+
 // ─── Constants ───────────────────────────────────────────────────────────────
 const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl';
 const PROFILE_FETCH_LIMIT = 200;
@@ -232,13 +334,10 @@ export default function MatchesPage() {
   const [signingOut, setSigningOut] = useState(false);
   const [nearMeOnly, setNearMeOnly] = useState(false);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
+  const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [inboundRequests, setInboundRequests] = useState<{
-    id: string;
-    sender_id: string;
-    sender: { id: string; name: string; games: string[] } | null;
-  }[]>([]);
+  const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -301,13 +400,14 @@ export default function MatchesPage() {
       // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
       const { data: sentData } = await supabase
         .from('match_requests')
-        .select('receiver_id')
+        .select('id, receiver_id, status, receiver:profiles!receiver_id(id, name)')
         .eq('sender_id', profileId);
 
       if (sentData) {
         const sentMap: Record<string, boolean> = {};
         sentData.forEach((r) => { sentMap[r.receiver_id] = true; });
         setSentInvitations(sentMap);
+        setSentRequests(sentData as unknown as SentRequest[]);
       }
 
       const { data: allProfiles, error: allError } = await supabase
@@ -386,6 +486,11 @@ export default function MatchesPage() {
 
     // 2. Mettre à jour l'état local (pas de localStorage)
     setSentInvitations((prev) => ({ ...prev, [matchId]: true }));
+    setSentRequests((prev) => (
+      prev.some((r) => r.receiver_id === matchId)
+        ? prev
+        : [...prev, { id: `local-${matchId}`, receiver_id: matchId, status: 'pending', receiver: { id: matchId, name: matchName } }]
+    ));
 
     // 3. Récupérer le contact via RPC sécurisée (email/discord jamais lus directement)
     const { data: contactRows, error } = await supabase
@@ -472,41 +577,17 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Demandes reçues */}
-      {!loading && inboundRequests.length > 0 && (
-        <div className="mb-6 flex flex-col gap-3">
-          <p className="text-sm font-semibold text-text">
-            🎮 {inboundRequests.length} player{inboundRequests.length > 1 ? 's' : ''} want{inboundRequests.length === 1 ? 's' : ''} to play with you
-          </p>
-          {inboundRequests.map((req) => (
-            <div
-              key={req.id}
-              className="flex items-center justify-between gap-4 rounded-xl border border-accent/30 bg-accent/5 px-5 py-4"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
-                <p className="text-xs text-muted mt-0.5 truncate">
-                  {(req.sender?.games ?? []).slice(0, 3).join(', ')}
-                </p>
-              </div>
-              <div className="flex gap-2 shrink-0">
-                <button
-                  onClick={() => handleAcceptRequest(req.id)}
-                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
-                >
-                  Accept
-                </button>
-                <button
-                  onClick={() => handleDeclineRequest(req.id)}
-                  className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-panel2 transition"
-                >
-                  Decline
-                </button>
-              </div>
-            </div>
-          ))}
-          {!hasContact && (
-            <p className="text-xs text-muted px-1">
+      {/* Invitations — reçues / envoyées */}
+      {!loading && (inboundRequests.length > 0 || sentRequests.length > 0) && (
+        <>
+          <InvitationsPanel
+            received={inboundRequests}
+            sent={sentRequests}
+            onAccept={handleAcceptRequest}
+            onDecline={handleDeclineRequest}
+          />
+          {inboundRequests.length > 0 && !hasContact && (
+            <p className="-mt-3 mb-6 text-xs text-muted px-1">
               Add your Discord in{' '}
               <Link href="/profile/edit" className="text-accent underline underline-offset-2 hover:opacity-80 transition">
                 your profile
@@ -514,7 +595,7 @@ export default function MatchesPage() {
               {' '}so players can reach you after you accept.
             </p>
           )}
-        </div>
+        </>
       )}
 
       {/* Bandeau no-email */}
