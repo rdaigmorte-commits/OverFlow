@@ -35,11 +35,21 @@ export default function ProfileEditPage() {
   const [loading, setLoading]     = useState(false);
   const [hydrating, setHydrating] = useState(true);
   const [error, setError]         = useState<string | null>(null);
+  const [needsLogin, setNeedsLogin] = useState(false);
   const [success, setSuccess]     = useState(false);
   const [gameInput, setGameInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [allGamesInDB, setAllGamesInDB] = useState<string[]>([]);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // ── Session — un profil lié à un compte (post Magic Link) ne peut être
+  // sauvegardé que par une session authentifiée (RLS profiles.user_id) ──────
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session?.user);
+    });
+  }, []);
 
   // ── Hydratation — charge le profil depuis Supabase ───────────────────────
   useEffect(() => {
@@ -133,7 +143,7 @@ export default function ProfileEditPage() {
 
   // ── Sauvegarde ───────────────────────────────────────────────────────────
   async function handleSave() {
-    setError(null); setSuccess(false);
+    setError(null); setNeedsLogin(false); setSuccess(false);
     if (!profile.name.trim())          { setError('Please enter a nickname.'); return; }
     if (profile.games.length === 0)    { setError('Please select at least one game.'); return; }
     if (profile.platform.length === 0) { setError('Please select at least one platform.'); return; }
@@ -164,7 +174,17 @@ export default function ProfileEditPage() {
       .single();
 
     setLoading(false);
-    if (dbError) { setError('Something went wrong. Please try again.'); return; }
+    if (dbError) {
+      // Un profil déjà lié à un compte (Magic Link) ne peut être sauvegardé
+      // que par une session authentifiée — cas le plus probable d'un 403 ici.
+      if (!isAuthenticated) {
+        setNeedsLogin(true);
+        setError('Your session has expired. Please sign in to save changes to this profile.');
+      } else {
+        setError('Something went wrong. Please try again.');
+      }
+      return;
+    }
 
     setSuccess(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -408,7 +428,19 @@ export default function ProfileEditPage() {
           </label>
         </section>
 
-        {error && <p className="text-sm text-red-400 -mt-4">{error}</p>}
+        {error && (
+          <p className="text-sm text-red-400 -mt-4">
+            {error}
+            {needsLogin && (
+              <>
+                {' '}
+                <Link href="/login" className="underline underline-offset-2 hover:opacity-80">
+                  Sign in
+                </Link>
+              </>
+            )}
+          </p>
+        )}
 
         {/* Actions */}
         <div className="flex flex-col gap-3 pb-10">
