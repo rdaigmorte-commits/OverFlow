@@ -137,10 +137,10 @@ function LiveCount({ count }: { count: number }) {
   return (
     <span className="flex items-center gap-1">
       <span className="relative flex h-2 w-2">
-        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
-        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent3 opacity-75" />
+        <span className="relative inline-flex rounded-full h-2 w-2 bg-accent3" />
       </span>
-      <span className="text-xs font-medium text-green-400">{count} playing</span>
+      <span className="text-xs font-medium text-[#2E9E24]">{count} playing</span>
     </span>
   );
 }
@@ -552,8 +552,8 @@ export default function OnboardingPage() {
                         className="flex w-full items-center justify-between px-4 py-3 text-sm text-text hover:bg-panel2 transition"
                       >
                         <span>{g}</span>
-                        <span className="flex items-center gap-1 text-xs text-green-400 font-medium">
-                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-green-500" />
+                        <span className="flex items-center gap-1 text-xs text-[#2E9E24] font-medium">
+                          <span className="inline-block h-1.5 w-1.5 rounded-full bg-accent3" />
                           {gameCounts[g]} playing
                         </span>
                       </button>
@@ -565,7 +565,7 @@ export default function OnboardingPage() {
                 const topGame = [...profile.games].sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0))[0];
                 const count = gameCounts[topGame] ?? 0;
                 return count > 0
-                  ? <p className="text-sm text-green-400 font-medium">🎮 {count} player{count > 1 ? 's' : ''} also play {topGame}!</p>
+                  ? <p className="text-sm text-[#2E9E24] font-medium">🎮 {count} player{count > 1 ? 's' : ''} also play {topGame}!</p>
                   : null;
               })()}
             </Card>
