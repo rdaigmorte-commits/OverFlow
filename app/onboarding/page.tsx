@@ -37,11 +37,11 @@ const SLOTS = [
 const TOTAL_STEPS = 5;
 
 const STEP_LABELS = [
-  'Who you are',
-  'Your games',
-  'Your vibe',
-  'Your setup',
-  'Your matches',
+  'CREATE YOUR CHARACTER',
+  'YOUR LOADOUT',
+  'CHOOSE YOUR CLASS',
+  'GEAR & COMMS',
+  'YOUR PARTY',
 ];
 
 const STEP_ENCOURAGEMENTS = [
@@ -64,9 +64,14 @@ function ProgressBar({ step }: { step: number }) {
   return (
     <div className="mb-8">
       <div className="flex items-center justify-between mb-3">
-        <span className="text-sm font-semibold text-text">{STEP_LABELS[step - 1]}</span>
-        <span className="text-xs text-muted">
-          {STEP_ENCOURAGEMENTS[step - 1] || `${step} of ${TOTAL_STEPS}`}
+        <span
+          className="text-[13px] font-semibold uppercase text-muted"
+          style={{ fontFamily: 'var(--font-fredoka)', letterSpacing: '0.14em' }}
+        >
+          {STEP_LABELS[step - 1]}
+        </span>
+        <span className="text-xs font-semibold text-muted" style={{ fontFamily: 'var(--font-fredoka)' }}>
+          {STEP_ENCOURAGEMENTS[step - 1] || `${step} / ${TOTAL_STEPS}`}
         </span>
       </div>
       <div className="flex items-center gap-2">

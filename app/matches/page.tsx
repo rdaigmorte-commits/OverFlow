@@ -183,7 +183,7 @@ function ContactModal({
             <p className="text-sm text-muted">
               {situation.name} hasn&apos;t shared contact info yet.
             </p>
-            <div className="rounded-xl border border-yellow-500/30 bg-yellow-500/5 px-4 py-3 text-sm text-muted">
+            <div className="rounded-xl border border-accent2/50 bg-accent2/10 px-4 py-3 text-sm text-muted">
               ⚠️ We&apos;ll notify them that players want to connect — this might nudge them to add their Discord or email.
             </div>
           </div>
@@ -197,7 +197,7 @@ function ContactModal({
             <Link
               href="/login"
               onClick={onClose}
-              className="block w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-black text-center hover:opacity-90 transition"
+              className="block w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white text-center hover:opacity-90 transition"
             >
               Sign in to invite
             </Link>
@@ -443,7 +443,7 @@ export default function MatchesPage() {
             <h1 className="text-3xl font-black">You haven&apos;t created your profile yet</h1>
             <p className="mt-3 text-muted max-w-md mx-auto">Create your gamer profile to find players who match your games, style, and availability.</p>
           </div>
-          <Link href="/onboarding" className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 transition">Create my profile</Link>
+          <Link href="/onboarding" className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-white hover:opacity-90 transition">Create my profile</Link>
           <p className="text-xs text-muted">Takes less than 2 minutes · No account needed</p>
         </div>
       </main>
@@ -492,7 +492,7 @@ export default function MatchesPage() {
               <div className="flex gap-2 shrink-0">
                 <button
                   onClick={() => handleAcceptRequest(req.id)}
-                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
+                  className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
                 >
                   Accept
                 </button>
@@ -519,7 +519,7 @@ export default function MatchesPage() {
 
       {/* Bandeau no-email */}
       {!loading && !hasEmail && (
-        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-yellow-500/40 bg-yellow-500/5 px-5 py-4">
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2/50 bg-accent2/10 px-5 py-4">
           <div className="flex items-start gap-3">
             <span className="text-lg leading-none mt-0.5">⚠️</span>
             <div>
@@ -531,7 +531,7 @@ export default function MatchesPage() {
           </div>
           <Link
             href="/login"
-            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-black hover:opacity-90 transition"
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
           >
             Add email
           </Link>
@@ -559,16 +559,16 @@ export default function MatchesPage() {
             <Card className="p-8 text-center">
               <div className="text-2xl font-bold">Something went wrong</div>
               <p className="mt-3 text-muted">We couldn&apos;t load your matches. Please try refreshing the page.</p>
-              <button onClick={() => setRetryCount(c => c + 1)} className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black">Try again</button>
+              <button onClick={() => setRetryCount(c => c + 1)} className="mt-5 inline-block rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white">Try again</button>
             </Card>
           )}
 
           {!loading && !fetchError && matches.length === 0 && (
             <div className="grid gap-5">
-              <div className="rounded-2xl border border-green-500/40 bg-green-500/10 px-6 py-5">
+              <div className="rounded-2xl border border-accent3/40 bg-accent3/10 px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
                   <span className="text-2xl">🚀</span>
-                  <span className="rounded-full border border-green-500/60 bg-green-500/20 px-3 py-1 text-xs font-bold text-green-400">
+                  <span className="rounded-full border border-accent3/60 bg-accent3/20 px-3 py-1 text-xs font-bold text-[#2E9E24]">
                     Early OverFlow Tester{userCity ? ` · ${userCity}` : ''}
                   </span>
                 </div>
@@ -585,7 +585,7 @@ export default function MatchesPage() {
                     </p>
                     <Link
                       href="/login"
-                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-black hover:opacity-90 transition"
+                      className="mt-4 inline-flex items-center gap-2 rounded-xl bg-accent px-5 py-3 text-sm font-semibold text-white hover:opacity-90 transition"
                     >
                       📧 Add my email
                     </Link>
@@ -616,7 +616,7 @@ export default function MatchesPage() {
                     onClick={() => setNearMeOnly((v) => !v)}
                     className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
                       nearMeOnly
-                        ? 'border-emerald-400/60 bg-emerald-400/15 text-emerald-400'
+                        ? 'border-accent3/60 bg-accent3/15 text-[#2E9E24]'
                         : 'border-border bg-panel2 text-muted hover:border-accent hover:text-text'
                     }`}
                   >

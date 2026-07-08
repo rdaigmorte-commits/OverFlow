@@ -19,15 +19,15 @@ type MatchCardProps = {
 const fitConfig = {
   'Strong fit': {
     badge: '🟢 Strong fit',
-    border: 'border-green-500/40',
-    bg: 'bg-green-500/8',
-    badgeBg: 'bg-green-500/20 text-green-400 border-green-500/40',
+    border: 'border-accent3/40',
+    bg: 'bg-accent3/8',
+    badgeBg: 'bg-accent3/20 text-[#2E9E24] border-accent3/40',
   },
   'Good fit': {
     badge: '🟡 Good fit',
-    border: 'border-yellow-500/40',
-    bg: 'bg-yellow-500/8',
-    badgeBg: 'bg-yellow-500/20 text-yellow-400 border-yellow-500/40',
+    border: 'border-accent2/50',
+    bg: 'bg-accent2/10',
+    badgeBg: 'bg-accent2/25 text-[#B77900] border-accent2/50',
   },
   'Worth reaching out': {
     badge: '⚪ Worth reaching out',
@@ -84,12 +84,12 @@ export function MatchCard({
                   : <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">📍 {city}</span>
               )}
               {isIRLNearby ? (
-                <span className="rounded-full border border-emerald-400/60 bg-emerald-400/15 px-2 py-0.5 text-xs font-bold text-emerald-400 animate-pulse">
+                <span className="rounded-full border border-accent3/60 bg-accent3/15 px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
                   📍 Nearby · IRL ready
                 </span>
               ) : openIRL ? (
-                <span className="rounded-full border border-green-500/40 bg-green-500/10 px-2 py-0.5 text-xs font-bold text-green-400">
-                  IRL ✓
+                <span className="rounded-full border border-accent3/40 bg-accent3/10 px-2 py-0.5 text-xs font-bold text-[#2E9E24]">
+                  🤝 Down to play
                 </span>
               ) : null}
             </div>
@@ -141,7 +141,7 @@ export function MatchCard({
       {/* CTA */}
       <div className="px-5 py-4">
         {invitationSent ? (
-          <div className="w-full rounded-xl border border-green-500/40 bg-green-500/10 px-5 py-3 text-sm font-semibold text-green-400 text-center">
+          <div className="w-full rounded-xl border border-accent3/40 bg-accent3/10 px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
             Invitation sent ✓
           </div>
         ) : (
