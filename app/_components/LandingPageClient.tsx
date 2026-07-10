@@ -21,8 +21,6 @@ function useScrollReveal(enabled: boolean) {
   return { ref, visible };
 }
 
-const BADGE_MIN_PLAYERS = 10;
-
 const WHY_ITEMS = [
   {
     shape: 'circle' as const,
@@ -50,10 +48,28 @@ const PATH_STEPS = [
   { n: 3, bg: '#46C93A', shadow: '#2E9E24', title: 'Play together', desc: 'Online or IRL' },
 ];
 
-const SQUAD_CARDS = [
-  { initials: 'JV', bg: 'linear-gradient(135deg,#7C5CFF,#9D86FF)', shadow: 'rgba(124,92,255,.6)', top: '20px', left: '40px', right: 'auto', bottom: 'auto', size: 152, font: 52, anim: 'of-bob 4s' },
-  { initials: 'MK', bg: 'linear-gradient(135deg,#FFC83D,#FFB01F)', shadow: 'rgba(255,176,31,.6)', top: '122px', left: 'auto', right: '24px', bottom: 'auto', size: 122, font: 42, anim: 'of-bob3 5s' },
-  { initials: 'TB', bg: 'linear-gradient(135deg,#38BDF8,#0EA5E9)', shadow: 'rgba(14,165,233,.6)', top: 'auto', left: '66px', right: 'auto', bottom: '4px', size: 106, font: 36, anim: 'of-bob2 4.4s' },
+// Duos plutôt que 3 avatars isolés — chaque paire est reliée par un connecteur qui
+// montre POURQUOI ils sont matchés (jeu, plateforme), pour rendre le concept de
+// squad/matching lisible d'un coup d'œil. Positions en % pour rester proportionnées
+// à toute largeur d'écran (visible aussi sur mobile, plus seulement lg:).
+const SQUAD_DUOS = [
+  {
+    id: 'duo1',
+    top: '2%', left: '0%', right: 'auto',
+    a: { initials: 'JV', bg: 'linear-gradient(135deg,#7C5CFF,#9D86FF)', shadow: 'rgba(124,92,255,.5)' },
+    b: { initials: 'MK', bg: 'linear-gradient(135deg,#FFC83D,#FFB01F)', shadow: 'rgba(255,176,31,.5)' },
+    connector: { icon: '🎮', label: 'Valorant' },
+    showMatchLabel: true,
+    anim: 'of-bob 4.4s ease-in-out infinite',
+  },
+  {
+    id: 'duo2',
+    top: 'auto', bottom: '4%', left: 'auto', right: '0%',
+    a: { initials: 'TB', bg: 'linear-gradient(135deg,#38BDF8,#0EA5E9)', shadow: 'rgba(14,165,233,.5)' },
+    b: { initials: 'RN', bg: 'linear-gradient(135deg,#46C93A,#2E9E24)', shadow: 'rgba(70,201,58,.5)' },
+    connector: { icon: '🖥️', label: 'PC' },
+    anim: 'of-bob3 5s ease-in-out infinite',
+  },
 ];
 
 const MARQUEE_ITEMS = [
@@ -171,7 +187,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
   }
 
   const hasProfile = !!profile.profileId;
-  const showBadge = playerCount !== null && playerCount >= BADGE_MIN_PLAYERS;
 
   // ── RETURNING USER ─────────────────────────────────────────────
   if (hasProfile) {
@@ -305,18 +320,18 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             </div>
           </div>
           <span className="inline-flex items-center rounded-full bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-accent">
-            Free · Local
+            🌱 Early Access
           </span>
         </header>
 
         {/* ── HERO ────────────────────────────────────────────────── */}
-        <section className="relative z-10 grid flex-1 items-center gap-10 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+        <section className="relative z-10 grid flex-1 items-center gap-10 pt-16 pb-6 lg:grid-cols-[1.05fr_0.95fr] lg:pt-24 lg:pb-8">
           <div>
 
             <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
               <span className="inline-flex items-center gap-2 rounded-full border-2 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em]" style={{ borderColor: '#B9EBB0', background: '#E7F8E4', color: '#2E9E24' }}>
                 <span className="of-dot inline-block h-2 w-2 rounded-full" />
-                <span>{showBadge ? `${playerCount} gamers near you` : 'Utrecht · Local matchmaking'}</span>
+                <span>Utrecht · Local matchmaking</span>
               </span>
             </div>
 
@@ -356,41 +371,69 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             </p>
           </div>
 
-          {/* Decorative squad visual */}
-          <div className="relative hidden h-[350px] lg:block" aria-hidden="true">
-            <svg width="60" height="56" className="of-shape" style={{ top: '4px', left: '30%', animation: 'of-bob2 5s ease-in-out infinite' }}>
-              <polygon points="30,6 55,50 5,50" fill="none" stroke="#46C93A" strokeWidth="7" strokeLinejoin="round" />
+          {/* Decorative squad visual — visible à toutes les tailles d'écran */}
+          <div className="relative h-[220px] sm:h-[280px] lg:h-[350px]" aria-hidden="true">
+            {/* Formes de fond ○✕△□ — toujours visibles, dans les coins libres entre les 2 duos diagonaux */}
+            <svg width="52" height="48" className="of-shape" style={{ top: '2%', right: '4%', animation: 'of-bob2 5s ease-in-out infinite' }}>
+              <polygon points="26,4 48,44 4,44" fill="none" stroke="#46C93A" strokeWidth="7" strokeLinejoin="round" />
             </svg>
-            <span className="of-shape rounded-full" style={{ top: '150px', left: '2px', width: 38, height: 38, border: '7px solid #FF6B6B', animation: 'of-bob 4.2s ease-in-out infinite' }} />
-            <span className="of-shape rounded-lg" style={{ top: '60px', right: '-6px', width: 34, height: 34, border: '7px solid #7C5CFF', animation: 'of-wob 5s ease-in-out infinite' }} />
-            <svg width="46" height="46" className="of-shape" style={{ bottom: '40px', right: '6%', animation: 'of-bob3 4.6s ease-in-out infinite' }}>
-              <line x1="8" y1="8" x2="38" y2="38" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
-              <line x1="38" y1="8" x2="8" y2="38" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
+            <span className="of-shape rounded-full" style={{ top: '38%', right: '14%', width: 40, height: 40, border: '7px solid #FF6B6B', animation: 'of-bob 4.2s ease-in-out infinite' }} />
+            <span className="of-shape rounded-lg" style={{ bottom: '30%', left: '4%', width: 36, height: 36, border: '7px solid #7C5CFF', animation: 'of-wob 5s ease-in-out infinite' }} />
+            <svg width="44" height="44" className="of-shape" style={{ bottom: '14%', left: '22%', animation: 'of-bob3 4.6s ease-in-out infinite' }}>
+              <line x1="7" y1="7" x2="37" y2="37" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
+              <line x1="37" y1="7" x2="7" y2="37" stroke="#38BDF8" strokeWidth="7" strokeLinecap="round" />
             </svg>
 
-            {SQUAD_CARDS.map((c) => (
+            {/* Duos matchés — chaque paire reliée par ce qui les a fait matcher */}
+            {SQUAD_DUOS.map((duo) => (
               <div
-                key={c.initials}
-                className="of-shape flex items-center justify-center rounded-[38px]"
-                style={{
-                  top: c.top, left: c.left, right: c.right, bottom: c.bottom,
-                  width: c.size, height: c.size, background: c.bg,
-                  boxShadow: `0 18px 40px -12px ${c.shadow}`,
-                  animation: `${c.anim} ease-in-out infinite`,
-                }}
+                key={duo.id}
+                className="of-shape flex items-center gap-2"
+                style={{ top: duo.top, left: duo.left, right: duo.right, bottom: duo.bottom, animation: duo.anim }}
               >
-                <span className="font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)', fontSize: c.font }}>{c.initials}</span>
+                <div
+                  className="flex shrink-0 items-center justify-center rounded-[24px]"
+                  style={{ width: 'clamp(52px, 15vw, 68px)', height: 'clamp(52px, 15vw, 68px)', background: duo.a.bg, boxShadow: `0 14px 28px -10px ${duo.a.shadow}` }}
+                >
+                  <span className="font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)', fontSize: 'clamp(18px, 5vw, 24px)' }}>{duo.a.initials}</span>
+                </div>
+                <div className="flex shrink-0 flex-col items-center gap-1">
+                  {duo.showMatchLabel && (
+                    <span className="text-[11px] font-extrabold uppercase tracking-wide" style={{ color: 'var(--accent3)' }}>
+                      ✓ Match!
+                    </span>
+                  )}
+                  <div
+                    className="flex items-center gap-1 rounded-full border-2 bg-white px-2.5 py-1.5 text-xs font-bold"
+                    style={{ borderColor: '#EFEAE0', color: 'var(--text)', boxShadow: '0 8px 18px -8px rgba(27,27,35,.2)' }}
+                  >
+                    <span>{duo.connector.icon}</span>
+                    {duo.connector.label}
+                  </div>
+                </div>
+                <div
+                  className="flex shrink-0 items-center justify-center rounded-[24px]"
+                  style={{ width: 'clamp(52px, 15vw, 68px)', height: 'clamp(52px, 15vw, 68px)', background: duo.b.bg, boxShadow: `0 14px 28px -10px ${duo.b.shadow}` }}
+                >
+                  <span className="font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)', fontSize: 'clamp(18px, 5vw, 24px)' }}>{duo.b.initials}</span>
+                </div>
               </div>
             ))}
-
-            <div
-              className="of-shape rounded-2xl border-2 bg-white px-3 py-2 text-sm font-extrabold"
-              style={{ top: '0px', right: '16%', borderColor: '#EFEAE0', color: 'var(--accent3)', boxShadow: '0 10px 24px -10px rgba(27,27,35,.25)', animation: 'of-bob 3.6s ease-in-out infinite' }}
-            >
-              ✓ Match!
-            </div>
           </div>
         </section>
+
+        {/* ── MOST PLAYED ─────────────────────────────────────────── */}
+        {topGames.length >= 4 && (
+          <section className="relative z-10 flex flex-wrap items-center gap-3 pb-6">
+            <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Most played</span>
+            {topGames.map((g) => (
+              <span key={g.name} className="inline-flex items-center gap-2 rounded-full border border-border bg-panel2 px-3.5 py-1.5 text-sm font-semibold text-text">
+                {g.name}
+                {g.count > 0 && <span className="font-bold" style={{ color: '#2E9E24' }}>{g.count}</span>}
+              </span>
+            ))}
+          </section>
+        )}
 
         {/* ── MARQUEE ─────────────────────────────────────────────── */}
         <section className="relative z-10 -mx-6 overflow-hidden border-y-2 py-3" style={{ background: '#F1ECFF', borderColor: '#E2D8FF' }} aria-hidden="true">
@@ -411,19 +454,6 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             ))}
           </div>
         </section>
-
-        {/* ── MOST PLAYED ─────────────────────────────────────────── */}
-        {topGames.length >= 4 && (
-          <section className="relative z-10 flex flex-wrap items-center gap-3 py-6">
-            <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Most played</span>
-            {topGames.map((g) => (
-              <span key={g.name} className="inline-flex items-center gap-2 rounded-full border border-border bg-panel2 px-3.5 py-1.5 text-sm font-semibold text-text">
-                {g.name}
-                {g.count > 0 && <span className="font-bold" style={{ color: '#2E9E24' }}>{g.count}</span>}
-              </span>
-            ))}
-          </section>
-        )}
 
         {/* ── GAMIFIED PATH ───────────────────────────────────────── */}
         <section className="relative z-10 -mx-6 mt-4 rounded-[28px] px-8 py-12" style={{ background: '#F4EFE4' }}>
@@ -484,7 +514,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)' }}>Ready to find your squad?</h2>
             <p className="mt-2 text-sm text-white/85">
               {playerCount !== null && playerCount > 0
-                ? `Join ${playerCount} players near you. It only takes 2 minutes.`
+                ? `Join ${playerCount} players in Utrecht. It only takes 2 minutes.`
                 : 'It only takes 2 minutes to get started.'}
             </p>
           </div>
