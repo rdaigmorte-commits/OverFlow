@@ -1,6 +1,6 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
-import { getRpgClass, getFitTier, TIER_STYLE, FIT_REASON_ICON, type FitReasonKind } from '@/lib/rpgClass';
-import { ShapeIcon } from '@/components/ShapeIcon';
+import { getFitTier, TIER_STYLE } from '@/lib/rpgClass';
+import { FIT_REASON_BADGE, type FitReasonKind } from '@/lib/fitReasons';
 
 type MatchCardProps = {
   name: string;
@@ -27,31 +27,28 @@ function getInitials(name: string): string {
 function parseFitReasonToIcons(fitReason: string): { kind: FitReasonKind; text: string }[] {
   const parts = fitReason.split(' · ');
   return parts.map((part) => {
-    if (part.startsWith('plays '))         return { kind: 'games' as const,         text: `Plays ${part.replace('plays ', '')}` };
-    if (part.startsWith('same platform'))  return { kind: 'platformStyle' as const, text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('same playstyle')) return { kind: 'platformStyle' as const, text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('speaks '))        return { kind: 'language' as const,      text: `Speaks ${part.replace('speaks ', '')}` };
-    if (part.startsWith('available '))     return { kind: 'availability' as const,  text: `Free ${part.replace('available ', '')}` };
-    if (part.startsWith('same city'))      return { kind: 'city' as const,          text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('plays '))         return { kind: 'games' as const,        text: `Plays ${part.replace('plays ', '')}` };
+    if (part.startsWith('same platform'))  return { kind: 'platform' as const,     text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('same playstyle')) return { kind: 'style' as const,        text: part.charAt(0).toUpperCase() + part.slice(1) };
+    if (part.startsWith('speaks '))        return { kind: 'language' as const,     text: `Speaks ${part.replace('speaks ', '')}` };
+    if (part.startsWith('available '))     return { kind: 'availability' as const, text: `Free ${part.replace('available ', '')}` };
+    if (part.startsWith('same city'))      return { kind: 'city' as const,         text: part.charAt(0).toUpperCase() + part.slice(1) };
     return { kind: 'games' as const, text: part };
   });
 }
 
 export function MatchCard({
   name,
-  style,
-  city,
   isIRLNearby,
   fitReason,
   score,
   invitationSent = false,
   onRequestMatch,
 }: MatchCardProps) {
-  const rpgClass = getRpgClass(style);
   const percent  = Math.round((score / 110) * 100);
   const tier     = getFitTier(score);
   const style_   = TIER_STYLE[tier];
-  const reasons  = parseFitReasonToIcons(fitReason).slice(0, 2);
+  const reasons  = parseFitReasonToIcons(fitReason);
 
   return (
     <div
@@ -76,29 +73,27 @@ export function MatchCard({
               </span>
             )}
           </div>
-          {rpgClass && (
-            <span
-              className="mt-1 inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-bold"
-              style={{ background: rpgClass.bg, color: rpgClass.color }}
-            >
-              <ShapeIcon shape={rpgClass.icon} color={rpgClass.color} size={11} />
-              {rpgClass.name}{city ? ` · ${city}` : ''}
-            </span>
-          )}
         </div>
         <CompatibilityRing percent={percent} tier={tier} />
       </div>
 
       <div className="border-t border-border/50 mx-5" />
 
-      {/* Why you match — 2 lignes max */}
-      <div className="px-5 py-3 flex flex-col gap-1.5">
-        {reasons.map((r, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm text-text">
-            <ShapeIcon shape={FIT_REASON_ICON[r.kind].shape} color={FIT_REASON_ICON[r.kind].color} size={14} />
-            <span>{r.text}</span>
-          </div>
-        ))}
+      {/* Why you match — toutes les correspondances, une pastille colorée par critère */}
+      <div className="px-5 py-3 flex flex-wrap gap-1.5">
+        {reasons.map((r, i) => {
+          const badge = FIT_REASON_BADGE[r.kind];
+          return (
+            <span
+              key={i}
+              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
+              style={{ background: badge.bg, borderColor: badge.border, color: badge.text }}
+            >
+              <span>{badge.emoji}</span>
+              {r.text}
+            </span>
+          );
+        })}
       </div>
 
       {/* CTA */}

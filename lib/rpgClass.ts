@@ -16,11 +16,6 @@ export const STYLE_TO_CLASS: Record<string, RpgClass> = {
   Roleplay:    { name: 'Trickster', color: '#5B3FD6', bg: '#EDE9FF', icon: 'square' },
 };
 
-export function getRpgClass(style: string[] | string | undefined): RpgClass | null {
-  const first = Array.isArray(style) ? style[0] : style;
-  return first ? STYLE_TO_CLASS[first] ?? null : null;
-}
-
 export type FitTier = 'strong' | 'good' | 'other';
 
 export function getFitTier(score: number): FitTier {
@@ -53,15 +48,4 @@ export const TIER_STYLE: Record<FitTier, {
     badgeBg: '#F4EFE4', badgeBorder: '#E5DECB', badgeText: '#6B6B76',
     cardBorder: '#E5DECB', cardBgFrom: '#FDFBF6',
   },
-};
-
-// Icônes de forme réutilisées comme puces "why you match" à la place des emoji.
-export type FitReasonKind = 'games' | 'platformStyle' | 'language' | 'availability' | 'city';
-
-export const FIT_REASON_ICON: Record<FitReasonKind, { shape: 'circle' | 'cross' | 'triangle' | 'square'; color: string }> = {
-  games:          { shape: 'circle',   color: '#FF6B6B' },
-  platformStyle:  { shape: 'cross',    color: '#38BDF8' },
-  city:           { shape: 'triangle', color: '#46C93A' },
-  language:       { shape: 'square',   color: '#7C5CFF' },
-  availability:   { shape: 'circle',   color: '#FFC83D' },
 };

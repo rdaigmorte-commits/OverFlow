@@ -120,10 +120,10 @@ export function getFitReason(a: Profile, b: Profile): string {
   if (commonGames.length > 0) parts.push(`plays ${commonGames.join(', ')}`);
 
   const commonPlatform = aPlatforms.find((p) => bPlatforms.includes(p));
-  if (commonPlatform) parts.push(`same platform (${commonPlatform})`);
+  if (commonPlatform) parts.push(`same platform`);
 
   const commonStyle = aStyles.find((s) => bStyles.includes(s));
-  if (commonStyle) parts.push(`same playstyle (${commonStyle})`);
+  if (commonStyle) parts.push(`same playstyle`);
 
   const commonLang = a.language.find((l) => b.language.includes(l));
   if (commonLang) parts.push(`speaks ${commonLang}`);
@@ -133,7 +133,7 @@ export function getFitReason(a: Profile, b: Profile): string {
 
   // Mention ville en commun dans le fitReason
   if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
-    parts.push(`same city (${b.city})`);
+    parts.push(`same city`);
   }
 
   if (parts.length === 0) return 'Some interests in common';
