@@ -132,17 +132,19 @@ export function getFitReasons(a: Profile, b: Profile): FitReason[] {
   const aStyles    = normalizeArray(a.style);
   const bStyles    = normalizeArray(b.style);
 
-  const commonPlatform = aPlatforms.find((p) => bPlatforms.includes(p));
-  if (commonPlatform) reasons.push({ kind: 'platform', label: commonPlatform });
+  // Une ligne par valeur en commun (pas juste la première) — cohérent avec les jeux,
+  // et nécessaire pour que chaque langue/plateforme garde sa propre icône (drapeau, etc.).
+  aPlatforms.filter((p) => bPlatforms.includes(p))
+    .forEach((p) => reasons.push({ kind: 'platform', label: p }));
 
-  const commonStyle = aStyles.find((s) => bStyles.includes(s));
-  if (commonStyle) reasons.push({ kind: 'style', label: commonStyle });
+  aStyles.filter((s) => bStyles.includes(s))
+    .forEach((s) => reasons.push({ kind: 'style', label: s }));
 
-  const commonLang = a.language.find((l) => b.language.includes(l));
-  if (commonLang) reasons.push({ kind: 'language', label: commonLang });
+  a.language.filter((l) => b.language.includes(l))
+    .forEach((l) => reasons.push({ kind: 'language', label: l }));
 
-  const commonSlots = a.availability.filter((s) => b.availability.includes(s));
-  if (commonSlots.length > 0) reasons.push({ kind: 'availability', label: commonSlots[0] });
+  a.availability.filter((s) => b.availability.includes(s))
+    .forEach((s) => reasons.push({ kind: 'availability', label: s }));
 
   if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
     reasons.push({ kind: 'city', label: b.city });

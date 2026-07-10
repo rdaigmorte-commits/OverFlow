@@ -1,6 +1,6 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { getFitTier, TIER_STYLE } from '@/lib/rpgClass';
-import { PLATFORM_EMOJI, type FitReason } from '@/lib/match';
+import { PLATFORM_EMOJI, LANG_FLAG, type FitReason } from '@/lib/match';
 import { FIT_REASON_EMOJI } from '@/lib/fitReasons';
 
 type MatchCardProps = {
@@ -24,6 +24,16 @@ function getInitials(name: string): string {
   if (words.length === 0) return '?';
   if (words.length === 1) return words[0].slice(0, 2).toUpperCase();
   return (words[0][0] + words[1][0]).toUpperCase();
+}
+
+function ReasonIcon({ reason }: { reason: FitReason }) {
+  if (reason.kind === 'language') {
+    return <span className={`fi fi-${LANG_FLAG[reason.label] ?? 'un'}`} />;
+  }
+  if (reason.kind === 'platform') {
+    return <>{PLATFORM_EMOJI[reason.label] ?? FIT_REASON_EMOJI.platform}</>;
+  }
+  return <>{FIT_REASON_EMOJI[reason.kind]}</>;
 }
 
 export function MatchCard({
@@ -79,7 +89,7 @@ export function MatchCard({
       <div className="px-5 py-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
         {fitReasons.map((r, i) => (
           <div key={i} className="flex items-center gap-2 text-sm text-text min-w-0">
-            <span className="shrink-0">{r.kind === 'platform' ? (PLATFORM_EMOJI[r.label] ?? FIT_REASON_EMOJI.platform) : FIT_REASON_EMOJI[r.kind]}</span>
+            <span className="shrink-0"><ReasonIcon reason={r} /></span>
             <span className="truncate">{r.label}</span>
           </div>
         ))}
