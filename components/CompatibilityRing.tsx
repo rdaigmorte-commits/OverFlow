@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { TIER_STYLE, type FitTier } from '@/lib/rpgClass';
+import { TIER_STYLE } from '@/lib/rpgClass';
+import type { FitTier } from '@/lib/match';
 
 type Props = {
   percent: number;

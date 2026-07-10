@@ -1,6 +1,6 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
-import { getFitTier, TIER_STYLE } from '@/lib/rpgClass';
-import { PLATFORM_EMOJI, LANG_FLAG, type FitReason } from '@/lib/match';
+import { TIER_STYLE } from '@/lib/rpgClass';
+import { PLATFORM_EMOJI, LANG_FLAG, type FitReason, type FitTier } from '@/lib/match';
 import { FIT_REASON_EMOJI } from '@/lib/fitReasons';
 
 type MatchCardProps = {
@@ -12,6 +12,7 @@ type MatchCardProps = {
   city?: string;
   isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
+  tier: FitTier;
   fitReasons: FitReason[];
   commonGames: string[];
   score: number;
@@ -40,6 +41,7 @@ export function MatchCard({
   name,
   isIRLNearby,
   fitLabel,
+  tier,
   fitReasons,
   commonGames,
   score,
@@ -47,7 +49,6 @@ export function MatchCard({
   onRequestMatch,
 }: MatchCardProps) {
   const percent  = Math.round((score / 110) * 100);
-  const tier     = getFitTier(score);
   const style_   = TIER_STYLE[tier];
 
   return (

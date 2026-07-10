@@ -2,6 +2,8 @@
 // Le style stocké en base reste la valeur réelle (Competitive/Co-op/Casual/Roleplay) ;
 // ces mappings ne servent qu'à l'affichage (nom de classe, icône, couleur).
 
+import type { FitTier } from '@/lib/match';
+
 export type RpgClass = {
   name: string;
   color: string;
@@ -15,14 +17,6 @@ export const STYLE_TO_CLASS: Record<string, RpgClass> = {
   Casual:      { name: 'Explorer',  color: '#B77900', bg: '#FFF6DE', icon: 'triangle' },
   Roleplay:    { name: 'Trickster', color: '#5B3FD6', bg: '#EDE9FF', icon: 'square' },
 };
-
-export type FitTier = 'strong' | 'good' | 'other';
-
-export function getFitTier(score: number): FitTier {
-  if (score >= 60) return 'strong';
-  if (score >= 40) return 'good';
-  return 'other';
-}
 
 export const TIER_STYLE: Record<FitTier, {
   ring: string; track: string;

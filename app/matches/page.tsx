@@ -10,7 +10,6 @@ import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
 import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
-import { getFitTier } from '@/lib/rpgClass';
 
 const GRID_PAGE_SIZE = 6;
 const TAIL_PAGE_SIZE = 10;
@@ -23,12 +22,11 @@ function CompactMatchRow({
   onRequestMatch,
 }: { match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
   const percent = Math.round((match.score / 110) * 100);
-  const tier = getFitTier(match.score);
   const reason = match.fitReason.split(' · ')[0];
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
-      <CompatibilityRing percent={percent} tier={tier} size={36} />
+      <CompatibilityRing percent={percent} tier={match.tier} size={36} />
       <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-text truncate">{match.name}</p>
         <p className="text-xs text-muted truncate">{reason}</p>
@@ -864,8 +862,8 @@ export default function MatchesPage() {
               )}
 
               {visibleMatches.length > 0 && (() => {
-                const priority = visibleMatches.filter((m) => getFitTier(m.score) !== 'other');
-                const tail     = visibleMatches.filter((m) => getFitTier(m.score) === 'other');
+                const priority = visibleMatches.filter((m) => m.tier !== 'other');
+                const tail     = visibleMatches.filter((m) => m.tier === 'other');
                 return (
                   <>
                     {priority.length > 0 && (
@@ -882,6 +880,7 @@ export default function MatchesPage() {
                               city={m.city}
                               isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
+                              tier={m.tier}
                               fitReasons={m.fitReasons}
                               commonGames={m.commonGames}
                               score={m.score}

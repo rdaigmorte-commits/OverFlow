@@ -48,9 +48,12 @@ export type Profile = {
 export type FitReasonKind = 'platform' | 'style' | 'language' | 'availability' | 'city';
 export type FitReason = { kind: FitReasonKind; label: string };
 
+export type FitTier = 'strong' | 'good' | 'other';
+
 export type MatchResult = {
   profile: Profile;
   score: number;
+  tier: FitTier;
   fitLabel: string;
   fitReason: string;
   fitReasons: FitReason[];
@@ -83,23 +86,28 @@ export type MatchResult = {
  */
 const CITY_BONUS = 10;
 
-// Jeux en commun — critère le plus lourd du barème, isolé pour un affichage dédié.
+// Jeux et plateforme en commun — les deux critères qui déterminent si on peut
+// concrètement jouer ensemble. Isolés pour l'affichage dédié ET pour le gate
+// de tier ci-dessous (un "Strong fit" sans ça n'a pas de sens en pratique).
 export function getCommonGames(a: Profile, b: Profile): string[] {
   return a.games.filter((g) => b.games.includes(g));
+}
+
+export function getCommonPlatforms(a: Profile, b: Profile): string[] {
+  const aPlatforms = normalizeArray(a.platform);
+  const bPlatforms = normalizeArray(b.platform);
+  return aPlatforms.filter((p) => bPlatforms.includes(p));
 }
 
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
-  const aPlatforms = normalizeArray(a.platform);
-  const bPlatforms = normalizeArray(b.platform);
-  const aStyles    = normalizeArray(a.style);
-  const bStyles    = normalizeArray(b.style);
+  const aStyles = normalizeArray(a.style);
+  const bStyles = normalizeArray(b.style);
 
-  const commonGames = getCommonGames(a, b);
-  if (commonGames.length > 0) score += 40;
+  if (getCommonGames(a, b).length > 0) score += 40;
 
-  if (aPlatforms.some((p) => bPlatforms.includes(p))) score += 20;
+  if (getCommonPlatforms(a, b).length > 0) score += 20;
 
   if (aStyles.some((s) => bStyles.includes(s))) score += 20;
 
@@ -116,9 +124,18 @@ export function computeScore(a: Profile, b: Profile): number {
   return score;
 }
 
-export function getFitLabel(score: number): string {
-  if (score >= 60) return 'Strong fit';
-  if (score >= 40) return 'Good fit';
+// "Strong fit" exige un jeu ET une plateforme en commun, quel que soit le score —
+// sinon deux joueurs sans rien de concret pour jouer ensemble (juste style/langue/
+// ville en commun) pouvaient être étiquetés "Strong fit".
+export function getFitTier(score: number, hasCoreMatch: boolean): FitTier {
+  if (score >= 60 && hasCoreMatch) return 'strong';
+  if (score >= 40) return 'good';
+  return 'other';
+}
+
+export function getFitLabel(tier: FitTier): string {
+  if (tier === 'strong') return 'Strong fit';
+  if (tier === 'good') return 'Good fit';
   return 'Worth reaching out';
 }
 
@@ -127,14 +144,12 @@ export function getFitLabel(score: number): string {
 export function getFitReasons(a: Profile, b: Profile): FitReason[] {
   const reasons: FitReason[] = [];
 
-  const aPlatforms = normalizeArray(a.platform);
-  const bPlatforms = normalizeArray(b.platform);
-  const aStyles    = normalizeArray(a.style);
-  const bStyles    = normalizeArray(b.style);
+  const aStyles = normalizeArray(a.style);
+  const bStyles = normalizeArray(b.style);
 
   // Une ligne par valeur en commun (pas juste la première) — cohérent avec les jeux,
   // et nécessaire pour que chaque langue/plateforme garde sa propre icône (drapeau, etc.).
-  aPlatforms.filter((p) => bPlatforms.includes(p))
+  getCommonPlatforms(a, b)
     .forEach((p) => reasons.push({ kind: 'platform', label: p }));
 
   aStyles.filter((s) => bStyles.includes(s))
@@ -174,6 +189,9 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         availability: Array.isArray(p.availability) ? p.availability : [],
       };
       const score = computeScore(current, normalizedP);
+      const commonGames     = getCommonGames(current, normalizedP);
+      const hasCoreMatch    = commonGames.length > 0 && getCommonPlatforms(current, normalizedP).length > 0;
+      const tier            = getFitTier(score, hasCoreMatch);
 
       // Badge IRL Nearby : même ville + open_irl
       const isIRLNearby =
@@ -185,10 +203,11 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
       return {
         profile:     normalizedP,
         score,
-        fitLabel:    getFitLabel(score),
+        tier,
+        fitLabel:    getFitLabel(tier),
         fitReason:   getFitReason(current, normalizedP),
         fitReasons:  getFitReasons(current, normalizedP),
-        commonGames: getCommonGames(current, normalizedP),
+        commonGames,
         isIRLNearby,
         id:          normalizedP.id,
         name:        normalizedP.name,

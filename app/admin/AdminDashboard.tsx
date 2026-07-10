@@ -49,9 +49,9 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
   const max = Math.max(data.strong, data.good, data.possible, 1);
 
   const tiers = [
-    { label: 'Strong fit (80%+)', value: data.strong, color: 'bg-accent' },
-    { label: 'Good fit (60–79%)', value: data.good, color: 'bg-accent2' },
-    { label: 'Possible (40–59%)', value: data.possible, color: 'bg-muted' },
+    { label: 'Strong fit (game + platform match)', value: data.strong, color: 'bg-accent' },
+    { label: 'Good fit', value: data.good, color: 'bg-accent2' },
+    { label: 'Possible', value: data.possible, color: 'bg-muted' },
   ];
 
   return (
