@@ -41,11 +41,15 @@ export type Profile = {
   discord?: string | null;
 };
 
+export type FitReasonKind = 'games' | 'platform' | 'style' | 'language' | 'availability' | 'city';
+export type FitReason = { kind: FitReasonKind; label: string };
+
 export type MatchResult = {
   profile: Profile;
   score: number;
   fitLabel: string;
   fitReason: string;
+  fitReasons: FitReason[];
   isIRLNearby: boolean;
   id: string;
   name: string;
@@ -108,8 +112,10 @@ export function getFitLabel(score: number): string {
   return 'Worth reaching out';
 }
 
-export function getFitReason(a: Profile, b: Profile): string {
-  const parts: string[] = [];
+// Raisons de match structurées — le libellé est la valeur partagée elle-même
+// (ex. "Competitive", "English"), pas une reformulation générique ("same playstyle").
+export function getFitReasons(a: Profile, b: Profile): FitReason[] {
+  const reasons: FitReason[] = [];
 
   const aPlatforms = normalizeArray(a.platform);
   const bPlatforms = normalizeArray(b.platform);
@@ -117,27 +123,32 @@ export function getFitReason(a: Profile, b: Profile): string {
   const bStyles    = normalizeArray(b.style);
 
   const commonGames = a.games.filter((g) => b.games.includes(g));
-  if (commonGames.length > 0) parts.push(`plays ${commonGames.join(', ')}`);
+  if (commonGames.length > 0) reasons.push({ kind: 'games', label: commonGames.join(', ') });
 
   const commonPlatform = aPlatforms.find((p) => bPlatforms.includes(p));
-  if (commonPlatform) parts.push(`same platform`);
+  if (commonPlatform) reasons.push({ kind: 'platform', label: commonPlatform });
 
   const commonStyle = aStyles.find((s) => bStyles.includes(s));
-  if (commonStyle) parts.push(`same playstyle`);
+  if (commonStyle) reasons.push({ kind: 'style', label: commonStyle });
 
   const commonLang = a.language.find((l) => b.language.includes(l));
-  if (commonLang) parts.push(`speaks ${commonLang}`);
+  if (commonLang) reasons.push({ kind: 'language', label: commonLang });
 
   const commonSlots = a.availability.filter((s) => b.availability.includes(s));
-  if (commonSlots.length > 0) parts.push(`available ${commonSlots[0]}`);
+  if (commonSlots.length > 0) reasons.push({ kind: 'availability', label: commonSlots[0] });
 
-  // Mention ville en commun dans le fitReason
   if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
-    parts.push(`same city`);
+    reasons.push({ kind: 'city', label: b.city });
   }
 
-  if (parts.length === 0) return 'Some interests in common';
-  return parts.join(' · ');
+  return reasons;
+}
+
+// Résumé texte (utilisé par la vue compacte "Worth reaching out").
+export function getFitReason(a: Profile, b: Profile): string {
+  const reasons = getFitReasons(a, b);
+  if (reasons.length === 0) return 'Some interests in common';
+  return reasons.map((r) => r.label).join(' · ');
 }
 
 export function matchProfiles(current: Profile, others: Profile[]): MatchResult[] {
@@ -166,6 +177,7 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         score,
         fitLabel:    getFitLabel(score),
         fitReason:   getFitReason(current, normalizedP),
+        fitReasons:  getFitReasons(current, normalizedP),
         isIRLNearby,
         id:          normalizedP.id,
         name:        normalizedP.name,

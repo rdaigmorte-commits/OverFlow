@@ -881,7 +881,7 @@ export default function MatchesPage() {
                               city={m.city}
                               isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
-                              fitReason={m.fitReason}
+                              fitReasons={m.fitReasons}
                               score={m.score}
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}

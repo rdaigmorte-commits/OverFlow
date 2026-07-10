@@ -1,6 +1,7 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { getFitTier, TIER_STYLE } from '@/lib/rpgClass';
-import { FIT_REASON_BADGE, type FitReasonKind } from '@/lib/fitReasons';
+import type { FitReason } from '@/lib/match';
+import { FIT_REASON_EMOJI } from '@/lib/fitReasons';
 
 type MatchCardProps = {
   name: string;
@@ -11,7 +12,7 @@ type MatchCardProps = {
   city?: string;
   isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
-  fitReason: string;
+  fitReasons: FitReason[];
   score: number;
   invitationSent?: boolean;
   onRequestMatch: () => void;
@@ -24,23 +25,11 @@ function getInitials(name: string): string {
   return (words[0][0] + words[1][0]).toUpperCase();
 }
 
-function parseFitReasonToIcons(fitReason: string): { kind: FitReasonKind; text: string }[] {
-  const parts = fitReason.split(' · ');
-  return parts.map((part) => {
-    if (part.startsWith('plays '))         return { kind: 'games' as const,        text: `Plays ${part.replace('plays ', '')}` };
-    if (part.startsWith('same platform'))  return { kind: 'platform' as const,     text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('same playstyle')) return { kind: 'style' as const,        text: part.charAt(0).toUpperCase() + part.slice(1) };
-    if (part.startsWith('speaks '))        return { kind: 'language' as const,     text: `Speaks ${part.replace('speaks ', '')}` };
-    if (part.startsWith('available '))     return { kind: 'availability' as const, text: `Free ${part.replace('available ', '')}` };
-    if (part.startsWith('same city'))      return { kind: 'city' as const,         text: part.charAt(0).toUpperCase() + part.slice(1) };
-    return { kind: 'games' as const, text: part };
-  });
-}
-
 export function MatchCard({
   name,
   isIRLNearby,
-  fitReason,
+  fitLabel,
+  fitReasons,
   score,
   invitationSent = false,
   onRequestMatch,
@@ -48,11 +37,10 @@ export function MatchCard({
   const percent  = Math.round((score / 110) * 100);
   const tier     = getFitTier(score);
   const style_   = TIER_STYLE[tier];
-  const reasons  = parseFitReasonToIcons(fitReason);
 
   return (
     <div
-      className="card-hover rounded-2xl border overflow-hidden"
+      className="card-hover flex h-full flex-col rounded-2xl border overflow-hidden"
       style={{ borderColor: style_.cardBorder, background: `linear-gradient(165deg, ${style_.cardBgFrom}, #FDFBF6)` }}
     >
 
@@ -73,31 +61,30 @@ export function MatchCard({
               </span>
             )}
           </div>
+          <span
+            className="mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold"
+            style={{ background: style_.badgeBg, borderColor: style_.badgeBorder, color: style_.badgeText }}
+          >
+            {fitLabel}
+          </span>
         </div>
         <CompatibilityRing percent={percent} tier={tier} />
       </div>
 
       <div className="border-t border-border/50 mx-5" />
 
-      {/* Why you match — toutes les correspondances, une pastille colorée par critère */}
-      <div className="px-5 py-3 flex flex-wrap gap-1.5">
-        {reasons.map((r, i) => {
-          const badge = FIT_REASON_BADGE[r.kind];
-          return (
-            <span
-              key={i}
-              className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold"
-              style={{ background: badge.bg, borderColor: badge.border, color: badge.text }}
-            >
-              <span>{badge.emoji}</span>
-              {r.text}
-            </span>
-          );
-        })}
+      {/* Why you match — liste neutre, la valeur qui matche plutôt qu'une reformulation générique */}
+      <div className="px-5 py-3 flex flex-col gap-1.5">
+        {fitReasons.map((r, i) => (
+          <div key={i} className="flex items-center gap-2 text-sm text-text">
+            <span className="shrink-0">{FIT_REASON_EMOJI[r.kind]}</span>
+            <span className="truncate">{r.label}</span>
+          </div>
+        ))}
       </div>
 
-      {/* CTA */}
-      <div className="px-5 pb-4">
+      {/* CTA — toujours calé en bas, même si peu de raisons au-dessus */}
+      <div className="mt-auto px-5 pb-4">
         {invitationSent ? (
           <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
             Invitation sent ✓
