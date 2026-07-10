@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { Card } from '@/components/Card';
 import { IrlEventBlock } from '@/components/IrlEventBlock';
 import { MatchCard } from '@/components/MatchCard';
+import { WhyYouMatch } from '@/components/WhyYouMatch';
+import { Avatar } from '@/components/Avatar';
 import { ProfileSummary } from '@/components/ProfileSummary';
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
-import { computeMatches, normalizeArray, normalizeCity, type Match } from '@/lib/match';
+import { computeMatches, normalizeArray, type Match } from '@/lib/match';
 
 const GRID_PAGE_SIZE = 6;
 const TAIL_PAGE_SIZE = 10;
@@ -332,6 +334,7 @@ function InvitationsPanel({
   sent,
   matched,
   revealedContacts,
+  matchesById,
   onAccept,
   onDecline,
 }: {
@@ -339,11 +342,13 @@ function InvitationsPanel({
   sent: SentRequest[];
   matched: MatchedConnection[];
   revealedContacts: Record<string, RevealedField[]>;
+  matchesById: Record<string, Match>;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
 }) {
   const [tab, setTab] = useState<'received' | 'sent' | 'matched'>('received');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const sentPending = sent.filter((r) => r.status !== 'accepted');
 
   const copy = (key: string, value: string) => {
@@ -352,6 +357,23 @@ function InvitationsPanel({
       setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
     });
   };
+
+  // Lien "Why we match" — déplie la même info que la card de découverte, réutilisée
+  // depuis les matches déjà calculés en mémoire (pas de nouvelle requête).
+  function WhyMatchToggle({ rowId, profileId }: { rowId: string; profileId: string }) {
+    const m = matchesById[profileId];
+    if (!m) return null;
+    const isOpen = expandedId === rowId;
+    return (
+      <button
+        type="button"
+        onClick={() => setExpandedId(isOpen ? null : rowId)}
+        className="text-xs text-accent underline underline-offset-2 hover:opacity-80 transition self-start"
+      >
+        {isOpen ? 'Hide details' : 'Why we match'}
+      </button>
+    );
+  }
 
   // Empty state global — aucune demande ni match dans aucune des deux directions.
   if (received.length === 0 && sentPending.length === 0 && matched.length === 0) {
@@ -408,29 +430,40 @@ function InvitationsPanel({
       {tab === 'received' && received.map((req) => (
         <div
           key={req.id}
-          className="flex items-center justify-between gap-4 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
+          className="flex flex-col gap-2 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
         >
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
-            <p className="text-xs text-muted mt-0.5 truncate">
-              {(req.sender?.games ?? []).slice(0, 3).join(', ')}
-              {req.sender?.games?.length ? ' · ' : ''}{formatRequestDate(req.created_at)}
-            </p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar name={req.sender?.name ?? '?'} tier={matchesById[req.sender_id]?.tier} size={40} />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
+                <p className="text-xs text-muted mt-0.5 truncate">
+                  {(req.sender?.games ?? []).slice(0, 3).join(', ')}
+                  {req.sender?.games?.length ? ' · ' : ''}{formatRequestDate(req.created_at)}
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={() => onAccept(req.id)}
+                className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
+              >
+                Accept
+              </button>
+              <button
+                onClick={() => onDecline(req.id)}
+                className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-panel2 transition"
+              >
+                Decline
+              </button>
+            </div>
           </div>
-          <div className="flex gap-2 shrink-0">
-            <button
-              onClick={() => onAccept(req.id)}
-              className="rounded-lg bg-accent px-3 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
-            >
-              Accept
-            </button>
-            <button
-              onClick={() => onDecline(req.id)}
-              className="rounded-lg border border-border px-3 py-2 text-xs font-semibold text-muted hover:text-text hover:bg-panel2 transition"
-            >
-              Decline
-            </button>
-          </div>
+          <WhyMatchToggle rowId={req.id} profileId={req.sender_id} />
+          {expandedId === req.id && matchesById[req.sender_id] && (
+            <div className="rounded-lg bg-panel/60 p-3">
+              <WhyYouMatch fitReasons={matchesById[req.sender_id].fitReasons} commonGames={matchesById[req.sender_id].commonGames} />
+            </div>
+          )}
         </div>
       ))}
       {tab === 'received' && received.length === 0 && (
@@ -440,20 +473,31 @@ function InvitationsPanel({
       {tab === 'sent' && sentPending.map((req) => (
         <div
           key={req.id}
-          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-panel2 px-5 py-4"
+          className="flex flex-col gap-2 rounded-xl border border-border bg-panel2 px-5 py-4"
         >
-          <div className="min-w-0">
-            <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
-            <p className="text-xs text-muted mt-0.5">{formatRequestDate(req.created_at)}</p>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <Avatar name={req.receiver?.name ?? '?'} tier={matchesById[req.receiver_id]?.tier} size={40} />
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+                <p className="text-xs text-muted mt-0.5">{formatRequestDate(req.created_at)}</p>
+              </div>
+            </div>
+            {req.status === 'declined' ? (
+              <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
+                Declined
+              </span>
+            ) : (
+              <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
+                ⏳ Pending
+              </span>
+            )}
           </div>
-          {req.status === 'declined' ? (
-            <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
-              Declined
-            </span>
-          ) : (
-            <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
-              ⏳ Pending
-            </span>
+          <WhyMatchToggle rowId={req.id} profileId={req.receiver_id} />
+          {expandedId === req.id && matchesById[req.receiver_id] && (
+            <div className="rounded-lg bg-panel/60 p-3">
+              <WhyYouMatch fitReasons={matchesById[req.receiver_id].fitReasons} commonGames={matchesById[req.receiver_id].commonGames} />
+            </div>
           )}
         </div>
       ))}
@@ -470,7 +514,10 @@ function InvitationsPanel({
             className="flex flex-col gap-2 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
           >
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium text-text truncate">{m.name}</p>
+              <div className="flex items-center gap-3 min-w-0">
+                <Avatar name={m.name} tier={matchesById[m.profileId]?.tier} size={40} />
+                <p className="text-sm font-medium text-text truncate">{m.name}</p>
+              </div>
               <span className="shrink-0 text-xs text-muted">{formatRequestDate(m.created_at)}</span>
             </div>
             {revealed === undefined ? (
@@ -491,6 +538,12 @@ function InvitationsPanel({
                     </button>
                   );
                 })}
+              </div>
+            )}
+            <WhyMatchToggle rowId={m.id} profileId={m.profileId} />
+            {expandedId === m.id && matchesById[m.profileId] && (
+              <div className="rounded-lg bg-panel2/60 p-3">
+                <WhyYouMatch fitReasons={matchesById[m.profileId].fitReasons} commonGames={matchesById[m.profileId].commonGames} />
               </div>
             )}
           </div>
@@ -518,7 +571,7 @@ export default function MatchesPage() {
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
-  const [nearMeOnly, setNearMeOnly] = useState(false);
+  const [downToMeetOnly, setDownToMeetOnly] = useState(false);
   const [gridVisibleCount, setGridVisibleCount] = useState(GRID_PAGE_SIZE);
   const [tailVisibleCount, setTailVisibleCount] = useState(TAIL_PAGE_SIZE);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
@@ -654,6 +707,7 @@ export default function MatchesPage() {
         availability: hydratedProfile.availability ?? [],
         style:        hydratedProfile.style,
         city:         hydratedProfile.city,
+        open_irl:     hydratedProfile.openIRL,
       };
 
       setCurrentProfile(hydratedProfile as typeof profile);
@@ -769,18 +823,20 @@ export default function MatchesPage() {
   const hasContact = !!displayProfile.email || !!displayProfile.discord;
   const userCity = displayProfile.city || '';
 
+  // Index par profil — permet à l'encart Invitations de retrouver les raisons de match
+  // ("Why we match") pour un joueur déjà accepté/en attente sans nouvelle requête.
+  const matchesById: Record<string, Match> = Object.fromEntries(matches.map((m) => [m.id, m]));
+
   // Un profil déjà matché (mutuel) sort de la découverte — "Let's play" n'a plus de sens,
   // il vit désormais dans l'onglet "Matched".
   const matchedProfileIds = new Set(matchedConnections.map((c) => c.profileId));
   const discoverableMatches = matches.filter((m) => !matchedProfileIds.has(m.id));
 
-  const visibleMatches = nearMeOnly && userCity
-    ? discoverableMatches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity))
+  const visibleMatches = downToMeetOnly
+    ? discoverableMatches.filter((m) => m.isIRLNearby)
     : discoverableMatches;
 
-  const nearMeCount = userCity
-    ? discoverableMatches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity)).length
-    : 0;
+  const downToMeetCount = discoverableMatches.filter((m) => m.isIRLNearby).length;
 
   if (hasNoProfile) {
     if (!authChecked) {
@@ -874,6 +930,7 @@ export default function MatchesPage() {
               sent={sentRequests}
               matched={matchedConnections}
               revealedContacts={revealedContacts}
+              matchesById={matchesById}
               onAccept={handleAcceptRequest}
               onDecline={handleDeclineRequest}
             />
@@ -950,32 +1007,32 @@ export default function MatchesPage() {
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-muted font-medium">
                   {visibleMatches.length} player{visibleMatches.length !== 1 ? 's' : ''} match your vibe
-                  {nearMeOnly && userCity ? ` in ${userCity}` : ''}
+                  {downToMeetOnly ? ' · down to meet' : ''}
                 </p>
                 {userCity && (
                   <button
                     onClick={() => {
-                      setNearMeOnly((v) => !v);
+                      setDownToMeetOnly((v) => !v);
                       setGridVisibleCount(GRID_PAGE_SIZE);
                       setTailVisibleCount(TAIL_PAGE_SIZE);
                     }}
                     className={`flex items-center gap-2 rounded-full border px-4 py-1.5 text-xs font-semibold transition ${
-                      nearMeOnly
+                      downToMeetOnly
                         ? 'border-accent3SoftBorder bg-accent3Soft text-[#2E9E24]'
                         : 'border-border bg-panel2 text-muted hover:border-accent hover:text-text'
                     }`}
                   >
-                    📍 Near me{nearMeOnly ? '' : ` (${nearMeCount})`}
+                    📍 Down to meet{downToMeetOnly ? '' : ` (${downToMeetCount})`}
                   </button>
                 )}
               </div>
 
-              {nearMeOnly && visibleMatches.length === 0 && (
+              {downToMeetOnly && visibleMatches.length === 0 && (
                 <Card className="p-6 text-center">
-                  <p className="text-sm font-medium text-text">No players found in {userCity} yet.</p>
-                  <p className="mt-1 text-xs text-muted">Try removing the Near me filter to see all compatible players.</p>
+                  <p className="text-sm font-medium text-text">No one down to meet in {userCity} yet.</p>
+                  <p className="mt-1 text-xs text-muted">Try removing the filter to see all compatible players.</p>
                   <button
-                    onClick={() => setNearMeOnly(false)}
+                    onClick={() => setDownToMeetOnly(false)}
                     className="mt-4 rounded-xl border border-border px-4 py-2 text-xs font-semibold text-text hover:bg-panel2 transition"
                   >
                     Show all matches

@@ -204,8 +204,10 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
       const hasCoreMatch    = commonGames.length > 0 && getCommonPlatforms(current, normalizedP).length > 0;
       const tier            = getFitTier(score, hasCoreMatch);
 
-      // Badge IRL Nearby : même ville + open_irl
+      // Badge "Down to meet" : même ville ET les deux joueurs ouverts à l'IRL (mutuel,
+      // pas juste l'autre — sinon un joueur "online only" verrait quand même le badge).
       const isIRLNearby =
+        !!current.open_irl &&
         !!normalizedP.open_irl &&
         !!current.city &&
         !!normalizedP.city &&
@@ -232,7 +234,14 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
       };
     })
     .filter((r) => r.score > 0)
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      // Tri à tier égal : les matchs mutuellement "down to meet" remontent en premier
+      // (objectif premier du POC), score en départage final.
+      const tierRank = (t: FitTier) => (t === 'strong' ? 2 : t === 'good' ? 1 : 0);
+      if (tierRank(b.tier) !== tierRank(a.tier)) return tierRank(b.tier) - tierRank(a.tier);
+      if (b.isIRLNearby !== a.isIRLNearby) return (b.isIRLNearby ? 1 : 0) - (a.isIRLNearby ? 1 : 0);
+      return b.score - a.score;
+    });
 }
 
 export type Match = MatchResult;
