@@ -304,14 +304,27 @@ function ContactModal({
 type ReceivedRequest = {
   id: string;
   sender_id: string;
+  created_at: string;
   sender: { id: string; name: string; games: string[] } | null;
 };
 type SentRequest = {
   id: string;
   receiver_id: string;
   status: string;
+  created_at: string;
   receiver: { id: string; name: string } | null;
 };
+
+// Date courte et lisible sans dépendance supplémentaire.
+function formatRequestDate(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const diffH  = diffMs / 3_600_000;
+  if (diffH < 1)  return 'Just now';
+  if (diffH < 24) return `${Math.floor(diffH)}h ago`;
+  const diffD = Math.floor(diffH / 24);
+  if (diffD < 7)  return `${diffD}d ago`;
+  return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
 
 function InvitationsPanel({
   received,
@@ -327,6 +340,29 @@ function InvitationsPanel({
   onDecline: (id: string) => void;
 }) {
   const [tab, setTab] = useState<'received' | 'sent'>('received');
+
+  // Empty state global — aucune demande dans aucune des deux directions.
+  if (received.length === 0 && sent.length === 0) {
+    return (
+      <div className="mb-6 rounded-2xl border border-border bg-panel px-6 py-8 text-center">
+        <p className="text-lg font-bold text-text">Rien ici pour l&apos;instant</p>
+        <p className="mt-2 text-sm text-muted">
+          OverFlow démarre. Aucune demande de match en cours — c&apos;est normal à ce stade.
+        </p>
+        <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
+          <a href="#matches-grid" className="btn-primary-new px-5 py-2.5 text-sm">
+            Créer une demande
+          </a>
+          <Link
+            href="/profile/edit"
+            className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-panel2 transition"
+          >
+            Compléter mon profil
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mb-6 flex flex-col gap-3">
@@ -358,6 +394,7 @@ function InvitationsPanel({
             <p className="text-sm font-medium text-text truncate">{req.sender?.name ?? 'A player'}</p>
             <p className="text-xs text-muted mt-0.5 truncate">
               {(req.sender?.games ?? []).slice(0, 3).join(', ')}
+              {req.sender?.games?.length ? ' · ' : ''}{formatRequestDate(req.created_at)}
             </p>
           </div>
           <div className="flex gap-2 shrink-0">
@@ -388,10 +425,17 @@ function InvitationsPanel({
             className="flex flex-col gap-2 rounded-xl border border-border bg-panel2 px-5 py-4"
           >
             <div className="flex items-center justify-between gap-4">
-              <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+              <div className="min-w-0">
+                <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+                <p className="text-xs text-muted mt-0.5">{formatRequestDate(req.created_at)}</p>
+              </div>
               {req.status === 'accepted' ? (
                 <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">
                   ✓ Accepted
+                </span>
+              ) : req.status === 'declined' ? (
+                <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
+                  Declined
                 </span>
               ) : (
                 <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
@@ -515,16 +559,18 @@ export default function MatchesPage() {
       // Charger les demandes reçues (pending) avec le profil de l'émetteur
       const { data: inboundData } = await supabase
         .from('match_requests')
-        .select('id, sender_id, sender:profiles!sender_id(id, name, games)')
+        .select('id, sender_id, created_at, sender:profiles!sender_id(id, name, games)')
         .eq('receiver_id', profileId)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
       setInboundRequests((inboundData ?? []) as unknown as typeof inboundRequests);
 
       // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
       const { data: sentData } = await supabase
         .from('match_requests')
-        .select('id, receiver_id, status, receiver:profiles!receiver_id(id, name)')
-        .eq('sender_id', profileId);
+        .select('id, receiver_id, status, created_at, receiver:profiles!receiver_id(id, name)')
+        .eq('sender_id', profileId)
+        .order('created_at', { ascending: false });
 
       if (sentData) {
         const sentMap: Record<string, boolean> = {};
@@ -625,7 +671,7 @@ export default function MatchesPage() {
     setSentRequests((prev) => (
       prev.some((r) => r.receiver_id === matchId)
         ? prev
-        : [...prev, { id: `local-${matchId}`, receiver_id: matchId, status: 'pending', receiver: { id: matchId, name: matchName } }]
+        : [{ id: `local-${matchId}`, receiver_id: matchId, status: 'pending', created_at: new Date().toISOString(), receiver: { id: matchId, name: matchName } }, ...prev]
     ));
 
     // 3. Récupérer le contact via RPC sécurisée (email/discord jamais lus directement)
@@ -713,8 +759,8 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Invitations — reçues / envoyées */}
-      {!loading && (inboundRequests.length > 0 || sentRequests.length > 0) && (
+      {/* Invitations — reçues / envoyées (gère elle-même l'empty state global) */}
+      {!loading && (
         <>
           <InvitationsPanel
             received={inboundRequests}
@@ -824,7 +870,7 @@ export default function MatchesPage() {
           )}
 
           {!loading && !fetchError && matches.length > 0 && (
-            <div className="grid gap-5">
+            <div id="matches-grid" className="grid gap-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-muted font-medium">
                   {visibleMatches.length} player{visibleMatches.length !== 1 ? 's' : ''} match your vibe
