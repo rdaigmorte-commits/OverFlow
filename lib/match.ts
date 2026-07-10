@@ -23,11 +23,13 @@ export function normalizeLanguage(lang: string | string[] | null | undefined): s
   return [lang];
 }
 
-// Normalise platform et style en string[] (migration vers multi-choix US-105)
+// Garde-fou à la frontière Supabase (colonnes platform/style déjà text[] en base,
+// mais le client ne garantit pas le typage à la compilation — jamais utilisé une
+// fois la donnée entrée dans un Profile typé, voir matchProfiles()).
 export function normalizeArray(val: string | string[] | null | undefined): string[] {
   if (!val) return [];
   if (Array.isArray(val)) return val;
-  return [val]; // compatibilité ascendante avec les anciens profils string
+  return [val];
 }
 
 // Normalise une ville pour comparaison insensible à la casse / espaces
@@ -39,8 +41,8 @@ export type Profile = {
   id: string;
   name: string;
   games: string[];
-  platform: string | string[];
-  style: string | string[];
+  platform: string[];
+  style: string[];
   language: string[];
   availability: string[];
   city?: string;
@@ -98,9 +100,7 @@ export function getCommonGames(a: Profile, b: Profile): string[] {
 }
 
 export function getCommonPlatforms(a: Profile, b: Profile): string[] {
-  const aPlatforms = normalizeArray(a.platform);
-  const bPlatforms = normalizeArray(b.platform);
-  return aPlatforms.filter((p) => bPlatforms.includes(p));
+  return a.platform.filter((p) => b.platform.includes(p));
 }
 
 // Score plafonné juste sous le seuil "Strong fit" quand jeu+plateforme ne sont
@@ -112,15 +112,13 @@ const NON_CORE_SCORE_CAP = 59;
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
-  const aStyles = normalizeArray(a.style);
-  const bStyles = normalizeArray(b.style);
   const hasCoreMatch = getCommonGames(a, b).length > 0 && getCommonPlatforms(a, b).length > 0;
 
   if (getCommonGames(a, b).length > 0) score += 40;
 
   if (getCommonPlatforms(a, b).length > 0) score += 20;
 
-  if (aStyles.some((s) => bStyles.includes(s))) score += 20;
+  if (a.style.some((s) => b.style.includes(s))) score += 20;
 
   if (a.language.some((l) => b.language.includes(l))) score += 10;
 
@@ -155,15 +153,12 @@ export function getFitLabel(tier: FitTier): string {
 export function getFitReasons(a: Profile, b: Profile): FitReason[] {
   const reasons: FitReason[] = [];
 
-  const aStyles = normalizeArray(a.style);
-  const bStyles = normalizeArray(b.style);
-
   // Une ligne par valeur en commun (pas juste la première) — cohérent avec les jeux,
   // et nécessaire pour que chaque langue/plateforme garde sa propre icône (drapeau, etc.).
   getCommonPlatforms(a, b)
     .forEach((p) => reasons.push({ kind: 'platform', label: p }));
 
-  aStyles.filter((s) => bStyles.includes(s))
+  a.style.filter((s) => b.style.includes(s))
     .forEach((s) => reasons.push({ kind: 'style', label: s }));
 
   a.language.filter((l) => b.language.includes(l))
@@ -225,8 +220,8 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         id:          normalizedP.id,
         name:        normalizedP.name,
         games:       normalizedP.games,
-        platform:    normalizeArray(normalizedP.platform),
-        language:    normalizeArray(normalizedP.language),
+        platform:    normalizedP.platform,
+        language:    normalizedP.language,
         city:        normalizedP.city,
         openIRL:     normalizedP.open_irl ?? false,
         email:       normalizedP.email ?? null,
