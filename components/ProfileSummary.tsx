@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { LANG_FLAG } from '@/lib/match';
+import { LANG_FLAG, PLATFORM_EMOJI } from '@/lib/match';
 
 type Props = {
   name: string;
@@ -7,6 +7,7 @@ type Props = {
   platform: string | string[];
   style: string | string[];
   language: string[];
+  availability: string[];
   city: string;
   openIRL: boolean;
 };
@@ -17,7 +18,7 @@ function toArray(val: string | string[] | null | undefined): string[] {
   return [val];
 }
 
-export function ProfileSummary({ name, games, platform, style, language, city, openIRL }: Props) {
+export function ProfileSummary({ name, games, platform, style, language, availability, city, openIRL }: Props) {
   const platforms = toArray(platform);
   const styles    = toArray(style);
 
@@ -52,7 +53,7 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
         ))}
         {platforms.map((p) => (
           <span key={p} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            🖥️ {p}
+            {PLATFORM_EMOJI[p] ?? '🖥️'} {p}
           </span>
         ))}
         {language.map((l) => (
@@ -64,6 +65,11 @@ export function ProfileSummary({ name, games, platform, style, language, city, o
         {styles.map((s) => (
           <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
             ⚡ {s}
+          </span>
+        ))}
+        {availability.map((slot) => (
+          <span key={slot} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
+            🕒 {slot}
           </span>
         ))}
       </div>

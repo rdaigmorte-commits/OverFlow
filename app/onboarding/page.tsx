@@ -4,20 +4,14 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
-import { normalizeLanguage, normalizeArray } from '@/lib/match';
+import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI } from '@/lib/match';
 import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
 const STYLES = Object.entries(STYLE_TO_CLASS).map(([value, rpg]) => ({ value, rpg }));
-const PLATFORMS = [
-  { label: 'PC',          emoji: '🖥️' },
-  { label: 'PlayStation', emoji: '🎮' },
-  { label: 'Xbox',        emoji: '🎮' },
-  { label: 'Switch',      emoji: '🎮' },
-  { label: 'Mobile',      emoji: '📱' },
-];
+const PLATFORMS = Object.entries(PLATFORM_EMOJI).map(([label, emoji]) => ({ label, emoji }));
 const LANGS = [
   { label: 'English', badge: 'EN', flag: 'gb' },
   { label: 'Dutch',   badge: 'NL', flag: 'nl' },

@@ -1,6 +1,6 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { getFitTier, TIER_STYLE } from '@/lib/rpgClass';
-import type { FitReason } from '@/lib/match';
+import { PLATFORM_EMOJI, type FitReason } from '@/lib/match';
 import { FIT_REASON_EMOJI } from '@/lib/fitReasons';
 
 type MatchCardProps = {
@@ -13,6 +13,7 @@ type MatchCardProps = {
   isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   fitReasons: FitReason[];
+  commonGames: string[];
   score: number;
   invitationSent?: boolean;
   onRequestMatch: () => void;
@@ -30,6 +31,7 @@ export function MatchCard({
   isIRLNearby,
   fitLabel,
   fitReasons,
+  commonGames,
   score,
   invitationSent = false,
   onRequestMatch,
@@ -73,15 +75,29 @@ export function MatchCard({
 
       <div className="border-t border-border/50 mx-5" />
 
-      {/* Why you match — liste neutre, la valeur qui matche plutôt qu'une reformulation générique */}
-      <div className="px-5 py-3 flex flex-col gap-1.5">
+      {/* Why you match — liste neutre en 2 colonnes, la valeur qui matche plutôt qu'une reformulation générique */}
+      <div className="px-5 py-3 grid grid-cols-2 gap-x-3 gap-y-1.5">
         {fitReasons.map((r, i) => (
-          <div key={i} className="flex items-center gap-2 text-sm text-text">
-            <span className="shrink-0">{FIT_REASON_EMOJI[r.kind]}</span>
+          <div key={i} className="flex items-center gap-2 text-sm text-text min-w-0">
+            <span className="shrink-0">{r.kind === 'platform' ? (PLATFORM_EMOJI[r.label] ?? FIT_REASON_EMOJI.platform) : FIT_REASON_EMOJI[r.kind]}</span>
             <span className="truncate">{r.label}</span>
           </div>
         ))}
       </div>
+
+      {/* Jeux en commun — critère le plus important, mis en avant à part */}
+      {commonGames.length > 0 && (
+        <div className="px-5 pb-3 flex flex-wrap gap-1.5">
+          {commonGames.map((g) => (
+            <span
+              key={g}
+              className="inline-flex items-center gap-1 rounded-full border border-accentSoftBorder bg-accentSoft px-2.5 py-1 text-xs font-bold text-accent"
+            >
+              {g}
+            </span>
+          ))}
+        </div>
+      )}
 
       {/* CTA — toujours calé en bas, même si peu de raisons au-dessus */}
       <div className="mt-auto px-5 pb-4">

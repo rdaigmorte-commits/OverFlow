@@ -767,6 +767,7 @@ export default function MatchesPage() {
             platform={displayProfile.platform}
             style={displayProfile.style}
             language={displayProfile.language ?? []}
+            availability={displayProfile.availability ?? []}
             city={displayProfile.city}
             openIRL={displayProfile.openIRL}
           />
@@ -882,6 +883,7 @@ export default function MatchesPage() {
                               isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                               fitReasons={m.fitReasons}
+                              commonGames={m.commonGames}
                               score={m.score}
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}

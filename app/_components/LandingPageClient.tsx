@@ -208,6 +208,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               platform={profile.platform}
               style={profile.style}
               language={profile.language ?? []}
+              availability={profile.availability ?? []}
               city={profile.city}
               openIRL={profile.openIRL}
             />

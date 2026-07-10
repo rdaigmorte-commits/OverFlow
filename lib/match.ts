@@ -8,6 +8,10 @@ export const LANG_FLAG: Record<string, string> = {
   Spanish: 'es', German: 'de', Italian: 'it',
 };
 
+export const PLATFORM_EMOJI: Record<string, string> = {
+  PC: '🖥️', PlayStation: '🎮', Xbox: '🎮', Switch: '🎮', Mobile: '📱',
+};
+
 // Normalise language en string[] quelle que soit la source Supabase.
 export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
   if (!lang) return [];
@@ -41,7 +45,7 @@ export type Profile = {
   discord?: string | null;
 };
 
-export type FitReasonKind = 'games' | 'platform' | 'style' | 'language' | 'availability' | 'city';
+export type FitReasonKind = 'platform' | 'style' | 'language' | 'availability' | 'city';
 export type FitReason = { kind: FitReasonKind; label: string };
 
 export type MatchResult = {
@@ -50,6 +54,7 @@ export type MatchResult = {
   fitLabel: string;
   fitReason: string;
   fitReasons: FitReason[];
+  commonGames: string[];
   isIRLNearby: boolean;
   id: string;
   name: string;
@@ -78,6 +83,11 @@ export type MatchResult = {
  */
 const CITY_BONUS = 10;
 
+// Jeux en commun — critère le plus lourd du barème, isolé pour un affichage dédié.
+export function getCommonGames(a: Profile, b: Profile): string[] {
+  return a.games.filter((g) => b.games.includes(g));
+}
+
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
@@ -86,7 +96,7 @@ export function computeScore(a: Profile, b: Profile): number {
   const aStyles    = normalizeArray(a.style);
   const bStyles    = normalizeArray(b.style);
 
-  const commonGames = a.games.filter((g) => b.games.includes(g));
+  const commonGames = getCommonGames(a, b);
   if (commonGames.length > 0) score += 40;
 
   if (aPlatforms.some((p) => bPlatforms.includes(p))) score += 20;
@@ -122,9 +132,6 @@ export function getFitReasons(a: Profile, b: Profile): FitReason[] {
   const aStyles    = normalizeArray(a.style);
   const bStyles    = normalizeArray(b.style);
 
-  const commonGames = a.games.filter((g) => b.games.includes(g));
-  if (commonGames.length > 0) reasons.push({ kind: 'games', label: commonGames.join(', ') });
-
   const commonPlatform = aPlatforms.find((p) => bPlatforms.includes(p));
   if (commonPlatform) reasons.push({ kind: 'platform', label: commonPlatform });
 
@@ -144,11 +151,12 @@ export function getFitReasons(a: Profile, b: Profile): FitReason[] {
   return reasons;
 }
 
-// Résumé texte (utilisé par la vue compacte "Worth reaching out").
+// Résumé texte (utilisé par la vue compacte "Worth reaching out") — jeux en tête,
+// c'est le critère le plus parlant en un coup d'œil.
 export function getFitReason(a: Profile, b: Profile): string {
-  const reasons = getFitReasons(a, b);
-  if (reasons.length === 0) return 'Some interests in common';
-  return reasons.map((r) => r.label).join(' · ');
+  const parts = [...getCommonGames(a, b), ...getFitReasons(a, b).map((r) => r.label)];
+  if (parts.length === 0) return 'Some interests in common';
+  return parts.join(' · ');
 }
 
 export function matchProfiles(current: Profile, others: Profile[]): MatchResult[] {
@@ -178,6 +186,7 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         fitLabel:    getFitLabel(score),
         fitReason:   getFitReason(current, normalizedP),
         fitReasons:  getFitReasons(current, normalizedP),
+        commonGames: getCommonGames(current, normalizedP),
         isIRLNearby,
         id:          normalizedP.id,
         name:        normalizedP.name,
