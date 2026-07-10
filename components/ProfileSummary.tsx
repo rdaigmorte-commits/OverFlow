@@ -1,5 +1,7 @@
 import Link from 'next/link';
 import { LANG_FLAG, PLATFORM_EMOJI } from '@/lib/match';
+import { STYLE_TO_CLASS } from '@/lib/rpgClass';
+import { ShapeIcon } from '@/components/ShapeIcon';
 
 type Props = {
   name: string;
@@ -33,11 +35,8 @@ export function ProfileSummary({ name, games, platform, style, language, availab
         </div>
         <div className="flex items-center gap-2">
           {openIRL && (
-            <span className="rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">📍 Down to meet</span>
+            <span className="rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">📍 IRL</span>
           )}
-          <span className="rounded-full border border-accentSoftBorder bg-accentSoft px-3 py-1 text-xs font-bold text-accent">
-            👤 My profile
-          </span>
         </div>
       </div>
 
@@ -62,11 +61,15 @@ export function ProfileSummary({ name, games, platform, style, language, availab
             {l}
           </span>
         ))}
-        {styles.map((s) => (
-          <span key={s} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
-            ⚡ {s}
-          </span>
-        ))}
+        {styles.map((s) => {
+          const rpg = STYLE_TO_CLASS[s];
+          return (
+            <span key={s} className="inline-flex items-center gap-1.5 rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
+              {rpg ? <ShapeIcon shape={rpg.icon} color={rpg.color} size={13} /> : '⚡'}
+              {s}
+            </span>
+          );
+        })}
         {availability.map((slot) => (
           <span key={slot} className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
             🕒 {slot}
