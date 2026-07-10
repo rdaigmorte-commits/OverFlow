@@ -890,6 +890,7 @@ export default function MatchesPage() {
         </div>
       )}
 
+      <h2 className="mb-2 text-sm font-bold text-muted uppercase tracking-wide">🎯 Matches</h2>
       <div className="grid gap-6">
 
         <section>
