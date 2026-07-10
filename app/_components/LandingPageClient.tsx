@@ -44,7 +44,7 @@ const WHY_ITEMS = [
 
 const PATH_STEPS = [
   { n: 1, bg: '#7C5CFF', shadow: '#5E42D6', title: 'Create your profile', desc: 'Games, style, schedule' },
-  { n: 2, bg: '#FFC83D', shadow: '#E0A016', title: 'Match on vibe', desc: 'Players in your city' },
+  { n: 2, bg: '#FFC83D', shadow: '#E0A016', title: 'Match on vibe', desc: 'Shared interests' },
   { n: 3, bg: '#46C93A', shadow: '#2E9E24', title: 'Play together', desc: 'Online or IRL' },
 ];
 
@@ -456,23 +456,23 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
         </section>
 
         {/* ── GAMIFIED PATH ───────────────────────────────────────── */}
-        <section className="relative z-10 -mx-6 mt-4 rounded-[28px] px-8 py-12" style={{ background: '#F4EFE4' }}>
+        <section className="relative z-10 -mx-6 mt-4 rounded-[28px] px-4 py-10 sm:px-8 sm:py-12" style={{ background: '#F4EFE4' }}>
           <p className="mb-9 text-center text-2xl font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>
-            How it works — 3 levels
+            How it works — 3 steps
           </p>
           <div className="relative mx-auto flex max-w-3xl items-start justify-between">
-            <div className="of-path-line absolute left-[8%] right-[8%] top-9 h-1.5 rounded-full" />
-            <div className="of-path-walker absolute top-7 h-6.5 w-6.5 rounded-full" style={{ width: 26, height: 26, background: 'var(--accent3)', boxShadow: '0 0 0 6px rgba(70,201,58,.2)' }} />
+            <div className="of-path-line absolute left-[8%] right-[8%] top-7 sm:top-9 h-1.5 rounded-full" />
+            <div className="of-path-walker absolute top-5 sm:top-7 rounded-full" style={{ width: 22, height: 22, background: 'var(--accent3)', boxShadow: '0 0 0 6px rgba(70,201,58,.2)' }} />
             {PATH_STEPS.map((s) => (
-              <div key={s.n} className="relative z-10 flex w-1/3 flex-col items-center gap-3">
+              <div key={s.n} className="relative z-10 flex w-1/3 flex-col items-center gap-2 px-1 sm:gap-3">
                 <div
                   className="flex items-center justify-center rounded-full text-white"
-                  style={{ width: 76, height: 76, background: s.bg, boxShadow: `0 6px 0 ${s.shadow}`, fontFamily: 'var(--font-fredoka)', fontWeight: 700, fontSize: 30 }}
+                  style={{ width: 'clamp(44px, 12vw, 76px)', height: 'clamp(44px, 12vw, 76px)', background: s.bg, boxShadow: `0 6px 0 ${s.shadow}`, fontFamily: 'var(--font-fredoka)', fontWeight: 700, fontSize: 'clamp(18px, 5vw, 30px)' }}
                 >
                   {s.n}
                 </div>
-                <span className="text-base font-bold text-text">{s.title}</span>
-                <span className="text-center text-sm text-muted">{s.desc}</span>
+                <span className="text-center font-bold text-text" style={{ fontSize: 'clamp(10px, 2.9vw, 16px)' }}>{s.title}</span>
+                <span className="text-center leading-snug text-muted" style={{ fontSize: 'clamp(9px, 2.5vw, 14px)' }}>{s.desc}</span>
               </div>
             ))}
           </div>
