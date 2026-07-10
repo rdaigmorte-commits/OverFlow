@@ -119,7 +119,7 @@ export function MatchCard({
         ) : (
           <button
             onClick={onRequestMatch}
-            className="btn-primary-new w-full px-5 py-3 text-sm"
+            className={`${tier === 'good' ? 'btn-yellow' : 'btn-primary-new'} w-full px-5 py-3 text-sm`}
           >
             Let&apos;s play 🎮
           </button>

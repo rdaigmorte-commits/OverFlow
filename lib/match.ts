@@ -99,11 +99,18 @@ export function getCommonPlatforms(a: Profile, b: Profile): string[] {
   return aPlatforms.filter((p) => bPlatforms.includes(p));
 }
 
+// Score plafonné juste sous le seuil "Strong fit" quand jeu+plateforme ne sont
+// pas réunis — sinon le % affiché peut dépasser 60 alors que le tier reste "Good
+// fit" (gate de getFitTier), ce qui donne l'impression d'un bug à l'affichage :
+// deux cards au même %, l'une strong, l'autre good.
+const NON_CORE_SCORE_CAP = 59;
+
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
 
   const aStyles = normalizeArray(a.style);
   const bStyles = normalizeArray(b.style);
+  const hasCoreMatch = getCommonGames(a, b).length > 0 && getCommonPlatforms(a, b).length > 0;
 
   if (getCommonGames(a, b).length > 0) score += 40;
 
@@ -121,7 +128,7 @@ export function computeScore(a: Profile, b: Profile): number {
     score += CITY_BONUS;
   }
 
-  return score;
+  return hasCoreMatch ? score : Math.min(score, NON_CORE_SCORE_CAP);
 }
 
 // "Strong fit" exige un jeu ET une plateforme en commun, quel que soit le score —
