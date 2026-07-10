@@ -150,14 +150,14 @@ type ContactSituation =
   | { type: 'revealed'; name: string; contacts: RevealedField[] };
 
 // Construit la liste des champs révélés à partir de get_match_contact() —
-// seuls les champs non-null passent (mutual accepted + share_* + consent).
+// l'email n'y figure jamais (privé, gardé pour le magic link + notifications) ;
+// seuls les champs non-null passent (mutual accepted + consent).
 function extractRevealedFields(contact: {
-  discord: string | null; email: string | null; psn: string | null; steam: string | null;
+  discord: string | null; psn: string | null; steam: string | null;
   other_contact: string | null; other_contact_label: string | null;
 }): RevealedField[] {
   const fields: RevealedField[] = [];
   if (contact.discord)       fields.push({ label: 'Discord', value: contact.discord });
-  if (contact.email)         fields.push({ label: 'Email',   value: contact.email });
   if (contact.psn)           fields.push({ label: 'PSN',     value: contact.psn });
   if (contact.steam)         fields.push({ label: 'Steam',   value: contact.steam });
   if (contact.other_contact) fields.push({ label: contact.other_contact_label || 'Other', value: contact.other_contact });

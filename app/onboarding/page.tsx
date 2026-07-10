@@ -429,11 +429,11 @@ export default function OnboardingPage() {
       setError('Please accept the profile sharing agreement to continue.');
       return;
     }
-    const hasAnyContact = !!(
-      profile.discord.trim() || profile.email.trim() || profile.psnHandle.trim() ||
+    const hasShareableContact = !!(
+      profile.discord.trim() || profile.psnHandle.trim() ||
       profile.steamHandle.trim() || profile.otherContact.trim()
     );
-    if (hasAnyContact && !profile.contactShareConsent) {
+    if (hasShareableContact && !profile.contactShareConsent) {
       setError('Please agree to share your contact details, or clear them to skip this step.');
       return;
     }
@@ -805,8 +805,8 @@ export default function OnboardingPage() {
             </div>
 
             <Card className="p-5">
-              <h2 className="text-base font-bold text-text mb-1">How can compatible players reach you?</h2>
-              <p className="text-xs text-muted mb-4">All optional — add at least one so matches can reach you.</p>
+              <h2 className="text-base font-bold text-text mb-1">Stay reachable</h2>
+              <p className="text-xs text-muted mb-4">All optional — add your email for notifications, and at least one shareable contact so matches can reach you directly.</p>
               <ContactFieldsEditor
                 values={profile}
                 onChange={(patch) => { setProfile(patch); setError(null); }}

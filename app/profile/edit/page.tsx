@@ -174,11 +174,11 @@ export default function ProfileEditPage() {
     if (profile.platform.length === 0) { setError('Please select at least one platform.'); return; }
     if (profile.style.length === 0)    { setError('Please select at least one play style.'); return; }
     if (profile.language.length === 0) { setError('Please select at least one language.'); return; }
-    const hasAnyContact = !!(
-      profile.discord.trim() || profile.email.trim() || profile.psnHandle.trim() ||
+    const hasShareableContact = !!(
+      profile.discord.trim() || profile.psnHandle.trim() ||
       profile.steamHandle.trim() || profile.otherContact.trim()
     );
-    if (hasAnyContact && !profile.contactShareConsent) {
+    if (hasShareableContact && !profile.contactShareConsent) {
       setError('Please agree to share your contact details, or clear them to skip this.');
       return;
     }
@@ -459,7 +459,7 @@ export default function ProfileEditPage() {
         <section className="rounded-2xl border border-border bg-panel p-6 flex flex-col gap-5">
           <div>
             <h2 className="text-base font-bold text-text">📬 Contact settings</h2>
-            <p className="mt-1 text-xs text-muted">Never shown publicly — only revealed on a mutual match.</p>
+            <p className="mt-1 text-xs text-muted">Your email stays private. Shareable details are only revealed on a mutual match.</p>
           </div>
           <ContactFieldsEditor values={profile} onChange={setProfile} />
         </section>
