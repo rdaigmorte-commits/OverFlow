@@ -314,6 +314,7 @@ type SentRequest = {
   created_at: string;
   receiver: { id: string; name: string } | null;
 };
+type MatchedConnection = { id: string; profileId: string; name: string; created_at: string };
 
 // Date courte et lisible sans dépendance supplémentaire.
 function formatRequestDate(iso: string): string {
@@ -329,35 +330,46 @@ function formatRequestDate(iso: string): string {
 function InvitationsPanel({
   received,
   sent,
-  revealedByReceiver,
+  matched,
+  revealedContacts,
   onAccept,
   onDecline,
 }: {
   received: ReceivedRequest[];
   sent: SentRequest[];
-  revealedByReceiver: Record<string, RevealedField[]>;
+  matched: MatchedConnection[];
+  revealedContacts: Record<string, RevealedField[]>;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
 }) {
-  const [tab, setTab] = useState<'received' | 'sent'>('received');
+  const [tab, setTab] = useState<'received' | 'sent' | 'matched'>('received');
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const sentPending = sent.filter((r) => r.status !== 'accepted');
 
-  // Empty state global — aucune demande dans aucune des deux directions.
-  if (received.length === 0 && sent.length === 0) {
+  const copy = (key: string, value: string) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
+    });
+  };
+
+  // Empty state global — aucune demande ni match dans aucune des deux directions.
+  if (received.length === 0 && sentPending.length === 0 && matched.length === 0) {
     return (
       <div className="mb-6 rounded-2xl border border-border bg-panel px-6 py-8 text-center">
-        <p className="text-lg font-bold text-text">Rien ici pour l&apos;instant</p>
+        <p className="text-lg font-bold text-text">No match yet</p>
         <p className="mt-2 text-sm text-muted">
-          OverFlow démarre. Aucune demande de match en cours — c&apos;est normal à ce stade.
+          Pick a player from the list below and send a request to get started.
         </p>
         <div className="mt-5 flex flex-wrap items-center justify-center gap-3">
           <a href="#matches-grid" className="btn-primary-new px-5 py-2.5 text-sm">
-            Créer une demande
+            Browse matches
           </a>
           <Link
             href="/profile/edit"
             className="rounded-xl border border-border px-5 py-2.5 text-sm font-semibold text-text hover:bg-panel2 transition"
           >
-            Compléter mon profil
+            Complete my profile
           </Link>
         </div>
       </div>
@@ -381,7 +393,15 @@ function InvitationsPanel({
             tab === 'sent' ? 'bg-white text-text shadow-sm' : 'bg-transparent text-muted hover:text-text'
           }`}
         >
-          Sent ({sent.length})
+          Sent ({sentPending.length})
+        </button>
+        <button
+          onClick={() => setTab('matched')}
+          className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition ${
+            tab === 'matched' ? 'bg-white text-text shadow-sm' : 'bg-transparent text-muted hover:text-text'
+          }`}
+        >
+          🤝 Matched ({matched.length})
         </button>
       </div>
 
@@ -417,46 +437,67 @@ function InvitationsPanel({
         <p className="text-xs text-muted px-1">No pending invitations right now.</p>
       )}
 
-      {tab === 'sent' && sent.map((req) => {
-        const revealed = revealedByReceiver[req.receiver_id];
+      {tab === 'sent' && sentPending.map((req) => (
+        <div
+          key={req.id}
+          className="flex items-center justify-between gap-4 rounded-xl border border-border bg-panel2 px-5 py-4"
+        >
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
+            <p className="text-xs text-muted mt-0.5">{formatRequestDate(req.created_at)}</p>
+          </div>
+          {req.status === 'declined' ? (
+            <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
+              Declined
+            </span>
+          ) : (
+            <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
+              ⏳ Pending
+            </span>
+          )}
+        </div>
+      ))}
+      {tab === 'sent' && sentPending.length === 0 && (
+        <p className="text-xs text-muted px-1">You haven&apos;t sent any invitations yet.</p>
+      )}
+
+      {/* Matched — connexions mutuelles, coordonnées toujours disponibles ici */}
+      {tab === 'matched' && matched.map((m) => {
+        const revealed = revealedContacts[m.profileId];
         return (
           <div
-            key={req.id}
-            className="flex flex-col gap-2 rounded-xl border border-border bg-panel2 px-5 py-4"
+            key={m.id}
+            className="flex flex-col gap-2 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
           >
             <div className="flex items-center justify-between gap-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-text truncate">{req.receiver?.name ?? 'A player'}</p>
-                <p className="text-xs text-muted mt-0.5">{formatRequestDate(req.created_at)}</p>
-              </div>
-              {req.status === 'accepted' ? (
-                <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1 text-xs font-bold text-[#2E9E24]">
-                  ✓ Accepted
-                </span>
-              ) : req.status === 'declined' ? (
-                <span className="shrink-0 rounded-full border border-border bg-panel px-3 py-1 text-xs font-semibold text-muted">
-                  Declined
-                </span>
-              ) : (
-                <span className="shrink-0 rounded-full border border-accent2SoftBorder bg-accent2Soft px-3 py-1 text-xs font-semibold text-[#B77900]">
-                  ⏳ Pending
-                </span>
-              )}
+              <p className="text-sm font-medium text-text truncate">{m.name}</p>
+              <span className="shrink-0 text-xs text-muted">{formatRequestDate(m.created_at)}</span>
             </div>
-            {req.status === 'accepted' && revealed && revealed.length > 0 && (
+            {revealed === undefined ? (
+              <p className="text-xs text-muted">Loading contact…</p>
+            ) : revealed.length === 0 ? (
+              <p className="text-xs text-muted">{m.name} hasn&apos;t shared any contact details yet — check back later.</p>
+            ) : (
               <div className="flex flex-wrap gap-2">
-                {revealed.map((c) => (
-                  <span key={c.label} className="rounded-full bg-panel border border-border px-3 py-1 text-xs font-medium text-text">
-                    {c.label}: {c.value}
-                  </span>
-                ))}
+                {revealed.map((c) => {
+                  const key = `${m.profileId}-${c.label}`;
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => copy(key, c.value)}
+                      className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text hover:border-accent transition"
+                    >
+                      {c.label}: {c.value} {copiedKey === key ? '· Copied ✓' : ''}
+                    </button>
+                  );
+                })}
               </div>
             )}
           </div>
         );
       })}
-      {tab === 'sent' && sent.length === 0 && (
-        <p className="text-xs text-muted px-1">You haven&apos;t sent any invitations yet.</p>
+      {tab === 'matched' && matched.length === 0 && (
+        <p className="text-xs text-muted px-1">No matches yet — accept or get an invitation accepted to connect.</p>
       )}
     </div>
   );
@@ -482,29 +523,38 @@ export default function MatchesPage() {
   const [tailVisibleCount, setTailVisibleCount] = useState(TAIL_PAGE_SIZE);
   const [sentInvitations, setSentInvitations] = useState<Record<string, boolean>>({});
   const [sentRequests, setSentRequests] = useState<SentRequest[]>([]);
-  const [revealedByReceiver, setRevealedByReceiver] = useState<Record<string, RevealedField[]>>({});
+  const [acceptedReceived, setAcceptedReceived] = useState<ReceivedRequest[]>([]);
+  const [revealedContacts, setRevealedContacts] = useState<Record<string, RevealedField[]>>({});
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
 
-  // Révèle automatiquement les contacts des invitations envoyées déjà acceptées
-  // (onglet Sent) — sans que l'utilisateur ait à recliquer quoi que ce soit.
+  // Matchs mutuels — union des demandes acceptées dans les deux sens, plus récent en premier.
+  const matchedConnections: MatchedConnection[] = [
+    ...sentRequests
+      .filter((r) => r.status === 'accepted')
+      .map((r) => ({ id: r.id, profileId: r.receiver_id, name: r.receiver?.name ?? 'A player', created_at: r.created_at })),
+    ...acceptedReceived
+      .map((r) => ({ id: r.id, profileId: r.sender_id, name: r.sender?.name ?? 'A player', created_at: r.created_at })),
+  ].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  // Révèle automatiquement les contacts des matchs mutuels (envoyés ET reçus acceptés)
+  // — sans que l'utilisateur ait à recliquer quoi que ce soit.
   useEffect(() => {
-    const toFetch = sentRequests.filter(
-      (r) => r.status === 'accepted' && !(r.receiver_id in revealedByReceiver)
-    );
+    const toFetch = [...new Set(matchedConnections.map((c) => c.profileId))]
+      .filter((id) => !(id in revealedContacts));
     if (toFetch.length === 0) return;
-    toFetch.forEach(async (r) => {
+    toFetch.forEach(async (id) => {
       const { data: contactRows } = await supabase
-        .rpc('get_match_contact', { target_profile_id: r.receiver_id });
+        .rpc('get_match_contact', { target_profile_id: id });
       const contact = contactRows?.[0];
-      setRevealedByReceiver((prev) => ({
+      setRevealedContacts((prev) => ({
         ...prev,
-        [r.receiver_id]: contact ? extractRevealedFields(contact) : [],
+        [id]: contact ? extractRevealedFields(contact) : [],
       }));
     });
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sentRequests]);
+  }, [sentRequests, acceptedReceived]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -565,6 +615,15 @@ export default function MatchesPage() {
         .order('created_at', { ascending: false });
       setInboundRequests((inboundData ?? []) as unknown as typeof inboundRequests);
 
+      // Charger les demandes reçues déjà acceptées (matchs mutuels, onglet "Matched")
+      const { data: acceptedReceivedData } = await supabase
+        .from('match_requests')
+        .select('id, sender_id, created_at, sender:profiles!sender_id(id, name, games)')
+        .eq('receiver_id', profileId)
+        .eq('status', 'accepted')
+        .order('created_at', { ascending: false });
+      setAcceptedReceived((acceptedReceivedData ?? []) as unknown as ReceivedRequest[]);
+
       // Charger les invitations déjà envoyées depuis Supabase (source de vérité)
       const { data: sentData } = await supabase
         .from('match_requests')
@@ -618,15 +677,22 @@ export default function MatchesPage() {
     if (!error) {
       setInboundRequests((prev) => prev.filter((r) => r.id !== requestId));
 
+      // Passe dans l'onglet "Matched" — retrouvable à tout moment, pas que dans le modal.
+      if (request) {
+        setAcceptedReceived((prev) => [request, ...prev]);
+      }
+
       // Révélation immédiate — plus besoin de re-cliquer "Let's play" pour la voir.
       if (request?.sender_id) {
         const { data: contactRows } = await supabase
           .rpc('get_match_contact', { target_profile_id: request.sender_id });
         const contact = contactRows?.[0];
+        const contacts = contact ? extractRevealedFields(contact) : [];
+        setRevealedContacts((prev) => ({ ...prev, [request.sender_id]: contacts }));
         setSituation({
           type: 'revealed',
           name: request.sender?.name ?? 'this player',
-          contacts: contact ? extractRevealedFields(contact) : [],
+          contacts,
         });
       }
     }
@@ -703,12 +769,17 @@ export default function MatchesPage() {
   const hasContact = !!displayProfile.email || !!displayProfile.discord;
   const userCity = displayProfile.city || '';
 
+  // Un profil déjà matché (mutuel) sort de la découverte — "Let's play" n'a plus de sens,
+  // il vit désormais dans l'onglet "Matched".
+  const matchedProfileIds = new Set(matchedConnections.map((c) => c.profileId));
+  const discoverableMatches = matches.filter((m) => !matchedProfileIds.has(m.id));
+
   const visibleMatches = nearMeOnly && userCity
-    ? matches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity))
-    : matches;
+    ? discoverableMatches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity))
+    : discoverableMatches;
 
   const nearMeCount = userCity
-    ? matches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity)).length
+    ? discoverableMatches.filter((m) => normalizeCity(m.city) === normalizeCity(userCity)).length
     : 0;
 
   if (hasNoProfile) {
@@ -759,28 +830,6 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Invitations — reçues / envoyées (gère elle-même l'empty state global) */}
-      {!loading && (
-        <>
-          <InvitationsPanel
-            received={inboundRequests}
-            sent={sentRequests}
-            revealedByReceiver={revealedByReceiver}
-            onAccept={handleAcceptRequest}
-            onDecline={handleDeclineRequest}
-          />
-          {inboundRequests.length > 0 && !hasContact && (
-            <p className="-mt-3 mb-6 text-xs text-muted px-1">
-              Add your Discord in{' '}
-              <Link href="/profile/edit" className="text-accent underline underline-offset-2 hover:opacity-80 transition">
-                your profile
-              </Link>
-              {' '}so players can reach you after you accept.
-            </p>
-          )}
-        </>
-      )}
-
       {/* Bandeau no-email */}
       {!loading && !hasEmail && (
         <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2SoftBorder bg-accent2Soft px-5 py-4">
@@ -802,20 +851,46 @@ export default function MatchesPage() {
         </div>
       )}
 
-      <div className="grid gap-6">
+      {/* Profil + activité (invitations/matchs) côte à côte — évite l'empilement vertical */}
+      {!loading && (
+        <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+          <div>
+            <h2 className="mb-2 text-sm font-bold text-muted uppercase tracking-wide">👤 Your profile</h2>
+            <ProfileSummary
+              name={displayProfile.name}
+              games={displayProfile.games ?? []}
+              platform={displayProfile.platform}
+              style={displayProfile.style}
+              language={displayProfile.language ?? []}
+              availability={displayProfile.availability ?? []}
+              city={displayProfile.city}
+              openIRL={displayProfile.openIRL}
+            />
+          </div>
+          <div>
+            <h2 className="mb-2 text-sm font-bold text-muted uppercase tracking-wide">🔔 Activity</h2>
+            <InvitationsPanel
+              received={inboundRequests}
+              sent={sentRequests}
+              matched={matchedConnections}
+              revealedContacts={revealedContacts}
+              onAccept={handleAcceptRequest}
+              onDecline={handleDeclineRequest}
+            />
+            {inboundRequests.length > 0 && !hasContact && (
+              <p className="-mt-3 text-xs text-muted px-1">
+                Add your Discord in{' '}
+                <Link href="/profile/edit" className="text-accent underline underline-offset-2 hover:opacity-80 transition">
+                  your profile
+                </Link>
+                {' '}so players can reach you after you accept.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
 
-        {!loading && (
-          <ProfileSummary
-            name={displayProfile.name}
-            games={displayProfile.games ?? []}
-            platform={displayProfile.platform}
-            style={displayProfile.style}
-            language={displayProfile.language ?? []}
-            availability={displayProfile.availability ?? []}
-            city={displayProfile.city}
-            openIRL={displayProfile.openIRL}
-          />
-        )}
+      <div className="grid gap-6">
 
         <section>
           {loading && <p className="text-muted text-sm">Finding your matches...</p>}
@@ -828,7 +903,7 @@ export default function MatchesPage() {
             </Card>
           )}
 
-          {!loading && !fetchError && matches.length === 0 && (
+          {!loading && !fetchError && discoverableMatches.length === 0 && (
             <div className="grid gap-5">
               <div className="rounded-2xl border border-accent3SoftBorder bg-accent3Soft px-6 py-5">
                 <div className="flex items-center gap-3 mb-3">
@@ -869,7 +944,7 @@ export default function MatchesPage() {
             </div>
           )}
 
-          {!loading && !fetchError && matches.length > 0 && (
+          {!loading && !fetchError && discoverableMatches.length > 0 && (
             <div id="matches-grid" className="grid gap-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-muted font-medium">
