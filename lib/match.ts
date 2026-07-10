@@ -12,6 +12,10 @@ export const PLATFORM_EMOJI: Record<string, string> = {
   PC: '🖥️', PlayStation: '🎮', Xbox: '🎮', Switch: '🎮', Mobile: '📱',
 };
 
+export const AVAILABILITY_EMOJI: Record<string, string> = {
+  'Weekday evenings': '🌙', 'Friday night': '🎉', 'Weekend day': '☀️', 'Weekend evening': '🌆',
+};
+
 // Normalise language en string[] quelle que soit la source Supabase.
 export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
   if (!lang) return [];

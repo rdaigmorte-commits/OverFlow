@@ -4,21 +4,25 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
-import { normalizeLanguage, normalizeArray } from '@/lib/match';
+import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, LANG_BADGE, LANG_FLAG } from '@/lib/match';
+import { STYLE_TO_CLASS } from '@/lib/rpgClass';
+import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
-const STYLES    = ['Competitive', 'Co-op', 'Casual', 'Roleplay'];
-const PLATFORMS = ['PC', 'PlayStation', 'Xbox', 'Switch', 'Mobile'];
-const LANGS     = ['English', 'Dutch', 'French', 'Spanish', 'German', 'Italian'];
-const SLOTS     = ['Weekday evenings', 'Friday night', 'Weekend day', 'Weekend evening'];
+// Mêmes sources que l'onboarding (lib/match.ts, lib/rpgClass.ts) — évite toute
+// resynchronisation manuelle si un jour de nouvelles valeurs sont ajoutées (US-TECH-02).
+const STYLES    = Object.entries(STYLE_TO_CLASS).map(([label, rpg]) => ({ label, rpg }));
+const PLATFORMS = Object.entries(PLATFORM_EMOJI).map(([label, emoji]) => ({ label, emoji }));
+const LANGS     = Object.keys(LANG_BADGE).map((label) => ({ label, flag: LANG_FLAG[label] }));
+const SLOTS     = Object.entries(AVAILABILITY_EMOJI).map(([label, emoji]) => ({ label, emoji }));
 const LOOKING_FOR_OPTIONS = [
   { value: 'online' as const, icon: '🏠', title: 'Play online',  desc: 'Regular sessions, no pressure' },
   { value: 'irl'    as const, icon: '🍺', title: 'Meet IRL',    desc: 'Find people in your city' },
   { value: 'both'   as const, icon: '⚡',  title: 'Both',        desc: 'Online first, IRL if it clicks' },
 ];
 
-function Chip({ label, selected, onClick }: { label: string; selected: boolean; onClick: () => void }) {
+function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: boolean; onClick: () => void }) {
   return (
     <button
       type="button"
@@ -389,7 +393,12 @@ export default function ProfileEditPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {PLATFORMS.map((p) => (
-                <Chip key={p} label={p} selected={profile.platform.includes(p)} onClick={() => toggleMulti('platform', p)} />
+                <Chip
+                  key={p.label}
+                  label={`${p.emoji} ${p.label}`}
+                  selected={profile.platform.includes(p.label)}
+                  onClick={() => toggleMulti('platform', p.label)}
+                />
               ))}
             </div>
           </div>
@@ -400,7 +409,12 @@ export default function ProfileEditPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {STYLES.map((s) => (
-                <Chip key={s} label={s} selected={profile.style.includes(s)} onClick={() => toggleMulti('style', s)} />
+                <Chip
+                  key={s.label}
+                  label={<span className="inline-flex items-center gap-1.5"><ShapeIcon shape={s.rpg.icon} color={s.rpg.color} size={12} />{s.label}</span>}
+                  selected={profile.style.includes(s.label)}
+                  onClick={() => toggleMulti('style', s.label)}
+                />
               ))}
             </div>
           </div>
@@ -410,7 +424,12 @@ export default function ProfileEditPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {LANGS.map((l) => (
-                <Chip key={l} label={l} selected={profile.language.includes(l)} onClick={() => toggleMulti('language', l)} />
+                <Chip
+                  key={l.label}
+                  label={<><span className={`fi fi-${l.flag} mr-1.5`} />{l.label}</>}
+                  selected={profile.language.includes(l.label)}
+                  onClick={() => toggleMulti('language', l.label)}
+                />
               ))}
             </div>
           </div>
@@ -420,7 +439,12 @@ export default function ProfileEditPage() {
             </h3>
             <div className="flex flex-wrap gap-3">
               {SLOTS.map((s) => (
-                <Chip key={s} label={s} selected={profile.availability.includes(s)} onClick={() => toggleMulti('availability', s)} />
+                <Chip
+                  key={s.label}
+                  label={`${s.emoji} ${s.label}`}
+                  selected={profile.availability.includes(s.label)}
+                  onClick={() => toggleMulti('availability', s.label)}
+                />
               ))}
             </div>
           </div>

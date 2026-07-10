@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { Card } from '@/components/Card';
 import { useOverflowStore } from '@/lib/store';
 import { supabase } from '@/lib/supabase';
-import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI } from '@/lib/match';
+import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, LANG_BADGE, LANG_FLAG } from '@/lib/match';
 import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
@@ -12,20 +12,8 @@ import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
 const STYLES = Object.entries(STYLE_TO_CLASS).map(([value, rpg]) => ({ value, rpg }));
 const PLATFORMS = Object.entries(PLATFORM_EMOJI).map(([label, emoji]) => ({ label, emoji }));
-const LANGS = [
-  { label: 'English', badge: 'EN', flag: 'gb' },
-  { label: 'Dutch',   badge: 'NL', flag: 'nl' },
-  { label: 'French',  badge: 'FR', flag: 'fr' },
-  { label: 'Spanish', badge: 'ES', flag: 'es' },
-  { label: 'German',  badge: 'DE', flag: 'de' },
-  { label: 'Italian', badge: 'IT', flag: 'it' },
-];
-const SLOTS = [
-  { label: 'Weekday evenings', emoji: '🌙' },
-  { label: 'Friday night',     emoji: '🎉' },
-  { label: 'Weekend day',      emoji: '☀️' },
-  { label: 'Weekend evening',  emoji: '🌆' },
-];
+const LANGS = Object.keys(LANG_BADGE).map((label) => ({ label, badge: LANG_BADGE[label], flag: LANG_FLAG[label] }));
+const SLOTS = Object.entries(AVAILABILITY_EMOJI).map(([label, emoji]) => ({ label, emoji }));
 const TOTAL_STEPS = 5;
 
 const STEP_LABELS = [
