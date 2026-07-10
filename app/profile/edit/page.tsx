@@ -24,9 +24,7 @@ function Chip({ label, selected, onClick }: { label: string; selected: boolean; 
       type="button"
       onClick={onClick}
       className={`rounded-full border px-4 py-2 text-sm transition ${
-        selected
-          ? 'border-accent bg-accent text-black font-semibold'
-          : 'border-border bg-panel2 text-text hover:border-accent'
+        selected ? 'chip-selected font-semibold' : 'chip-unselected hover:border-accent'
       }`}
     >
       {label}
@@ -267,9 +265,9 @@ export default function ProfileEditPage() {
 
       {/* Bannière de succès */}
       {success && (
-        <div className="mb-6 flex items-center gap-3 rounded-xl border border-green-500/40 bg-green-500/10 px-5 py-4">
+        <div className="mb-6 flex items-center gap-3 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4">
           <span className="text-lg">✅</span>
-          <p className="text-sm font-medium text-green-400">Profile updated successfully!</p>
+          <p className="text-sm font-medium text-[#2E9E24]">Profile updated successfully!</p>
         </div>
       )}
 
@@ -324,7 +322,7 @@ export default function ProfileEditPage() {
               {profile.games.map((g) => (
                 <span
                   key={g}
-                  className="inline-flex items-center gap-2 rounded-full border border-accent bg-accent px-4 py-2 text-sm text-black font-semibold"
+                  className="chip-selected inline-flex items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold"
                 >
                   {g}
                   <button
@@ -438,7 +436,7 @@ export default function ProfileEditPage() {
                     onClick={() => setProfile({ lookingFor: opt.value })}
                     className={`rounded-2xl border-2 p-5 text-left transition-all duration-200 ${
                       selected
-                        ? 'border-accent bg-accent/10 shadow-[0_0_20px_rgba(124,92,255,0.2)]'
+                        ? 'border-accentSoftBorder bg-accentSoft'
                         : 'border-border bg-panel2 hover:border-accent/50 hover:scale-[1.02]'
                     }`}
                   >
@@ -467,7 +465,7 @@ export default function ProfileEditPage() {
         </section>
 
         {error && (
-          <p className="text-sm text-red-400 -mt-4">
+          <p className="text-sm text-error -mt-4">
             {error}
             {needsLogin && (
               <>
@@ -485,7 +483,7 @@ export default function ProfileEditPage() {
           <button
             onClick={handleSave}
             disabled={loading}
-            className="w-full rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-black hover:opacity-90 disabled:opacity-50 transition"
+            className="btn-primary-new w-full py-3 text-sm disabled:pointer-events-none"
           >
             {loading ? 'Saving…' : 'Save changes ✓'}
           </button>
