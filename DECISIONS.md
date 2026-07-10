@@ -4,6 +4,18 @@
 
 ---
 
+## 2026-07-10
+
+- Reskin candy finalisé sur login/profile/admin · Complète le reskin dark→light entamé en session précédente ; login et admin héritaient déjà correctement des tokens, seul profile/edit avait des résidus de l'ancien style (chips violet/noir, bannières Tailwind brutes).
+- Email jamais partagé avec les autres joueurs, séparé du bloc "coordonnées partageables" · L'email sert uniquement au magic link + notifications (confirmé en lisant `notify-match`) ; RPC `get_match_contact` modifiée pour ne plus jamais le retourner à un pair. Les 5 toggles "Share on mutual match" par champ retirés au profit d'un seul consentement global sur Discord/PSN/Steam/Autre.
+- "Strong fit" exige désormais jeu ET plateforme en commun, en plus du score ≥ 60 · Sans ce gate, deux joueurs sans rien de jouable ensemble (juste style/langue/ville) pouvaient être étiquetés "Strong fit". Score plafonné à 59 quand le gate n'est pas rempli, pour que le % affiché ne contredise jamais le badge de tier.
+- Formule de matching alignée entre `lib/match.ts` (app) et la RPC Supabase `get_match_opportunities` (dashboard admin) · Elles utilisaient deux barèmes complètement différents (poids, seuils, max). **Règle permanente actée** : toute évolution de l'algorithme doit être répercutée des deux côtés le même jour.
+- `looking_for`/`open_irl` reste hors du score de matching · Mesure une intention différente (veut-on se rencontrer) de la compatibilité (a-t-on des points communs) ; mélanger les deux aurait pénalisé de vrais matchs pour une dimension différente. Mis en avant autrement : badge "IRL" (désormais mutuel, bug corrigé), filtre "Down to meet" (remplace "Near me", POC concentré sur Utrecht), tri secondaire à tier égal.
+- Profils déjà matchés (demande acceptée, mutuel) sortent de la grille de découverte · "Let's play" n'a plus de sens une fois matché ; nouvel onglet "🤝 Matched" dans l'encart Invitations, coordonnées révélées et retrouvables à tout moment (persistant, plus seulement dans un modal ponctuel).
+- US-HOME-01 (#58), US-TECH-02 (#72), US-TECH-01 (#60) fermées · Vérifiées et complétées cette session (voir commentaires de traçabilité sur chaque issue GitHub).
+
+---
+
 ## 2026-06-25 (session 2)
 
 - Badges texte (EN, NL, FR…) à la place des emojis drapeaux dans les chips langue · Les emojis drapeaux ne s'affichent pas sur Windows — cible principale du POC Utrecht.

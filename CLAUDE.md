@@ -73,3 +73,12 @@ _(mis à jour à chaque « Fin de session »)_
 - 2026-06-25 (session 2) — US-ONB-04 #73 livrée : badges texte langues (EN/NL/FR…) à la place des
   drapeaux emoji (non rendus Windows), checkbox open_irl supprimée du step 3, open_irl dérivé
   automatiquement depuis looking_for dans saveProfile(). Règle push-après-US ajoutée à CLAUDE.md.
+- 2026-07-10 — Grosse session /matches + landing. Reskin candy finalisé (login/profile/admin).
+  Algorithme de matching durci (Strong fit exige jeu+plateforme, score plafonné, formule alignée
+  app/admin — voir DECISIONS.md). Nouvel onglet "Matched" avec révélation de contact persistante ;
+  profils déjà matchés sortent de la grille. Badge/filtre IRL corrigés (mutuel, "Down to meet"
+  remplace "Near me"). Cards de match repensées (raisons neutres, jeux mis en avant, icônes
+  cohérentes RPG/plateforme/langue). Landing : hero moins redondant, visuel "squad" responsive
+  avec duos connectés. US fermées : #58 (HOME-01), #72 (TECH-02), #60 (TECH-01). 9 profils
+  TEST_* restent en base pour tests visuels — à nettoyer (`DELETE FROM profiles WHERE name LIKE
+  'TEST_%'`), ainsi que le profil "Léa" créé pour tester le flow de match.
