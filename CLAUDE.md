@@ -33,6 +33,11 @@ Tailwind · Supabase (SDK + SSR) · cible de déploiement : Vercel (non configur
    avant accord mutuel. Vérifier au niveau réseau, pas seulement à l'affichage.
 6. **Permissions.** Si une commande échoue par manque de scope, signale-le au PM avec la commande
    exacte à exécuter. Ne contourne pas.
+7. **Révocations Postgres.** Un `REVOKE` doit cibler précisément le mécanisme du grant existant :
+   `FROM PUBLIC` ne retire pas un grant nommé (`anon`/`authenticated`), et un `REVOKE` par colonne
+   ne retire pas un `GRANT` posé au niveau table entière. Toujours vérifier via `pg_proc.proacl`
+   ou `information_schema.column_privileges` après un `REVOKE` — ne jamais supposer qu'il a
+   fonctionné juste parce que la requête s'exécute sans erreur.
 
 ## Priorisation (grille)
 - **P0** — ne peut pas être lancé en prod sans ça (« avant prod », pas « avant ce soir »).
