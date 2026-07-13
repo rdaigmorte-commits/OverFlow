@@ -241,8 +241,7 @@ export default function ProfileEditPage() {
         setNeedsLogin(true);
         setError('Your session has expired. Please sign in to save changes to this profile.');
       } else {
-        // POC : message brut affiché pour diagnostiquer plus vite un 403 inattendu.
-        setError(`Something went wrong. Please try again. (${dbError.message})`);
+        setError('Something went wrong. Please try again.');
       }
       return;
     }
