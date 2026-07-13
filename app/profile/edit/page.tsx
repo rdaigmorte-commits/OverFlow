@@ -8,6 +8,7 @@ import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, 
 import { STYLE_TO_CLASS } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
+import { saveExistingProfile, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 // Mêmes sources que l'onboarding (lib/match.ts, lib/rpgClass.ts) — évite toute
@@ -187,9 +188,11 @@ export default function ProfileEditPage() {
       return;
     }
 
+    if (!profile.profileId) return;
+
     setLoading(true);
     const consentChanged = profile.contactShareConsent !== consentAtLoad.current;
-    const payload = {
+    const nonSensitive: NonSensitiveFields = {
       name:         profile.name,
       age:          profile.age || null,
       city:         profile.city || null,
@@ -201,6 +204,8 @@ export default function ProfileEditPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      profile.consent,
       looking_for:  profile.lookingFor,
+    };
+    const sensitive: SensitiveFields = {
       email:                profile.email || null,
       discord:              profile.discord || null,
       psn_handle:           profile.psnHandle || null,
@@ -212,20 +217,20 @@ export default function ProfileEditPage() {
       share_psn:            profile.sharePsn,
       share_steam:          profile.shareSteam,
       share_other:          profile.shareOther,
-      contact_share_consent:    profile.contactShareConsent,
-      ...(consentChanged ? { contact_share_consent_at: profile.contactShareConsent ? new Date().toISOString() : null } : {}),
+      contact_share_consent: profile.contactShareConsent,
     };
 
-    // update() plutôt qu'upsert() : ON CONFLICT DO UPDATE exige un SELECT
-    // table-level sur profiles, révoqué par SEC-02 (anon/authenticated n'ont
-    // que des GRANT colonne) — l'upsert renvoie systématiquement 403 ici,
-    // qu'on soit connecté ou non, profil lié ou non.
-    const { error: dbError } = await supabase
-      .from('profiles')
-      .update(payload)
-      .eq('id', profile.profileId)
-      .select('id')
-      .single();
+    // Profil pas encore lié à un compte : les champs de contact passent par
+    // claim_token plutôt qu'un UPDATE direct (US-SEC-09) — géré dans le helper.
+    const { error: dbError } = await saveExistingProfile({
+      profileId: profile.profileId,
+      isAuthenticated,
+      claimToken: profile.claimToken,
+      nonSensitive,
+      sensitive,
+      consentChanged,
+      contactShareConsentAt: profile.contactShareConsent ? new Date().toISOString() : null,
+    });
 
     setLoading(false);
     if (dbError) {

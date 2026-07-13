@@ -3,6 +3,7 @@ import type { Session } from '@supabase/supabase-js';
 
 type Profile = {
   profileId: string | null;
+  claimToken: string | null;
   name: string;
   age: string;
   city: string;
@@ -39,14 +40,23 @@ type State = {
 };
 
 const STORAGE_KEY = 'overflow_profile_id';
+// claim_token : preuve de possession d'un profil pas encore lié à un compte
+// (US-SEC-09). Généré côté client à la création, jamais lu depuis le serveur.
+const CLAIM_TOKEN_STORAGE_KEY = 'overflow_claim_token';
 
 function getSavedProfileId(): string | null {
   if (typeof window === 'undefined') return null;
   try { return localStorage.getItem(STORAGE_KEY); } catch { return null; }
 }
 
+function getSavedClaimToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  try { return localStorage.getItem(CLAIM_TOKEN_STORAGE_KEY); } catch { return null; }
+}
+
 const initialProfile: Profile = {
   profileId: getSavedProfileId(),
+  claimToken: getSavedClaimToken(),
   name: '',
   age: '',
   city: '',
@@ -82,6 +92,9 @@ export const useOverflowStore = create<State>((set) => ({
     if (updated.profileId && typeof window !== 'undefined') {
       try { localStorage.setItem(STORAGE_KEY, updated.profileId); } catch { /* silencieux */ }
     }
+    if (updated.claimToken && typeof window !== 'undefined') {
+      try { localStorage.setItem(CLAIM_TOKEN_STORAGE_KEY, updated.claimToken); } catch { /* silencieux */ }
+    }
     return { profile: updated };
   }),
 
@@ -91,8 +104,11 @@ export const useOverflowStore = create<State>((set) => ({
 
   reset: () => {
     if (typeof window !== 'undefined') {
-      try { localStorage.removeItem(STORAGE_KEY); } catch { /* silencieux */ }
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CLAIM_TOKEN_STORAGE_KEY);
+      } catch { /* silencieux */ }
     }
-    set({ profile: { ...initialProfile, profileId: null }, session: null, currentStep: 1 });
+    set({ profile: { ...initialProfile, profileId: null, claimToken: null }, session: null, currentStep: 1 });
   },
 }));

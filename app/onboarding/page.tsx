@@ -8,6 +8,7 @@ import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, 
 import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
+import { saveExistingProfile, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
 const STYLES = Object.entries(STYLE_TO_CLASS).map(([value, rpg]) => ({ value, rpg }));
@@ -160,6 +161,7 @@ export default function OnboardingPage() {
   const [isUtrecht, setIsUtrecht]       = useState<boolean | null>(null);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [direction, setDirection]       = useState<'next' | 'prev'>('next');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const suggestionsRef  = useRef<HTMLDivElement>(null);
   const sessionId       = useRef<string>(crypto.randomUUID());
   const completedRef    = useRef(false);
@@ -192,6 +194,12 @@ export default function OnboardingPage() {
   }
 
   useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session?.user);
+    });
+  }, []);
 
   useEffect(() => {
     track(1, 'start');
@@ -327,7 +335,7 @@ export default function OnboardingPage() {
 
   async function saveProfile(): Promise<boolean> {
     setLoading(true); setError(null);
-    const basePayload = {
+    const nonSensitive: NonSensitiveFields = {
       name:         profile.name,
       age:          profile.age || null,
       city:         profile.city || null,
@@ -339,6 +347,8 @@ export default function OnboardingPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      consentGiven,
       looking_for:  profile.lookingFor,
+    };
+    const sensitive: SensitiveFields = {
       discord:              profile.discord || null,
       email:                profile.email || null,
       psn_handle:           profile.psnHandle || null,
@@ -350,31 +360,40 @@ export default function OnboardingPage() {
       share_psn:            profile.sharePsn,
       share_steam:          profile.shareSteam,
       share_other:          profile.shareOther,
-      contact_share_consent:    profile.contactShareConsent,
-      contact_share_consent_at: profile.contactShareConsent ? new Date().toISOString() : null,
+      contact_share_consent: profile.contactShareConsent,
     };
-    let data: { id: string } | null = null;
-    let dbError: { message?: string; code?: string } | null = null;
+    const contactShareConsentAt = profile.contactShareConsent ? new Date().toISOString() : null;
+
     if (profile.profileId) {
-      // update() plutôt qu'upsert() : ON CONFLICT DO UPDATE exige un SELECT
-      // table-level sur profiles, révoqué par SEC-02 (anon/authenticated
-      // n'ont que des GRANT colonne) — l'upsert renvoie systématiquement 403.
-      ({ data, error: dbError } = await supabase
-        .from('profiles')
-        .update(basePayload)
-        .eq('id', profile.profileId)
-        .select('id')
-        .single());
-    } else {
-      ({ data, error: dbError } = await supabase
-        .from('profiles')
-        .insert(basePayload)
-        .select('id')
-        .single());
+      // Reprise d'un onboarding déjà commencé (profileId existant en localStorage).
+      // Les champs de contact d'un profil pas encore lié passent par claim_token (US-SEC-09).
+      const { error: dbError } = await saveExistingProfile({
+        profileId: profile.profileId,
+        isAuthenticated,
+        claimToken: profile.claimToken,
+        nonSensitive,
+        sensitive,
+        consentChanged: true,
+        contactShareConsentAt,
+      });
+      setLoading(false);
+      if (dbError) { setError('Something went wrong. Please try again.'); return false; }
+      setProfile({ consent: consentGiven });
+      return true;
     }
+
+    // Nouveau profil : claim_token généré côté client, jamais transmis en lecture
+    // au serveur — c'est la preuve de possession qui protège l'édition future
+    // des champs de contact tant que le profil n'est pas lié à un compte.
+    const claimToken = crypto.randomUUID();
+    const { data, error: dbError } = await supabase
+      .from('profiles')
+      .insert({ ...nonSensitive, ...sensitive, contact_share_consent_at: contactShareConsentAt, claim_token: claimToken })
+      .select('id')
+      .single();
     setLoading(false);
     if (dbError || !data) { setError('Something went wrong. Please try again.'); return false; }
-    setProfile({ profileId: data.id, consent: consentGiven });
+    setProfile({ profileId: data.id, claimToken, consent: consentGiven });
     return true;
   }
 

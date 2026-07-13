@@ -43,6 +43,48 @@ function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; lab
 }
 
 type MatchOpportunities = { strong: number; good: number; possible: number };
+type FunnelRow = { step: number; action: string; occurrences: number };
+
+function FunnelBlock({ rows, loading }: { rows: FunnelRow[]; loading: boolean }) {
+  const steps = [1, 2, 3, 4, 5];
+  const countFor = (step: number, action: string) =>
+    Number(rows.find((r) => r.step === step && r.action === action)?.occurrences ?? 0);
+
+  return (
+    <Card className="mt-8 p-5">
+      <h2 className="text-xl font-bold">📈 Onboarding funnel</h2>
+      <p className="mt-1 text-sm text-muted">Where players complete or abandon each step.</p>
+      {loading ? (
+        <p className="mt-4 text-sm text-muted">Loading...</p>
+      ) : rows.length === 0 ? (
+        <p className="mt-4 text-sm text-muted">No onboarding activity tracked yet.</p>
+      ) : (
+        <div className="mt-5 overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-left text-muted">
+                <th className="pb-2 pr-4">Step</th>
+                <th className="pb-2 pr-4">Started</th>
+                <th className="pb-2 pr-4">Completed</th>
+                <th className="pb-2">Abandoned</th>
+              </tr>
+            </thead>
+            <tbody>
+              {steps.map((step) => (
+                <tr key={step} className="border-t border-border">
+                  <td className="py-2 pr-4 font-semibold text-text">Step {step}</td>
+                  <td className="py-2 pr-4">{countFor(step, 'start')}</td>
+                  <td className="py-2 pr-4 text-[#2E9E24]">{countFor(step, 'complete')}</td>
+                  <td className="py-2 text-error">{countFor(step, 'abandon')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Card>
+  );
+}
 
 function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; loading: boolean }) {
   const total = data.strong + data.good + data.possible;
@@ -106,13 +148,14 @@ export default function AdminDashboard() {
   const [ages, setAges] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [matchOps, setMatchOps] = useState<MatchOpportunities>({ strong: 0, good: 0, possible: 0 });
+  const [funnel, setFunnel] = useState<FunnelRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function fetchAll() {
       const [g] = await Promise.all([supabase.rpc('get_global_stats')]);
 
-      const [gm, pl, st, la, av, ag, ci, mo] = await Promise.all([
+      const [gm, pl, st, la, av, ag, ci, mo, fn] = await Promise.all([
         supabase.rpc('get_game_stats'),
         supabase.rpc('get_platform_stats'),
         supabase.rpc('get_style_stats'),
@@ -121,6 +164,7 @@ export default function AdminDashboard() {
         supabase.rpc('get_age_stats'),
         supabase.rpc('get_city_stats'),
         supabase.rpc('get_match_opportunities'),
+        supabase.rpc('get_onboarding_funnel_stats'),
       ]);
 
       if (g.data)  setGlobals(g.data);
@@ -132,6 +176,7 @@ export default function AdminDashboard() {
       if (ag.data) setAges(ag.data);
       if (ci.data) setCities(ci.data);
       if (mo.data) setMatchOps(mo.data);
+      if (fn.data) setFunnel(fn.data);
       setLoading(false);
     }
     fetchAll();
@@ -150,6 +195,7 @@ export default function AdminDashboard() {
       </div>
 
       <MatchOpportunitiesBlock data={matchOps} loading={loading} />
+      <FunnelBlock rows={funnel} loading={loading} />
 
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
       <div className="mt-4 grid gap-5 md:grid-cols-2">
