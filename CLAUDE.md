@@ -82,3 +82,10 @@ _(mis à jour à chaque « Fin de session »)_
   avec duos connectés. US fermées : #58 (HOME-01), #72 (TECH-02), #60 (TECH-01). 9 profils
   TEST_* restent en base pour tests visuels — à nettoyer (`DELETE FROM profiles WHERE name LIKE
   'TEST_%'`), ainsi que le profil "Léa" créé pour tester le flow de match.
+- 2026-07-13 — Audit sécurité complet (14 points) + corrections. 2 P0 corrigés et vérifiés en
+  conditions réelles (#79, #80 — RLS onboarding_events, prise de contrôle de profil via
+  claim_token). 8 points Haute/Moyenne/Basse traités dans la foulée (CSP/headers, fonctions SQL
+  durcies, CORS notify-match, Next.js 14.2.35, pages d'erreur, rate limiting maison Postgres).
+  Next.js 16 et validation Zod volontairement différés — 4 issues ouvertes pour la suite
+  (#81-#84, P2/P3, non bloquantes). Détail technique complet en mémoire (jamais publié en clair
+  sur le tracker public tant qu'une faille n'est pas corrigée).

@@ -4,6 +4,26 @@
 
 ---
 
+## 2026-07-13
+
+- Issues sécurité fermées en version expurgée sur le tracker public, détail complet gardé en
+  interne (mémoire + rapport privé) · Le repo GitHub est public : publier la recette
+  d'exploitation exacte d'une faille avant son correctif reviendrait à la rendre disponible à
+  n'importe qui.
+- Prise de contrôle de profil anonyme (SEC-09) corrigée via un `claim_token` généré côté client
+  plutôt qu'en imposant un compte obligatoire · Préserve le flow "profil sans compte", choix
+  produit assumé du POC (onboarding sans friction), tout en fermant le contournement identifié.
+- Next.js mis à jour en patch (14.2.5 → 14.2.35) mais pas de passage à Next 16 pour l'instant ·
+  Les CVE restantes après le patch ne s'appliquent quasiment pas à l'usage réel d'OverFlow (pas
+  de next/image distant, pas de rewrites, pas d'i18n) ; une migration majeure (React 19) mérite
+  sa propre session de tests, pas un `--force` glissé dans une série de correctifs sécurité.
+- Seuils de rate limiting laissés à 5 créations de profil / IP / heure malgré un risque de faux
+  positifs sur IP partagée (wifi d'événement, CGNAT mobile) · Décision PM explicite après avoir
+  été informé du risque concret pour l'événement pilote Utrecht (US-ACT-01) ; trivial à remonter
+  plus tard si besoin.
+
+---
+
 ## 2026-07-10
 
 - Reskin candy finalisé sur login/profile/admin · Complète le reskin dark→light entamé en session précédente ; login et admin héritaient déjà correctement des tokens, seul profile/edit avait des résidus de l'ancien style (chips violet/noir, bannières Tailwind brutes).
