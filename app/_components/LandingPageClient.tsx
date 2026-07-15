@@ -68,6 +68,7 @@ const SQUAD_DUOS = [
     a: { initials: 'TB', bg: 'linear-gradient(135deg,#38BDF8,#0EA5E9)', shadow: 'rgba(14,165,233,.5)' },
     b: { initials: 'RN', bg: 'linear-gradient(135deg,#46C93A,#2E9E24)', shadow: 'rgba(70,201,58,.5)' },
     connector: { icon: '🖥️', label: 'PC' },
+    showMatchLabel: true,
     anim: 'of-bob3 5s ease-in-out infinite',
   },
 ];
