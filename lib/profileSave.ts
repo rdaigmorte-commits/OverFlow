@@ -14,6 +14,7 @@ export type NonSensitiveFields = {
   open_irl: boolean;
   looking_for: string;
   consent: boolean;
+  notify_on_match_request: boolean;
 };
 
 export type SensitiveFields = {
@@ -97,4 +98,30 @@ export async function saveExistingProfile(
     p_contact_share_consent_at: contactShareConsentAt,
   });
   return { error: sensitiveError };
+}
+
+// Supprime définitivement le profil (+ ses demandes de match, + le compte Auth
+// s'il est lié). Deux chemins : authentifié (auth.uid()) ou profil non lié
+// (claim_token) — même logique que saveExistingProfile.
+export async function deleteAccount(opts: {
+  profileId: string;
+  isAuthenticated: boolean;
+  claimToken: string | null;
+}): Promise<{ error: { message: string } | null }> {
+  const { profileId, isAuthenticated, claimToken } = opts;
+
+  if (isAuthenticated) {
+    const { error } = await supabase.rpc('delete_my_account');
+    return { error };
+  }
+
+  if (!claimToken) {
+    return { error: { message: 'Missing claim token — cannot delete an unclaimed profile.' } };
+  }
+
+  const { error } = await supabase.rpc('delete_unclaimed_profile', {
+    p_profile_id: profileId,
+    p_claim_token: claimToken,
+  });
+  return { error };
 }

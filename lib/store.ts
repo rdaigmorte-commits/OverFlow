@@ -27,6 +27,7 @@ type Profile = {
   shareOther: boolean;
   contactShareConsent: boolean;
   lookingFor: 'online' | 'irl' | 'both';
+  notifyOnMatchRequest: boolean;
 };
 
 type State = {
@@ -80,6 +81,7 @@ const initialProfile: Profile = {
   shareOther: true,
   contactShareConsent: false,
   lookingFor: 'both',
+  notifyOnMatchRequest: true,
 };
 
 export const useOverflowStore = create<State>((set) => ({

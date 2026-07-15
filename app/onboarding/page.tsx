@@ -347,6 +347,7 @@ export default function OnboardingPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      consentGiven,
       looking_for:  profile.lookingFor,
+      notify_on_match_request: profile.notifyOnMatchRequest,
     };
     const sensitive: SensitiveFields = {
       discord:              profile.discord || null,

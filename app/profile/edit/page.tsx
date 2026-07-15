@@ -8,7 +8,7 @@ import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, 
 import { STYLE_TO_CLASS } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
-import { saveExistingProfile, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
+import { saveExistingProfile, deleteAccount, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
 // Mêmes sources que l'onboarding (lib/match.ts, lib/rpgClass.ts) — évite toute
@@ -37,9 +37,49 @@ function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: 
   );
 }
 
+function DeleteAccountModal({
+  onConfirm,
+  onCancel,
+  deleting,
+  error,
+}: {
+  onConfirm: () => void;
+  onCancel: () => void;
+  deleting: boolean;
+  error: string | null;
+}) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={deleting ? undefined : onCancel}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        <h2 className="text-xl font-bold text-text">⚠️ Delete your account?</h2>
+        <p className="mt-3 text-sm text-muted leading-relaxed">
+          This permanently deletes your profile, your matches, and your login (if you have one). There&apos;s no way to undo this.
+        </p>
+        {error && <p className="mt-3 text-sm text-error">{error}</p>}
+        <div className="mt-6 flex flex-col gap-3">
+          <button
+            onClick={onConfirm}
+            disabled={deleting}
+            className="w-full rounded-xl bg-error px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition disabled:pointer-events-none disabled:opacity-60"
+          >
+            {deleting ? 'Deleting…' : 'Yes, delete my account'}
+          </button>
+          <button
+            onClick={onCancel}
+            disabled={deleting}
+            className="w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition disabled:pointer-events-none disabled:opacity-60"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function ProfileEditPage() {
   const router = useRouter();
-  const { profile, setProfile } = useOverflowStore();
+  const { profile, setProfile, reset } = useOverflowStore();
 
   const [loading, setLoading]     = useState(false);
   const [hydrating, setHydrating] = useState(true);
@@ -50,6 +90,9 @@ export default function ProfileEditPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [allGamesInDB, setAllGamesInDB] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const consentAtLoad = useRef(false);
 
@@ -69,7 +112,7 @@ export default function ProfileEditPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, notify_on_match_request')
         .eq('id', profileId)
         .single();
 
@@ -87,6 +130,7 @@ export default function ProfileEditPage() {
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
+          notifyOnMatchRequest: data.notify_on_match_request ?? true,
           email:        '',
           discord:      '',
           psnHandle:    '',
@@ -204,6 +248,7 @@ export default function ProfileEditPage() {
       open_irl:     profile.lookingFor === 'irl' || profile.lookingFor === 'both',
       consent:      profile.consent,
       looking_for:  profile.lookingFor,
+      notify_on_match_request: profile.notifyOnMatchRequest,
     };
     const sensitive: SensitiveFields = {
       email:                profile.email || null,
@@ -249,6 +294,32 @@ export default function ProfileEditPage() {
     setSuccess(true);
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setTimeout(() => setSuccess(false), 3000);
+  }
+
+  // ── Suppression de compte ────────────────────────────────────────────────
+  async function handleDeleteAccount() {
+    if (!profile.profileId) return;
+    setDeleting(true);
+    setDeleteError(null);
+
+    const { error: dbError } = await deleteAccount({
+      profileId: profile.profileId,
+      isAuthenticated,
+      claimToken: profile.claimToken,
+    });
+
+    if (dbError) {
+      console.error('[profile/edit] delete failed:', dbError);
+      setDeleting(false);
+      setDeleteError('Something went wrong. Please try again.');
+      return;
+    }
+
+    if (isAuthenticated) {
+      await supabase.auth.signOut();
+    }
+    reset();
+    router.replace('/');
   }
 
   if (hydrating) {
@@ -492,6 +563,23 @@ export default function ProfileEditPage() {
           <ContactFieldsEditor values={profile} onChange={setProfile} />
         </section>
 
+        {/* Section : Notifications */}
+        <section className="rounded-2xl border border-border bg-panel p-6 flex flex-col gap-4">
+          <h2 className="text-base font-bold text-text">🔔 Notifications</h2>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.notifyOnMatchRequest}
+              onChange={(e) => setProfile({ notifyOnMatchRequest: e.target.checked })}
+              className="mt-0.5 accent-[var(--accent)]"
+            />
+            <span className="text-sm text-text leading-relaxed">
+              Email me when someone wants to play with me
+              <span className="block text-xs text-muted mt-0.5">On by default — turn off anytime if you&apos;d rather just check the app.</span>
+            </span>
+          </label>
+        </section>
+
         {error && (
           <p className="text-sm text-error -mt-4">
             {error}
@@ -523,7 +611,30 @@ export default function ProfileEditPage() {
           </Link>
         </div>
 
+        {/* Danger zone */}
+        <section className="rounded-2xl border border-error/30 bg-panel p-6 flex flex-col gap-3">
+          <h2 className="text-base font-bold text-error">⚠️ Danger zone</h2>
+          <p className="text-xs text-muted leading-relaxed">
+            Permanently delete your profile, your matches, and your login. This can&apos;t be undone.
+          </p>
+          <button
+            onClick={() => { setDeleteError(null); setShowDeleteConfirm(true); }}
+            className="self-start rounded-xl border border-error/40 px-4 py-2.5 text-sm font-semibold text-error hover:bg-error/10 transition"
+          >
+            Delete my account
+          </button>
+        </section>
+
       </div>
+
+      {showDeleteConfirm && (
+        <DeleteAccountModal
+          deleting={deleting}
+          error={deleteError}
+          onCancel={() => setShowDeleteConfirm(false)}
+          onConfirm={handleDeleteAccount}
+        />
+      )}
     </main>
   );
 }
