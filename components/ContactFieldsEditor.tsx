@@ -91,7 +91,7 @@ export function ContactFieldsEditor({ values, onChange }: Props) {
               onChange={(e) => onChange({ otherContactLabel: e.target.value })}
             />
             <input
-              className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+              className="min-w-0 flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
               placeholder="Your handle or link"
               value={values.otherContact}
               onChange={(e) => onChange({ otherContact: e.target.value })}
