@@ -98,8 +98,11 @@ _(mis à jour à chaque « Fin de session »)_
   Next.js 16 et validation Zod volontairement différés — 4 issues ouvertes pour la suite
   (#81-#84, P2/P3, non bloquantes). Détail technique complet en mémoire (jamais publié en clair
   sur le tracker public tant qu'une faille n'est pas corrigée).
-- 2026-07-16 — US-SEC-14 #85 (P0) livrée et fermée : `link_profile_to_auth` permettait à
-  n'importe quel compte authentifié de s'approprier un profil non réclamé (profile_id public,
-  aucune vérification de possession). Corrigé en alignant sur le pattern `claim_token` déjà en
-  place ailleurs (`app/auth/callback/page.tsx`). ESLint configuré (`next/core-web-vitals`),
-  0 warning sur le code existant. Les deux commits sont déjà pushés sur `main`.
+- 2026-07-16 — Revue pré-go-live (pas un audit complet). US-SEC-14 #85 (P0) livrée et fermée :
+  `link_profile_to_auth` permettait à n'importe quel compte authentifié de s'approprier un
+  profil non réclamé (profile_id public, aucune vérification de possession) ; corrigé en
+  alignant sur le pattern `claim_token` déjà en place ailleurs (`app/auth/callback/page.tsx`,
+  commit 1c4dc78). Perf DB : 5 policies RLS réécrites (`(select auth.uid())`), 1 index manquant
+  ajouté sur `match_requests(receiver_id)`, appliqués directement en base (pas de migration
+  fichier). ESLint configuré (`next/core-web-vitals`, commit 3e19938), 0 warning. Les deux
+  commits sont pushés sur `main`. Restant volontairement pas traité : tests automatisés (§3.1).
