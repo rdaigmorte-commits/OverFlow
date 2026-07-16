@@ -25,9 +25,11 @@ export default function AuthCallbackPage() {
     if (hasProfile) {
       if (userEmail && currentProfile.profileId) {
         // Liaison par ID de profil via SECURITY DEFINER — pas de dépendance sur
-        // profile.email (retiré de l'onboarding par SEC-02).
+        // profile.email (retiré de l'onboarding par SEC-02). claim_token exigé
+        // pour prouver la possession du profil (SEC-14).
         const { data: rows } = await supabase.rpc('link_profile_to_auth', {
-          profile_id: currentProfile.profileId,
+          p_profile_id: currentProfile.profileId,
+          p_claim_token: currentProfile.claimToken,
         });
         const linked = rows?.[0];
         if (linked) {
