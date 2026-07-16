@@ -4,6 +4,19 @@
 
 ---
 
+## 2026-07-16
+
+- SEC-14 corrigée en réutilisant le pattern `claim_token` existant plutôt qu'en imposant une
+  vérification serveur nouvelle · Cohérence avec `update_unclaimed_profile_contact` /
+  `delete_unclaimed_profile`, qui suivent déjà ce pattern pour le même problème (profil sans
+  compte obligatoire, POC onboarding sans friction).
+- ESLint configuré maintenant (`next/core-web-vitals`) plutôt que reporté après le lancement ·
+  `next lint` n'avait jamais tourné, aucun config n'existait ; le passage a été fait à blanc
+  (0 correction nécessaire sur le code existant), donc coût quasi nul à le faire tout de suite
+  plutôt que d'accumuler de la dette de lint invisible.
+
+---
+
 ## 2026-07-13
 
 - Issues sécurité fermées en version expurgée sur le tracker public, détail complet gardé en
