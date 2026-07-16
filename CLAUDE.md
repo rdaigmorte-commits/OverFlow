@@ -106,3 +106,7 @@ _(mis à jour à chaque « Fin de session »)_
   ajouté sur `match_requests(receiver_id)`, appliqués directement en base (pas de migration
   fichier). ESLint configuré (`next/core-web-vitals`, commit 3e19938), 0 warning. Les deux
   commits sont pushés sur `main`. Restant volontairement pas traité : tests automatisés (§3.1).
+  **À faire prochaine session** : nettoyer 3 fichiers untracked à la racine — `Design/`
+  (maquettes HTML, à ranger ou committer), `INSTRUCTIONS_CLAUDE_CODE.md` (mémo migration backlog
+  du 18/06, déjà exécuté — obsolète), `tsconfig.tsbuildinfo` (artefact de build, à ajouter au
+  `.gitignore` plutôt qu'à laisser traîner).
