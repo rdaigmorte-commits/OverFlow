@@ -15,6 +15,7 @@ export type NonSensitiveFields = {
   looking_for: string;
   consent: boolean;
   notify_on_match_request: boolean;
+  interested_in_irl_event: boolean;
 };
 
 export type SensitiveFields = {

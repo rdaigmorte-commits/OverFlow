@@ -214,7 +214,7 @@ export default function OnboardingPage() {
       if (!profileId) { setHydrating(false); return; }
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, interested_in_irl_event')
         .eq('id', profileId)
         .single();
       if (!error && data) {
@@ -233,6 +233,7 @@ export default function OnboardingPage() {
           openIRL:      data.open_irl ?? false,
           consent:      data.consent ?? false,
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
+          interestedInIrlEvent: data.interested_in_irl_event ?? false,
         });
         // Identifiants de contact : colonnes non lisibles directement (protégées
         // depuis SEC-02) — passer par la RPC, qui ne renvoie rien si anonyme.
@@ -348,6 +349,7 @@ export default function OnboardingPage() {
       consent:      consentGiven,
       looking_for:  profile.lookingFor,
       notify_on_match_request: profile.notifyOnMatchRequest,
+      interested_in_irl_event: profile.interestedInIrlEvent,
     };
     const sensitive: SensitiveFields = {
       discord:              profile.discord || null,
@@ -805,6 +807,22 @@ export default function OnboardingPage() {
                 </span>
               </label>
             </div>
+
+            {isUtrecht === true && (
+              <div className="rounded-xl border border-border bg-panel p-5">
+                <label className="flex items-start gap-3 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={profile.interestedInIrlEvent}
+                    onChange={(e) => { setProfile({ interestedInIrlEvent: e.target.checked }); setError(null); }}
+                    className="mt-0.5 accent-[var(--accent)]"
+                  />
+                  <span className="text-sm text-muted leading-relaxed">
+                    🍺 I&apos;m interested in a first in-person meetup for OverFlow players in Utrecht — let me know when there&apos;s a date.
+                  </span>
+                </label>
+              </div>
+            )}
 
             <Card className="p-5">
               <h2 className="text-base font-bold text-text mb-1">Stay reachable</h2>

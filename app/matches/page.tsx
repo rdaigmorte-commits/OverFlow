@@ -838,6 +838,12 @@ export default function MatchesPage() {
 
   const downToMeetCount = discoverableMatches.filter((m) => m.isIRLNearby).length;
 
+  // Un simple bonus de ville suffit à générer un match "Worth reaching out" (tier
+  // 'other') dès qu'un autre profil existe dans la même ville — matches.length === 0
+  // n'est donc quasiment jamais vrai. Le signal pertinent pour proposer l'événement
+  // IRL est l'absence de match sérieux (Strong/Good fit), pas l'absence totale.
+  const hasSeriousMatch = discoverableMatches.some((m) => m.tier !== 'other');
+
   if (hasNoProfile) {
     if (!authChecked) {
       return (
@@ -1108,8 +1114,8 @@ export default function MatchesPage() {
             </div>
           )}
 
-          {/* Pré-inscription événement pilote — US-ACT-01 #53 : Utrecht + pas encore de match */}
-          {profile.profileId && displayProfile.city === 'Utrecht' && discoverableMatches.length === 0 && (
+          {/* Pré-inscription événement pilote — US-ACT-01 #53 : Utrecht + pas de match sérieux */}
+          {profile.profileId && displayProfile.city === 'Utrecht' && !hasSeriousMatch && (
             <IrlEventBlock profileId={profile.profileId} />
           )}
 

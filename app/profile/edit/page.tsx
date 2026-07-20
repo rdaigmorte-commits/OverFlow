@@ -112,7 +112,7 @@ export default function ProfileEditPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, notify_on_match_request')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, notify_on_match_request, interested_in_irl_event')
         .eq('id', profileId)
         .single();
 
@@ -131,6 +131,7 @@ export default function ProfileEditPage() {
           consent:      data.consent ?? false,
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
           notifyOnMatchRequest: data.notify_on_match_request ?? true,
+          interestedInIrlEvent: data.interested_in_irl_event ?? false,
           email:        '',
           discord:      '',
           psnHandle:    '',
@@ -249,6 +250,7 @@ export default function ProfileEditPage() {
       consent:      profile.consent,
       looking_for:  profile.lookingFor,
       notify_on_match_request: profile.notifyOnMatchRequest,
+      interested_in_irl_event: profile.interestedInIrlEvent,
     };
     const sensitive: SensitiveFields = {
       email:                profile.email || null,
