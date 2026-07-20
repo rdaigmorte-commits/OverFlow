@@ -80,6 +80,16 @@ const MARQUEE_ITEMS = [
   { label: 'REPEAT', glyph: '□', color: '#7C5CFF' },
 ];
 
+const DISCORD_URL = 'https://discord.gg/j2PCTYZ78j';
+
+function DiscordIcon({ size = 22 }: { size?: number }) {
+  return (
+    <svg width={size} height={size * (96.36 / 127.14)} viewBox="0 0 127.14 96.36" fill="currentColor" aria-hidden="true">
+      <path d="M107.7,8.07A105.15,105.15,0,0,0,81.47,0a72.06,72.06,0,0,0-3.36,6.83A97.68,97.68,0,0,0,49,6.83,72.37,72.37,0,0,0,45.64,0,105.89,105.89,0,0,0,19.39,8.09C2.79,32.65-1.71,56.6.54,80.21h0A105.73,105.73,0,0,0,32.71,96.36,77.7,77.7,0,0,0,39.6,85.25a68.42,68.42,0,0,1-10.85-5.18c.91-.66,1.8-1.34,2.66-2a75.57,75.57,0,0,0,64.32,0c.87.71,1.76,1.39,2.66,2a68.68,68.68,0,0,1-10.87,5.19,77,77,0,0,0,6.89,11.1A105.25,105.25,0,0,0,126.6,80.22h0C129.24,52.84,122.09,29.11,107.7,8.07ZM42.45,65.69C36.18,65.69,31,60,31,53s5-12.74,11.43-12.74S54,46,53.89,53,48.84,65.69,42.45,65.69Zm42.24,0C78.41,65.69,73.25,60,73.25,53s5-12.74,11.44-12.74S96.23,46,96.12,53,91.08,65.69,84.69,65.69Z" />
+    </svg>
+  );
+}
+
 interface Props {
   playerCount: number | null;
   topGames: { name: string; count: number }[];
@@ -239,6 +249,22 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               See my matches
             </Link>
           </div>
+
+          <a
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="of-lift flex items-center gap-4 rounded-2xl border-2 p-4"
+            style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
+          >
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: '#5865F2' }}>
+              <DiscordIcon size={20} />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-text">Join the Discord</p>
+              <p className="text-xs text-muted">Meet other Utrecht players, or drop a bug/idea for the team.</p>
+            </div>
+          </a>
         </section>
       </main>
     );
@@ -503,6 +529,35 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               </div>
             ))}
           </div>
+        </section>
+
+        {/* ── DISCORD ─────────────────────────────────────────────── */}
+        <section
+          className="relative z-10 mb-10 flex flex-col items-start gap-6 rounded-[26px] border-2 p-8 sm:flex-row sm:items-center sm:justify-between"
+          style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
+        >
+          <div className="flex items-start gap-4 sm:items-center">
+            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: '#5865F2' }}>
+              <DiscordIcon size={24} />
+            </div>
+            <div>
+              <span className="text-xs font-bold uppercase tracking-[0.1em]" style={{ color: '#5865F2' }}>💬 Community</span>
+              <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Or just come say hi</h3>
+              <p className="mt-1 max-w-md text-sm leading-6 text-muted">
+                Our Discord already has a bunch of Utrecht players hanging out. It&apos;s way easier to introduce yourself and meet people than a cold match request. Found a bug or got an idea to improve OverFlow? Drop it there too, we&apos;re around.
+              </p>
+            </div>
+          </div>
+          <a
+            href={DISCORD_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="of-lift inline-flex shrink-0 items-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-white"
+            style={{ background: '#5865F2' }}
+          >
+            <DiscordIcon size={18} />
+            Join the Discord →
+          </a>
         </section>
 
         {/* ── FOOTER CTA ──────────────────────────────────────────── */}
