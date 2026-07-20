@@ -255,7 +255,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             target="_blank"
             rel="noopener noreferrer"
             className="of-lift flex items-center gap-4 rounded-2xl border-2 p-4"
-            style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
+            style={{ borderColor: 'var(--border)', background: 'var(--panel2)' }}
           >
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: '#5865F2' }}>
               <DiscordIcon size={20} />
@@ -536,14 +536,14 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
 
           <section
             className="flex flex-col items-start gap-5 rounded-[26px] border-2 p-8"
-            style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
+            style={{ borderColor: 'var(--border)', background: 'var(--panel2)' }}
           >
             <div className="flex items-start gap-4">
               <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: '#5865F2' }}>
                 <DiscordIcon size={24} />
               </div>
               <div>
-                <span className="text-xs font-bold uppercase tracking-[0.1em]" style={{ color: '#5865F2' }}>💬 Community</span>
+                <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Community</span>
                 <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Come say hi</h3>
               </div>
             </div>
