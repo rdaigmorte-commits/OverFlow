@@ -43,6 +43,7 @@ function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; lab
 }
 
 type MatchOpportunities = { strong: number; good: number; possible: number };
+type MatchRequests = { total: number; pending: number; accepted: number; declined: number };
 type FunnelRow = { step: number; action: string; occurrences: number };
 
 function FunnelBlock({ rows, loading }: { rows: FunnelRow[]; loading: boolean }) {
@@ -136,6 +137,64 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
   );
 }
 
+function MatchRequestsBlock({ data, loading }: { data: MatchRequests; loading: boolean }) {
+  const responded = data.accepted + data.declined;
+  const acceptanceRate = responded > 0 ? Math.round((data.accepted / responded) * 100) : null;
+  const max = Math.max(data.pending, data.accepted, data.declined, 1);
+
+  const rows = [
+    { label: 'Pending', value: data.pending, color: 'bg-accent2' },
+    { label: 'Accepted', value: data.accepted, color: 'bg-accent3' },
+    { label: 'Declined', value: data.declined, color: 'bg-muted' },
+  ];
+
+  return (
+    <Card className="mt-8 p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">📨 Match requests</h2>
+          <p className="mt-1 text-sm text-muted">Requests actually sent between players — real activity, not potential.</p>
+        </div>
+        {!loading && (
+          <div className="text-right">
+            <div className="text-3xl font-black text-accent">{data.total}</div>
+            <div className="text-xs text-muted">sent total</div>
+          </div>
+        )}
+      </div>
+      <div className="mt-6 space-y-4">
+        {loading ? (
+          <p className="text-sm text-muted">Calculating...</p>
+        ) : data.total === 0 ? (
+          <p className="text-sm text-muted">No match request sent yet.</p>
+        ) : (
+          <>
+            {rows.map((r) => (
+              <div key={r.label}>
+                <div className="flex justify-between text-sm mb-1">
+                  <span className="font-semibold text-text">{r.label}</span>
+                  <span className="text-muted">{r.value} request{r.value !== 1 ? 's' : ''}</span>
+                </div>
+                <div className="h-2 w-full rounded-full bg-panel2 border border-border overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${r.color}`}
+                    style={{ width: `${Math.round((r.value / max) * 100)}%` }}
+                  />
+                </div>
+              </div>
+            ))}
+            {acceptanceRate !== null && (
+              <p className="pt-2 text-sm text-muted">
+                Acceptance rate: <span className="font-semibold text-text">{acceptanceRate}%</span> ({data.accepted}/{responded} answered requests)
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
@@ -148,6 +207,7 @@ export default function AdminDashboard() {
   const [ages, setAges] = useState<any[]>([]);
   const [cities, setCities] = useState<any[]>([]);
   const [matchOps, setMatchOps] = useState<MatchOpportunities>({ strong: 0, good: 0, possible: 0 });
+  const [matchRequests, setMatchRequests] = useState<MatchRequests>({ total: 0, pending: 0, accepted: 0, declined: 0 });
   const [funnel, setFunnel] = useState<FunnelRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -155,7 +215,7 @@ export default function AdminDashboard() {
     async function fetchAll() {
       const [g] = await Promise.all([supabase.rpc('get_global_stats')]);
 
-      const [gm, pl, st, la, av, ag, ci, mo, fn] = await Promise.all([
+      const [gm, pl, st, la, av, ag, ci, mo, mr, fn] = await Promise.all([
         supabase.rpc('get_game_stats'),
         supabase.rpc('get_platform_stats'),
         supabase.rpc('get_style_stats'),
@@ -164,6 +224,7 @@ export default function AdminDashboard() {
         supabase.rpc('get_age_stats'),
         supabase.rpc('get_city_stats'),
         supabase.rpc('get_match_opportunities'),
+        supabase.rpc('get_match_requests_stats'),
         supabase.rpc('get_onboarding_funnel_stats'),
       ]);
 
@@ -176,6 +237,7 @@ export default function AdminDashboard() {
       if (ag.data) setAges(ag.data);
       if (ci.data) setCities(ci.data);
       if (mo.data) setMatchOps(mo.data);
+      if (mr.data) setMatchRequests(mr.data);
       if (fn.data) setFunnel(fn.data);
       setLoading(false);
     }
@@ -195,6 +257,7 @@ export default function AdminDashboard() {
       </div>
 
       <MatchOpportunitiesBlock data={matchOps} loading={loading} />
+      <MatchRequestsBlock data={matchRequests} loading={loading} />
       <FunnelBlock rows={funnel} loading={loading} />
 
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
