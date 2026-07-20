@@ -28,7 +28,8 @@ export default async function Page() {
 
     const { count } = await supabase
       .from('profiles')
-      .select('id', { count: 'exact', head: true });
+      .select('id', { count: 'exact', head: true })
+      .eq('city', 'Utrecht');
 
     if (typeof count === 'number') playerCount = count;
 
