@@ -544,7 +544,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               </div>
               <div>
                 <span className="text-xs font-bold uppercase tracking-[0.1em] text-muted">Community</span>
-                <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Come say hi</h3>
+                <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Come say hi!</h3>
               </div>
             </div>
             <p className="text-sm leading-6 text-muted">
