@@ -1108,8 +1108,10 @@ export default function MatchesPage() {
             </div>
           )}
 
-          {/* Slot IRL Utrecht — US-ACT-01 #53 */}
-          {displayProfile.city === 'Utrecht' && <IrlEventBlock />}
+          {/* Pré-inscription événement pilote — US-ACT-01 #53 : Utrecht + pas encore de match */}
+          {profile.profileId && displayProfile.city === 'Utrecht' && discoverableMatches.length === 0 && (
+            <IrlEventBlock profileId={profile.profileId} />
+          )}
 
         </section>
 

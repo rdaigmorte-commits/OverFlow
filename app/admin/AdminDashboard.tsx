@@ -44,6 +44,7 @@ function StatsBlock({ title, rows, labelKey }: { title: string; rows: any[]; lab
 
 type MatchOpportunities = { strong: number; good: number; possible: number };
 type MatchRequests = { total: number; pending: number; accepted: number; declined: number };
+type IrlInterest = { count: number; players: { name: string; city: string | null }[] };
 type FunnelRow = { step: number; action: string; occurrences: number };
 
 function FunnelBlock({ rows, loading }: { rows: FunnelRow[]; loading: boolean }) {
@@ -195,6 +196,41 @@ function MatchRequestsBlock({ data, loading }: { data: MatchRequests; loading: b
   );
 }
 
+function IrlInterestBlock({ data, loading }: { data: IrlInterest; loading: boolean }) {
+  return (
+    <Card className="mt-8 p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-xl font-bold">🍺 Utrecht pilot meetup</h2>
+          <p className="mt-1 text-sm text-muted">Players who opted in to be told when the first IRL meetup is scheduled.</p>
+        </div>
+        {!loading && (
+          <div className="text-right">
+            <div className="text-3xl font-black text-accent">{data.count}</div>
+            <div className="text-xs text-muted">interested</div>
+          </div>
+        )}
+      </div>
+      <div className="mt-5">
+        {loading ? (
+          <p className="text-sm text-muted">Calculating...</p>
+        ) : data.players.length === 0 ? (
+          <p className="text-sm text-muted">No one has opted in yet.</p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {data.players.map((p, i) => (
+              <span key={`${p.name}-${i}`} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-panel2 px-3.5 py-1.5 text-sm font-semibold text-text">
+                {p.name}
+                {p.city && <span className="font-normal text-muted">· {p.city}</span>}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
+}
+
 // ─── Admin Dashboard ──────────────────────────────────────────────────────────
 
 export default function AdminDashboard() {
@@ -208,6 +244,7 @@ export default function AdminDashboard() {
   const [cities, setCities] = useState<any[]>([]);
   const [matchOps, setMatchOps] = useState<MatchOpportunities>({ strong: 0, good: 0, possible: 0 });
   const [matchRequests, setMatchRequests] = useState<MatchRequests>({ total: 0, pending: 0, accepted: 0, declined: 0 });
+  const [irlInterest, setIrlInterest] = useState<IrlInterest>({ count: 0, players: [] });
   const [funnel, setFunnel] = useState<FunnelRow[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -215,7 +252,7 @@ export default function AdminDashboard() {
     async function fetchAll() {
       const [g] = await Promise.all([supabase.rpc('get_global_stats')]);
 
-      const [gm, pl, st, la, av, ag, ci, mo, mr, fn] = await Promise.all([
+      const [gm, pl, st, la, av, ag, ci, mo, mr, ir, fn] = await Promise.all([
         supabase.rpc('get_game_stats'),
         supabase.rpc('get_platform_stats'),
         supabase.rpc('get_style_stats'),
@@ -225,6 +262,7 @@ export default function AdminDashboard() {
         supabase.rpc('get_city_stats'),
         supabase.rpc('get_match_opportunities'),
         supabase.rpc('get_match_requests_stats'),
+        supabase.rpc('get_irl_interest_stats'),
         supabase.rpc('get_onboarding_funnel_stats'),
       ]);
 
@@ -238,6 +276,7 @@ export default function AdminDashboard() {
       if (ci.data) setCities(ci.data);
       if (mo.data) setMatchOps(mo.data);
       if (mr.data) setMatchRequests(mr.data);
+      if (ir.data) setIrlInterest(ir.data);
       if (fn.data) setFunnel(fn.data);
       setLoading(false);
     }
@@ -258,6 +297,7 @@ export default function AdminDashboard() {
 
       <MatchOpportunitiesBlock data={matchOps} loading={loading} />
       <MatchRequestsBlock data={matchRequests} loading={loading} />
+      <IrlInterestBlock data={irlInterest} loading={loading} />
       <FunnelBlock rows={funnel} loading={loading} />
 
       <h2 className="mt-10 text-2xl font-black">Community profile</h2>
