@@ -536,7 +536,7 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
 
           <section
             className="flex flex-col items-start gap-5 rounded-[26px] border-2 p-8"
-            style={{ borderColor: 'var(--border)', background: 'var(--panel2)' }}
+            style={{ borderColor: 'var(--border)', background: 'var(--bg)' }}
           >
             <div className="flex items-start gap-4">
               <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: '#5865F2' }}>
