@@ -531,56 +531,59 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
           </div>
         </section>
 
-        {/* ── DISCORD ─────────────────────────────────────────────── */}
-        <section
-          className="relative z-10 mb-10 flex flex-col items-start gap-6 rounded-[26px] border-2 p-8 sm:flex-row sm:items-center sm:justify-between"
-          style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
-        >
-          <div className="flex items-start gap-4 sm:items-center">
-            <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: '#5865F2' }}>
-              <DiscordIcon size={24} />
+        {/* ── DISCORD + FOOTER CTA ────────────────────────────────── */}
+        <div className="relative z-10 mb-6 grid gap-5 lg:grid-cols-2">
+
+          <section
+            className="flex flex-col items-start gap-5 rounded-[26px] border-2 p-8"
+            style={{ borderColor: '#E2D8FF', background: '#F1ECFF' }}
+          >
+            <div className="flex items-start gap-4">
+              <div className="flex h-[52px] w-[52px] shrink-0 items-center justify-center rounded-2xl text-white" style={{ background: '#5865F2' }}>
+                <DiscordIcon size={24} />
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-[0.1em]" style={{ color: '#5865F2' }}>💬 Community</span>
+                <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Come say hi</h3>
+              </div>
             </div>
-            <div>
-              <span className="text-xs font-bold uppercase tracking-[0.1em]" style={{ color: '#5865F2' }}>💬 Community</span>
-              <h3 className="mt-1 text-lg font-semibold text-text" style={{ fontFamily: 'var(--font-fredoka)' }}>Or just come say hi</h3>
-              <p className="mt-1 max-w-md text-sm leading-6 text-muted">
-                Our Discord already has a bunch of Utrecht players hanging out. It&apos;s way easier to introduce yourself and meet people than a cold match request. Found a bug or got an idea to improve OverFlow? Drop it there too, we&apos;re around.
+            <p className="text-sm leading-6 text-muted">
+              Our Discord already has a bunch of Utrecht players hanging out. It&apos;s way easier to introduce yourself and meet people than a cold match request. Found a bug or got an idea to improve OverFlow? Drop it there too, we&apos;re around.
+            </p>
+            <a
+              href={DISCORD_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="of-lift inline-flex shrink-0 items-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-white"
+              style={{ background: '#5865F2' }}
+            >
+              <DiscordIcon size={18} />
+              Join the Discord →
+            </a>
+          </section>
+
+          <section
+            className="relative flex flex-col items-start justify-center gap-5 overflow-hidden rounded-[26px] p-8"
+            style={{ background: 'linear-gradient(135deg,#7C5CFF,#9D86FF)' }}
+          >
+            <svg width="70" height="66" className="of-shape opacity-20" style={{ top: '-14px', right: '40px' }} aria-hidden="true">
+              <polygon points="35,8 64,60 6,60" fill="none" stroke="#fff" strokeWidth="8" strokeLinejoin="round" />
+            </svg>
+            <span className="of-shape rounded-full opacity-20" style={{ bottom: '-16px', right: '20px', width: 60, height: 60, border: '8px solid #fff' }} aria-hidden="true" />
+            <div className="relative z-10">
+              <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)' }}>Ready to find your squad?</h2>
+              <p className="mt-2 text-sm text-white/85">
+                {playerCount !== null && playerCount > 0
+                  ? `Join ${playerCount} players in Utrecht. It only takes 2 minutes.`
+                  : 'It only takes 2 minutes to get started.'}
               </p>
             </div>
-          </div>
-          <a
-            href={DISCORD_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="of-lift inline-flex shrink-0 items-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-bold text-white"
-            style={{ background: '#5865F2' }}
-          >
-            <DiscordIcon size={18} />
-            Join the Discord →
-          </a>
-        </section>
+            <Link href="/onboarding" className="relative z-10 rounded-2xl bg-white px-8 py-4 text-lg font-semibold text-accent shadow-[0_6px_0_rgba(0,0,0,0.18)] transition active:translate-y-1 active:shadow-[0_1px_0_rgba(0,0,0,0.18)]" style={{ fontFamily: 'var(--font-fredoka)' }}>
+              Start now →
+            </Link>
+          </section>
 
-        {/* ── FOOTER CTA ──────────────────────────────────────────── */}
-        <section
-          className="relative z-10 mb-6 flex flex-col items-start gap-6 overflow-hidden rounded-[26px] p-10 sm:flex-row sm:items-center sm:justify-between"
-          style={{ background: 'linear-gradient(135deg,#7C5CFF,#9D86FF)' }}
-        >
-          <svg width="70" height="66" className="of-shape opacity-20" style={{ top: '-14px', right: '200px' }} aria-hidden="true">
-            <polygon points="35,8 64,60 6,60" fill="none" stroke="#fff" strokeWidth="8" strokeLinejoin="round" />
-          </svg>
-          <span className="of-shape rounded-full opacity-20" style={{ bottom: '-16px', right: '120px', width: 60, height: 60, border: '8px solid #fff' }} aria-hidden="true" />
-          <div className="relative z-10">
-            <h2 className="text-3xl font-bold text-white" style={{ fontFamily: 'var(--font-fredoka)' }}>Ready to find your squad?</h2>
-            <p className="mt-2 text-sm text-white/85">
-              {playerCount !== null && playerCount > 0
-                ? `Join ${playerCount} players in Utrecht. It only takes 2 minutes.`
-                : 'It only takes 2 minutes to get started.'}
-            </p>
-          </div>
-          <Link href="/onboarding" className="relative z-10 rounded-2xl bg-white px-8 py-4 text-lg font-semibold text-accent shadow-[0_6px_0_rgba(0,0,0,0.18)] transition active:translate-y-1 active:shadow-[0_1px_0_rgba(0,0,0,0.18)]" style={{ fontFamily: 'var(--font-fredoka)' }}>
-            Start now →
-          </Link>
-        </section>
+        </div>
 
       </main>
     </>
