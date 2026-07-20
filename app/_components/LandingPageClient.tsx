@@ -337,7 +337,10 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             </div>
 
             <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.05] tracking-tight text-text md:text-7xl`}>
-              Find your <span style={{ color: 'var(--accent)' }}>squad.</span><br />
+              Find your <span className="relative inline-block" style={{ color: 'var(--accent)' }}>
+                squad.
+                <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded" style={{ background: '#DED2FF' }} />
+              </span><br />
               Play <span className="relative inline-block" style={{ color: 'var(--accent3)' }}>
                 IRL.
                 <span className="absolute inset-x-0 bottom-1 -z-10 h-3 rounded" style={{ background: '#C9F5C2' }} />
@@ -345,8 +348,8 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
             </h1>
 
             <p className={`${v ? 'of-r2' : 'opacity-0'} mt-6 max-w-xl text-lg leading-8 text-muted`}>
-              Same games, same city, same vibe. OverFlow connects you with players who actually want to team up —
-              no feed, no algorithm, just real people who want to play.
+              Same games, same city, same vibe. OverFlow connects you with players who actually want to team up.
+              No feed, no algorithm, just real people who want to play.
             </p>
 
             <div className={`${v ? 'of-r3' : 'opacity-0'} mt-8 flex flex-wrap items-center gap-4`}>
