@@ -1,7 +1,7 @@
 import './globals.css';
 import React from 'react';
 import { Fredoka, Plus_Jakarta_Sans } from 'next/font/google';
-import { Analytics } from '@vercel/analytics/react';
+import { Analytics } from '@vercel/analytics/next';
 
 const fredoka = Fredoka({ subsets: ['latin'], weight: ['700'], variable: '--font-fredoka' });
 const jakarta = Plus_Jakarta_Sans({ subsets: ['latin'], variable: '--font-jakarta' });
