@@ -580,6 +580,9 @@ export default function MatchesPage() {
   const [revealedContacts, setRevealedContacts] = useState<Record<string, RevealedField[]>>({});
   const [authChecked, setAuthChecked] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // true = get_my_contacts() confirmed this session owns the loaded profile;
+  // false = authenticated, but as a different account (profile/login identity mismatch).
+  const [ownsProfile, setOwnsProfile] = useState<boolean | null>(null);
   const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
 
   // Matchs mutuels — union des demandes acceptées dans les deux sens, plus récent en premier.
@@ -656,6 +659,11 @@ export default function MatchesPage() {
           const contactPatch = { email: contacts[0].email ?? '', discord: contacts[0].discord ?? '' };
           setProfile(contactPatch);
           hydratedProfile = { ...hydratedProfile, ...contactPatch };
+          setOwnsProfile(true);
+        } else {
+          // Signed in, but this session doesn't own the profile cached in localStorage —
+          // e.g. a stale profileId from a previous account on this browser.
+          setOwnsProfile(false);
         }
       }
 
@@ -892,8 +900,8 @@ export default function MatchesPage() {
         </button>
       </div>
 
-      {/* Bandeau no-email */}
-      {!loading && !hasEmail && (
+      {/* Bandeau no-email — profil jamais lié à un compte : recoverability réellement en jeu */}
+      {!loading && !isAuthenticated && (
         <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2SoftBorder bg-accent2Soft px-5 py-4">
           <div className="flex items-start gap-3">
             <span className="text-lg leading-none mt-0.5">⚠️</span>
@@ -910,6 +918,30 @@ export default function MatchesPage() {
           >
             Add email
           </Link>
+        </div>
+      )}
+
+      {/* Bandeau mismatch — authentifié, mais avec un compte différent de celui qui possède
+          ce profil (ex : profileId d'un ancien compte resté dans le localStorage). "Add email"
+          n'aiderait pas ici : le profil est déjà lié, il faut se reconnecter avec le bon compte. */}
+      {!loading && isAuthenticated && ownsProfile === false && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accent2SoftBorder bg-accent2Soft px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5">⚠️</span>
+            <div>
+              <p className="text-sm font-medium text-text">You&apos;re signed in with a different account</p>
+              <p className="mt-1 text-xs text-muted">
+                This profile is linked to a different email than the one you&apos;re currently signed in with. Sign out and sign back in with the original email to manage it.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={handleSignOut}
+            disabled={signingOut}
+            className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition disabled:opacity-50"
+          >
+            {signingOut ? 'Signing out…' : 'Sign out'}
+          </button>
         </div>
       )}
 

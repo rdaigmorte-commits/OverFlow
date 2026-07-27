@@ -38,7 +38,8 @@ export function ContactFieldsEditor({ values, onChange }: Props) {
           onChange={(e) => onChange({ email: e.target.value })}
         />
         <p className="text-xs text-muted leading-relaxed">
-          Only used to sign you in (magic link) and to notify you of match requests. Never shown to other players.
+          Used to notify you of match requests. Kept private, never shown to other players.
+          Changing it does not change which email you sign in with.
         </p>
       </div>
 

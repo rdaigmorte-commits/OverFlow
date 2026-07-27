@@ -287,6 +287,10 @@ export default function ProfileEditPage() {
       if (!isAuthenticated) {
         setNeedsLogin(true);
         setError('Your session has expired. Please sign in to save changes to this profile.');
+      } else if ((dbError as { code?: string }).code === 'PGRST116') {
+        // RLS a bloqué l'UPDATE (0 ligne touchée) : authentifié, mais pas propriétaire
+        // de ce profil — ex. profileId d'un ancien compte resté en localStorage.
+        setError('This profile is linked to a different account than the one you’re signed in with. Sign out and sign back in with the original email to make changes.');
       } else {
         setError('Something went wrong. Please try again.');
       }
