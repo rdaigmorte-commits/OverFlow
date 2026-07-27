@@ -75,7 +75,7 @@ function ChangeEmailModal({
           <>
             <h2 className="text-xl font-bold text-text">📧 Check your inbox</h2>
             <p className="mt-3 text-sm text-muted leading-relaxed">
-              We sent a confirmation link to <span className="font-medium text-text">{newEmail}</span>. Click it to finish changing your email — until then, you&apos;ll keep signing in with <span className="font-medium text-text">{currentEmail}</span>.
+              We sent a confirmation link to <span className="font-medium text-text">{newEmail}</span>. Some projects also require confirming from your current address — if so, check <span className="font-medium text-text">{currentEmail}</span> too. Until every required link is clicked, you&apos;ll keep signing in with {currentEmail}.
             </p>
             <button
               onClick={onClose}
