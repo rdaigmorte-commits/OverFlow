@@ -8,7 +8,7 @@ import { useOverflowStore } from '@/lib/store';
 export default function AuthCallbackPage() {
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'error'>('loading');
-  const { profile, setProfile } = useOverflowStore();
+  const { profile, setProfile, reset } = useOverflowStore();
   const handledRef = useRef(false);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -54,6 +54,16 @@ export default function AuthCallbackPage() {
         const { data: ownId } = await supabase.rpc('get_own_profile_id');
         if (ownId && ownId !== currentProfile.profileId) {
           setProfile({ profileId: ownId });
+        }
+
+        if (!linked && !ownId) {
+          // Ce compte ne possède aucun profil : le profileId en cache vient d'un
+          // autre compte (ex. localStorage réutilisé après un changement de compte).
+          // Traiter comme un utilisateur réellement nouveau plutôt que d'atterrir
+          // sur le profil de quelqu'un d'autre.
+          reset();
+          router.replace('/onboarding');
+          return;
         }
       }
 
