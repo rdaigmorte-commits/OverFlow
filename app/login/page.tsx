@@ -117,6 +117,9 @@ export default function LoginPage() {
                 Create your profile
               </a>
             </p>
+            <p className="text-center text-xs text-muted">
+              Already have an account? Use the same email you signed up with — entering a different one signs you into a different account, it doesn&apos;t rename your current one. To change your email, sign in and use the profile page instead.
+            </p>
           </form>
         )}
       </div>

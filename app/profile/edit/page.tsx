@@ -37,6 +37,96 @@ function Chip({ label, selected, onClick }: { label: React.ReactNode; selected: 
   );
 }
 
+function ChangeEmailModal({
+  currentEmail,
+  onSent,
+  onClose,
+}: {
+  currentEmail: string;
+  onSent: () => void;
+  onClose: () => void;
+}) {
+  const [newEmail, setNewEmail] = useState('');
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [sent, setSent] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setSending(true);
+    setError(null);
+    const { error: updateError } = await supabase.auth.updateUser(
+      { email: newEmail },
+      { emailRedirectTo: `${window.location.origin}/auth/callback` }
+    );
+    setSending(false);
+    if (updateError) {
+      setError(updateError.message || 'Something went wrong. Please try again.');
+      return;
+    }
+    setSent(true);
+    onSent();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4" onClick={onClose}>
+      <div className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
+        {sent ? (
+          <>
+            <h2 className="text-xl font-bold text-text">📧 Check your inbox</h2>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              We sent a confirmation link to <span className="font-medium text-text">{newEmail}</span>. Click it to finish changing your email — until then, you&apos;ll keep signing in with <span className="font-medium text-text">{currentEmail}</span>.
+            </p>
+            <button
+              onClick={onClose}
+              className="mt-6 w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+            >
+              Close
+            </button>
+          </>
+        ) : (
+          <form onSubmit={handleSubmit}>
+            <h2 className="text-xl font-bold text-text">Change your email</h2>
+            <p className="mt-3 text-sm text-muted leading-relaxed">
+              This changes the email you sign in with (magic link) — it&apos;s also what we use to notify you of match requests.
+            </p>
+            <label className="mt-4 flex flex-col gap-1.5">
+              <span className="text-sm font-medium text-text">New email</span>
+              <input
+                type="email"
+                required
+                autoFocus
+                value={newEmail}
+                onChange={(e) => setNewEmail(e.target.value)}
+                placeholder="you@example.com"
+                className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+              />
+            </label>
+            {error && <p className="mt-3 text-sm text-error">{error}</p>}
+            <div className="mt-6 flex flex-col gap-3">
+              <button
+                type="submit"
+                disabled={sending || !newEmail}
+                className="w-full rounded-xl bg-accent px-4 py-3 text-sm font-semibold text-white hover:opacity-90 transition disabled:pointer-events-none disabled:opacity-60"
+              >
+                {sending ? 'Sending…' : 'Send confirmation link'}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={sending}
+                className="w-full rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition disabled:pointer-events-none disabled:opacity-60"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DeleteAccountModal({
   onConfirm,
   onCancel,
@@ -90,9 +180,12 @@ export default function ProfileEditPage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [allGamesInDB, setAllGamesInDB] = useState<string[]>([]);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // true = get_my_contacts() confirmed this session owns the loaded profile.
+  const [ownsProfile, setOwnsProfile] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showChangeEmail, setShowChangeEmail] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const consentAtLoad = useRef(false);
 
@@ -142,6 +235,7 @@ export default function ProfileEditPage() {
         // Contacts : REVOKE bloque la lecture directe — passer par la RPC
         const { data: contacts } = await supabase.rpc('get_my_contacts');
         const c = contacts?.[0];
+        setOwnsProfile(!!c);
         if (c) {
           setProfile({
             email:              c.email ?? '',
@@ -566,7 +660,12 @@ export default function ProfileEditPage() {
             <h2 className="text-base font-bold text-text">📬 Contact settings</h2>
             <p className="mt-1 text-xs text-muted">Your email stays private. Shareable details are only revealed on a mutual match.</p>
           </div>
-          <ContactFieldsEditor values={profile} onChange={setProfile} />
+          <ContactFieldsEditor
+            values={profile}
+            onChange={setProfile}
+            isLinkedAccount={isAuthenticated && ownsProfile}
+            onRequestEmailChange={() => setShowChangeEmail(true)}
+          />
         </section>
 
         {/* Section : Notifications */}
@@ -639,6 +738,14 @@ export default function ProfileEditPage() {
           error={deleteError}
           onCancel={() => setShowDeleteConfirm(false)}
           onConfirm={handleDeleteAccount}
+        />
+      )}
+
+      {showChangeEmail && (
+        <ChangeEmailModal
+          currentEmail={profile.email}
+          onSent={() => { /* stays open to show the "check your inbox" state */ }}
+          onClose={() => setShowChangeEmail(false)}
         />
       )}
     </main>

@@ -16,9 +16,13 @@ export type ContactValues = {
 type Props = {
   values: ContactValues;
   onChange: (patch: Partial<ContactValues>) => void;
+  // true once this profile is linked to an authenticated account — the email
+  // field then mirrors the login email (DB-synced) and stops being freeform.
+  isLinkedAccount?: boolean;
+  onRequestEmailChange?: () => void;
 };
 
-export function ContactFieldsEditor({ values, onChange }: Props) {
+export function ContactFieldsEditor({ values, onChange, isLinkedAccount, onRequestEmailChange }: Props) {
   const hasShareableContact = !!(
     values.discord.trim() || values.psnHandle.trim() ||
     values.steamHandle.trim() || values.otherContact.trim()
@@ -30,16 +34,35 @@ export function ContactFieldsEditor({ values, onChange }: Props) {
       {/* Email — privé, jamais montré aux autres joueurs */}
       <div className="flex flex-col gap-1.5">
         <label className="text-sm font-medium text-text">📧 Your email <span className="text-muted text-xs font-normal">(private)</span></label>
-        <input
-          type="email"
-          className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
-          placeholder="you@example.com"
-          value={values.email}
-          onChange={(e) => onChange({ email: e.target.value })}
-        />
+        {isLinkedAccount ? (
+          <div className="flex items-center gap-3">
+            <input
+              type="email"
+              readOnly
+              className="flex-1 rounded-xl border border-border bg-panel2 px-4 py-3 text-muted outline-none cursor-not-allowed"
+              value={values.email}
+            />
+            <button
+              type="button"
+              onClick={onRequestEmailChange}
+              className="shrink-0 rounded-xl border border-border px-4 py-3 text-sm font-semibold text-text hover:bg-panel2 transition"
+            >
+              Change
+            </button>
+          </div>
+        ) : (
+          <input
+            type="email"
+            className="rounded-xl border border-border bg-panel2 px-4 py-3 text-text outline-none focus:border-accent transition"
+            placeholder="you@example.com"
+            value={values.email}
+            onChange={(e) => onChange({ email: e.target.value })}
+          />
+        )}
         <p className="text-xs text-muted leading-relaxed">
-          Used to notify you of match requests. Kept private, never shown to other players.
-          Changing it does not change which email you sign in with.
+          {isLinkedAccount
+            ? 'This is also the email you sign in with (magic link). Changing it will ask you to confirm via a link.'
+            : 'Used to notify you of match requests. Kept private, never shown to other players. Changing it does not change which email you sign in with.'}
         </p>
       </div>
 
