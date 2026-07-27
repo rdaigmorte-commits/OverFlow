@@ -48,19 +48,7 @@ export function IrlEventBlock({ profileId }: { profileId: string }) {
 
   if (loading) return null;
 
-  if (interested) {
-    return (
-      <div className="rounded-2xl border border-accent3SoftBorder bg-accent3Soft px-6 py-5">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🎉</span>
-          <div>
-            <p className="text-sm font-semibold text-text">You&apos;re on the list!</p>
-            <p className="mt-1 text-xs text-muted">We&apos;ll reach out with details for the Utrecht meetup as soon as we lock a date.</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  if (interested) return null;
 
   return (
     <Card className="p-6">
