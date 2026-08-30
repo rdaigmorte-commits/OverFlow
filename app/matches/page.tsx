@@ -23,14 +23,17 @@ function CompactMatchRow({
   invitationSent,
   onRequestMatch,
 }: { match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
-  const percent = Math.round((match.score / 110) * 100);
+  const percent = Math.round((match.score / 120) * 100);
   const reason = match.fitReason.split(' · ')[0];
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
       <CompatibilityRing percent={percent} tier={match.tier} size={36} />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-text truncate">{match.name}</p>
+        <p className="text-sm font-semibold text-text truncate">
+          {match.name}
+          {match.age && <span className="font-normal text-muted">, {match.age}</span>}
+        </p>
         <p className="text-xs text-muted truncate">{reason}</p>
       </div>
       {invitationSent ? (
@@ -727,6 +730,7 @@ export default function MatchesPage() {
         availability: hydratedProfile.availability ?? [],
         style:        hydratedProfile.style,
         city:         hydratedProfile.city,
+        age:          hydratedProfile.age,
         open_irl:     hydratedProfile.openIRL,
       };
 
@@ -1113,6 +1117,7 @@ export default function MatchesPage() {
                               style={normalizeArray(m.profile?.style)}
                               language={normalizeArray(m.language)}
                               city={m.city}
+                              age={m.age}
                               isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                               tier={m.tier}

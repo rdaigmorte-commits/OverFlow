@@ -46,12 +46,13 @@ export type Profile = {
   language: string[];
   availability: string[];
   city?: string;
+  age?: string | null;
   open_irl?: boolean;
   email?: string | null;
   discord?: string | null;
 };
 
-export type FitReasonKind = 'platform' | 'style' | 'language' | 'availability' | 'city';
+export type FitReasonKind = 'platform' | 'style' | 'language' | 'availability' | 'city' | 'age';
 export type FitReason = { kind: FitReasonKind; label: string };
 
 export type FitTier = 'strong' | 'good' | 'other';
@@ -71,13 +72,14 @@ export type MatchResult = {
   platform: string[];
   language: string[];
   city?: string;
+  age?: string | null;
   openIRL?: boolean;
   email?: string | null;
   discord?: string | null;
 };
 
 /**
- * Barème v3 (US-083 — ville comme critère de matching)
+ * Barème v4 (US-084 — âge comme critère de matching)
  *
  * Critère                          | Points
  * ─────────────────────────────────────────
@@ -87,10 +89,32 @@ export type MatchResult = {
  * Langue en commun                 |  +10
  * Au moins 1 créneau commun        |  +10
  * Même ville (bonus)               |  +10
+ * Âge proche (bonus dégressif)     |  +10 / +5 / +2 / 0
  * ─────────────────────────────────────────
- * Score max                        |  110
+ * Score max                        |  120
  */
 const CITY_BONUS = 10;
+
+// Bonus d'âge dégressif par palier plutôt qu'une formule continue — évite tout
+// risque d'arrondi différent entre ce fichier et son miroir SQL (get_match_
+// opportunities), et reste dans le style "points fixes par palier" du reste
+// du barème. Jamais bloquant : absent si l'un des deux âges n'est pas renseigné.
+function parseAge(age: string | null | undefined): number | null {
+  if (!age) return null;
+  const n = Number(age);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function getAgeBonus(a: Profile, b: Profile): number {
+  const ageA = parseAge(a.age);
+  const ageB = parseAge(b.age);
+  if (ageA === null || ageB === null) return 0;
+  const gap = Math.abs(ageA - ageB);
+  if (gap <= 2) return 10;
+  if (gap <= 5) return 5;
+  if (gap <= 10) return 2;
+  return 0;
+}
 
 // Jeux et plateforme en commun — les deux critères qui déterminent si on peut
 // concrètement jouer ensemble. Isolés pour l'affichage dédié ET pour le gate
@@ -138,6 +162,8 @@ export function computeScore(a: Profile, b: Profile): number {
     score += CITY_BONUS;
   }
 
+  score += getAgeBonus(a, b);
+
   return hasCoreMatch ? score : Math.min(score, NON_CORE_SCORE_CAP);
 }
 
@@ -177,6 +203,12 @@ export function getFitReasons(a: Profile, b: Profile): FitReason[] {
 
   if (a.city && b.city && normalizeCity(a.city) === normalizeCity(b.city)) {
     reasons.push({ kind: 'city', label: b.city });
+  }
+
+  // N'affiche la raison que sur le palier le plus proche (écart ≤ 2 ans) — un
+  // bonus marginal (écart 6-10 ans) ne mérite pas sa propre ligne dans la liste.
+  if (getAgeBonus(a, b) === 10) {
+    reasons.push({ kind: 'age', label: 'Similar age' });
   }
 
   return reasons;
@@ -231,6 +263,7 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         platform:    normalizedP.platform,
         language:    normalizedP.language,
         city:        normalizedP.city,
+        age:         normalizedP.age ?? null,
         openIRL:     normalizedP.open_irl ?? false,
         email:       normalizedP.email ?? null,
         discord:     normalizedP.discord ?? null,

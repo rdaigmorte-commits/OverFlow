@@ -10,4 +10,5 @@ export const FIT_REASON_EMOJI: Record<FitReasonKind, string> = {
   language:     '🗣️',
   availability: '🕒',
   city:         '📍',
+  age:          '🎂',
 };

@@ -6,6 +6,7 @@ import { Avatar } from '@/components/Avatar';
 
 type MatchCardProps = {
   name: string;
+  age?: string | null;
   games: string[];
   platform: string[];
   style: string[];
@@ -23,6 +24,7 @@ type MatchCardProps = {
 
 export function MatchCard({
   name,
+  age,
   isIRLNearby,
   fitLabel,
   tier,
@@ -32,7 +34,7 @@ export function MatchCard({
   invitationSent = false,
   onRequestMatch,
 }: MatchCardProps) {
-  const percent  = Math.round((score / 110) * 100);
+  const percent  = Math.round((score / 120) * 100);
   const style_   = TIER_STYLE[tier];
 
   return (
@@ -46,7 +48,10 @@ export function MatchCard({
         <Avatar name={name} tier={tier} size={56} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xl font-black text-text truncate">{name}</span>
+            <span className="text-xl font-black text-text truncate">
+              {name}
+              {age && <span className="font-semibold text-muted">, {age}</span>}
+            </span>
             {isIRLNearby && (
               <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
                 📍 IRL
