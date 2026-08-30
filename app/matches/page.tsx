@@ -12,7 +12,7 @@ import { DISCORD_URL, DiscordIcon } from '@/components/DiscordIcon';
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
-import { computeMatches, normalizeArray, type Match } from '@/lib/match';
+import { computeMatches, normalizeArray, MAX_SCORE, type Match } from '@/lib/match';
 
 const GRID_PAGE_SIZE = 6;
 const TAIL_PAGE_SIZE = 10;
@@ -25,7 +25,7 @@ function CompactMatchRow({
   onRequestMatch,
   onViewProfile,
 }: { match: Match; invitationSent: boolean; onRequestMatch: () => void; onViewProfile: () => void }) {
-  const percent = Math.round((match.score / 120) * 100);
+  const percent = Math.round((match.score / MAX_SCORE) * 100);
   const reason = match.fitReason.split(' · ')[0];
 
   return (
@@ -382,7 +382,7 @@ function PlayerDetailModal({
 
           <div className="mt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
-              {match.fitLabel} · {Math.round((match.score / 120) * 100)}%
+              {match.fitLabel} · {Math.round((match.score / MAX_SCORE) * 100)}%
             </p>
             <WhyYouMatch fitReasons={match.fitReasons} commonGames={match.commonGames} />
           </div>

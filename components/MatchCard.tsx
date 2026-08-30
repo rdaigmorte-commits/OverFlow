@@ -1,6 +1,6 @@
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { TIER_STYLE } from '@/lib/rpgClass';
-import type { FitReason, FitTier } from '@/lib/match';
+import { MAX_SCORE, type FitReason, type FitTier } from '@/lib/match';
 import { WhyYouMatch } from '@/components/WhyYouMatch';
 import { Avatar } from '@/components/Avatar';
 
@@ -40,7 +40,7 @@ export function MatchCard({
   onViewProfile,
   footer,
 }: MatchCardProps) {
-  const percent  = Math.round((score / 120) * 100);
+  const percent  = Math.round((score / MAX_SCORE) * 100);
   const style_   = TIER_STYLE[tier];
 
   return (

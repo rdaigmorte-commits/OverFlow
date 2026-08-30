@@ -87,11 +87,12 @@ export type MatchResult = {
 };
 
 /**
- * Barème v4 (US-084 — âge comme critère de matching)
+ * Barème v5 (US-MATCH — granularité du score)
  *
  * Critère                          | Points
  * ─────────────────────────────────────────
  * Au moins 1 jeu en commun         |  +40
+ * Jeux en commun supplémentaires   |  +4 / jeu, plafonné à +10 (donc dès le 3ᵉ jeu)
  * Au moins 1 plateforme en commun  |  +20
  * Au moins 1 style en commun       |  +20
  * Langue en commun                 |  +10
@@ -99,9 +100,17 @@ export type MatchResult = {
  * Même ville (bonus)               |  +10
  * Âge proche (bonus dégressif)     |  +10 / +5 / +2 / 0
  * ─────────────────────────────────────────
- * Score max                        |  120
+ * Score max                        |  130
+ *
+ * v4→v5 : le critère "jeu" était binaire (1 jeu en commun = 5 jeux en commun),
+ * ce qui tassait énormément de paires différentes au même score. Le bonus
+ * multi-jeux différencie enfin "on a un jeu en commun" de "on a plusieurs jeux
+ * en commun" — y compris pour les paires déjà "Strong fit" (jeu+plateforme).
  */
+export const MAX_SCORE = 130;
 const CITY_BONUS = 10;
+const MULTI_GAME_BONUS_MAX = 10;
+const MULTI_GAME_BONUS_STEP = 4; // +4 par jeu en commun au-delà du premier, plafonné à MULTI_GAME_BONUS_MAX
 
 // Bonus d'âge dégressif par palier plutôt qu'une formule continue — évite tout
 // risque d'arrondi différent entre ce fichier et son miroir SQL (get_match_
@@ -143,11 +152,35 @@ export function getCommonPlatforms(a: Profile, b: Profile): string[] {
   return a.platform.filter((p) => b.platform.includes(p));
 }
 
-// Score plafonné juste sous le seuil "Strong fit" quand jeu+plateforme ne sont
-// pas réunis — sinon le % affiché peut dépasser 60 alors que le tier reste "Good
-// fit" (gate de getFitTier), ce qui donne l'impression d'un bug à l'affichage :
-// deux cards au même %, l'une strong, l'autre good.
+// Différencie "1 jeu en commun" de "plusieurs jeux en commun" — sans ce bonus,
+// les deux rapportent exactement les mêmes points (cause principale du tassement
+// à 100% observé en prod : beaucoup de paires finissent par cocher toutes les
+// cases binaires du barème).
+export function getMultiGameBonus(a: Profile, b: Profile): number {
+  const common = getCommonGames(a, b).length;
+  if (common <= 1) return 0;
+  return Math.min(MULTI_GAME_BONUS_MAX, (common - 1) * MULTI_GAME_BONUS_STEP);
+}
+
+// ── Paires sans jeu+plateforme réunis (hasCoreMatch = false) ────────────────
+// Le score brut y va jusqu'à 110 (jeu sans plateforme commune + tout le reste),
+// mais l'affiché ne doit jamais atteindre le plancher du tier Strong fit (60
+// bruts, ~46 %) — sinon un "Good fit" peut sembler mieux noté qu'un "Strong
+// fit", ce qui a l'air d'un bug. Avant : Math.min(score, 59) — un clamp dur qui
+// remontait TOUTE paire au-dessus de 59 à exactement la même valeur (cause
+// principale du tassement à 49 %). Remplacé par une compression proportionnelle
+// au-delà de NON_CORE_COMPRESS_KNOT : en dessous, le score est inchangé (déjà
+// différencié) ; au-dessus, il est réparti sur la petite marge qui reste avant
+// le plafond, au lieu d'être tous écrasés sur le même point.
+const NON_CORE_COMPRESS_KNOT = 45;
 const NON_CORE_SCORE_CAP = 59;
+const NON_CORE_RAW_MAX = 110; // jeu(40, sans plateforme commune) + style + langue + dispo + ville + âge + bonus multi-jeux
+
+function compressNonCoreScore(raw: number): number {
+  if (raw <= NON_CORE_COMPRESS_KNOT) return raw;
+  const t = Math.min(1, (raw - NON_CORE_COMPRESS_KNOT) / (NON_CORE_RAW_MAX - NON_CORE_COMPRESS_KNOT));
+  return Math.round(NON_CORE_COMPRESS_KNOT + t * (NON_CORE_SCORE_CAP - NON_CORE_COMPRESS_KNOT));
+}
 
 export function computeScore(a: Profile, b: Profile): number {
   let score = 0;
@@ -171,8 +204,9 @@ export function computeScore(a: Profile, b: Profile): number {
   }
 
   score += getAgeBonus(a, b);
+  score += getMultiGameBonus(a, b);
 
-  return hasCoreMatch ? score : Math.min(score, NON_CORE_SCORE_CAP);
+  return hasCoreMatch ? score : compressNonCoreScore(Math.min(score, NON_CORE_RAW_MAX));
 }
 
 // "Strong fit" exige un jeu ET une plateforme en commun, quel que soit le score —
