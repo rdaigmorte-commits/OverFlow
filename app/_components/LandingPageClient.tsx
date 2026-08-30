@@ -346,21 +346,11 @@ export function LandingPageClient({ playerCount, topGames }: Props) {
               <span className="inline-block h-3 w-3 rounded-[3px] border-[3px]" style={{ borderColor: '#7C5CFF' }} />
             </div>
           </div>
-          <span className="inline-flex items-center rounded-full bg-accent/10 px-4 py-2 text-xs font-bold uppercase tracking-[0.1em] text-accent">
-            🌱 Early Access
-          </span>
         </header>
 
         {/* ── HERO ────────────────────────────────────────────────── */}
         <section className="relative z-10 grid flex-1 items-center gap-10 pt-16 pb-6 lg:grid-cols-[1.05fr_0.95fr] lg:pt-24 lg:pb-8">
           <div>
-
-            <div className={v ? 'of-r0 mb-6' : 'mb-6 opacity-0'}>
-              <span className="inline-flex items-center gap-2 rounded-full border-2 px-4 py-2 text-xs font-bold uppercase tracking-[0.15em]" style={{ borderColor: '#B9EBB0', background: '#E7F8E4', color: '#2E9E24' }}>
-                <span className="of-dot inline-block h-2 w-2 rounded-full" />
-                <span>Utrecht · Local matchmaking</span>
-              </span>
-            </div>
 
             <h1 className={`${v ? 'of-r1' : 'opacity-0'} text-5xl font-black leading-[1.05] tracking-tight text-text md:text-7xl`}>
               Find your <span className="relative inline-block" style={{ color: 'var(--accent)' }}>
