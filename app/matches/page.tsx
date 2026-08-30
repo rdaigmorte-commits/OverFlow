@@ -446,11 +446,21 @@ function MatchedSection({
   revealedContacts: Record<string, RevealedField[]>;
   onViewProfile: (m: Match) => void;
 }) {
+  const [expanded, setExpanded] = useState(true);
+
   if (matched.length === 0) return null;
 
   return (
     <div className="mb-8">
-      <h2 className="mb-3 text-sm font-bold text-muted uppercase tracking-wide">🤝 Your matches ({matched.length})</h2>
+      <button
+        type="button"
+        onClick={() => setExpanded((v) => !v)}
+        className="mb-3 flex items-center gap-1.5 text-sm font-bold text-muted uppercase tracking-wide hover:text-text transition"
+      >
+        🤝 Your matches ({matched.length})
+        <span className={`text-xs transition-transform ${expanded ? '' : '-rotate-90'}`}>▾</span>
+      </button>
+      {expanded && (
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {matched.map((m) => {
           const match = matchesById[m.profileId];
@@ -493,6 +503,7 @@ function MatchedSection({
           );
         })}
       </div>
+      )}
     </div>
   );
 }
@@ -1110,15 +1121,6 @@ export default function MatchesPage() {
         </div>
       )}
 
-      {!loading && (
-        <MatchedSection
-          matched={matchedConnections}
-          matchesById={matchesById}
-          revealedContacts={revealedContacts}
-          onViewProfile={(m) => setViewingProfile(m)}
-        />
-      )}
-
       {/* Profil + activité (invitations/matchs) côte à côte — évite l'empilement vertical */}
       {!loading && (
         <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -1156,6 +1158,15 @@ export default function MatchesPage() {
             )}
           </div>
         </div>
+      )}
+
+      {!loading && (
+        <MatchedSection
+          matched={matchedConnections}
+          matchesById={matchesById}
+          revealedContacts={revealedContacts}
+          onViewProfile={(m) => setViewingProfile(m)}
+        />
       )}
 
       <a
