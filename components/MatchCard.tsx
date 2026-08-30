@@ -12,7 +12,6 @@ type MatchCardProps = {
   style: string[];
   language: string[];
   city?: string;
-  isIRLNearby?: boolean;
   fitLabel: 'Strong fit' | 'Good fit' | 'Worth reaching out';
   tier: FitTier;
   fitReasons: FitReason[];
@@ -29,7 +28,6 @@ type MatchCardProps = {
 export function MatchCard({
   name,
   age,
-  isIRLNearby,
   fitLabel,
   tier,
   fitReasons,
@@ -53,16 +51,11 @@ export function MatchCard({
       <div className="flex items-center gap-3 px-5 pt-4 pb-3">
         <Avatar name={name} tier={tier} size={56} />
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 min-w-0">
-            <span className="text-xl font-black text-text truncate">
+          <div className="min-w-0">
+            <span className="text-xl font-black text-text truncate block">
               {name}
               {age && <span className="font-semibold text-muted">, {age}</span>}
             </span>
-            {isIRLNearby && (
-              <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-2 py-0.5 text-xs font-bold text-[#2E9E24] animate-pulse">
-                📍 IRL
-              </span>
-            )}
           </div>
           <div className="mt-1 flex items-center gap-2">
             <span

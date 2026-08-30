@@ -455,6 +455,7 @@ function MatchedSection({
       <button
         type="button"
         onClick={() => setExpanded((v) => !v)}
+        style={{ fontFamily: 'var(--font-fredoka)' }}
         className="mb-3 flex items-center gap-1.5 text-sm font-bold text-muted uppercase tracking-wide hover:text-text transition"
       >
         🤝 Your matches ({matched.length})
@@ -491,7 +492,6 @@ function MatchedSection({
               style={normalizeArray(match.profile?.style)}
               language={normalizeArray(match.language)}
               city={match.city}
-              isIRLNearby={match.isIRLNearby}
               fitLabel={match.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
               tier={match.tier}
               fitReasons={match.fitReasons}
@@ -1297,7 +1297,6 @@ export default function MatchesPage() {
                               language={normalizeArray(m.language)}
                               city={m.city}
                               age={m.age}
-                              isIRLNearby={m.isIRLNearby}
                               fitLabel={m.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
                               tier={m.tier}
                               fitReasons={m.fitReasons}
