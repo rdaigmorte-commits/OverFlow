@@ -1,10 +1,11 @@
 import Link from 'next/link';
-import { LANG_FLAG, PLATFORM_EMOJI } from '@/lib/match';
+import { LANG_FLAG, PLATFORM_EMOJI, LOOKING_FOR_META } from '@/lib/match';
 import { STYLE_TO_CLASS } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
 
 type Props = {
   name: string;
+  age?: string | null;
   games: string[];
   platform: string | string[];
   style: string | string[];
@@ -12,6 +13,10 @@ type Props = {
   availability: string[];
   city: string;
   openIRL: boolean;
+  lookingFor?: string | null;
+  // Remplace le CTA "Edit my profile" par défaut — utilisé pour afficher la
+  // fiche d'un AUTRE joueur (voir PlayerDetailModal dans /matches).
+  footer?: React.ReactNode;
 };
 
 function toArray(val: string | string[] | null | undefined): string[] {
@@ -20,9 +25,10 @@ function toArray(val: string | string[] | null | undefined): string[] {
   return [val];
 }
 
-export function ProfileSummary({ name, games, platform, style, language, availability, city, openIRL }: Props) {
+export function ProfileSummary({ name, age, games, platform, style, language, availability, city, openIRL, lookingFor, footer }: Props) {
   const platforms = toArray(platform);
   const styles    = toArray(style);
+  const lookingForMeta = lookingFor ? LOOKING_FOR_META[lookingFor] : null;
 
   return (
     <div className="rounded-2xl border border-accentSoftBorder bg-accentSoft overflow-hidden">
@@ -30,7 +36,10 @@ export function ProfileSummary({ name, games, platform, style, language, availab
       {/* Header */}
       <div className="flex items-center justify-between px-5 pt-4 pb-3">
         <div className="flex items-center gap-2">
-          <span className="text-xl font-black text-text">{name || 'Your profile'}</span>
+          <span className="text-xl font-black text-text">
+            {name || 'Your profile'}
+            {age && <span className="font-semibold text-muted">, {age}</span>}
+          </span>
           <span className="rounded-full border border-border bg-panel2 px-2 py-0.5 text-xs text-muted">{city || 'your city'}</span>
         </div>
         <div className="flex items-center gap-2">
@@ -75,19 +84,26 @@ export function ProfileSummary({ name, games, platform, style, language, availab
             🕒 {slot}
           </span>
         ))}
+        {lookingForMeta && (
+          <span className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text">
+            {lookingForMeta.icon} Looking for: {lookingForMeta.label}
+          </span>
+        )}
       </div>
 
       {/* Séparateur */}
       <div className="border-t border-accentSoftBorder mx-5" />
 
-      {/* CTA Edit — pointe maintenant vers /profile/edit */}
+      {/* CTA — "Edit my profile" par défaut, remplaçable via `footer` (fiche d'un autre joueur) */}
       <div className="px-5 py-4">
-        <Link
-          href="/profile/edit"
-          className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-accent/60 hover:text-accent transition"
-        >
-          ✏️ Edit my profile
-        </Link>
+        {footer ?? (
+          <Link
+            href="/profile/edit"
+            className="inline-flex items-center gap-2 rounded-xl bg-panel2 border border-border px-4 py-2 text-sm font-semibold text-text hover:border-accent/60 hover:text-accent transition"
+          >
+            ✏️ Edit my profile
+          </Link>
+        )}
       </div>
 
     </div>

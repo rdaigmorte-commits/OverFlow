@@ -23,20 +23,25 @@ function CompactMatchRow({
   match,
   invitationSent,
   onRequestMatch,
-}: { match: Match; invitationSent: boolean; onRequestMatch: () => void }) {
+  onViewProfile,
+}: { match: Match; invitationSent: boolean; onRequestMatch: () => void; onViewProfile: () => void }) {
   const percent = Math.round((match.score / 120) * 100);
   const reason = match.fitReason.split(' · ')[0];
 
   return (
     <div className="flex items-center gap-3 rounded-xl border border-border bg-panel px-4 py-3">
       <CompatibilityRing percent={percent} tier={match.tier} size={36} />
-      <div className="min-w-0 flex-1">
+      <button
+        type="button"
+        onClick={onViewProfile}
+        className="min-w-0 flex-1 text-left hover:opacity-80 transition"
+      >
         <p className="text-sm font-semibold text-text truncate">
           {match.name}
           {match.age && <span className="font-normal text-muted">, {match.age}</span>}
         </p>
-        <p className="text-xs text-muted truncate">{reason}</p>
-      </div>
+        <p className="text-xs text-muted truncate">{reason} · See full profile</p>
+      </button>
       {invitationSent ? (
         <span className="shrink-0 rounded-full border border-accent3SoftBorder bg-accent3Soft px-3 py-1.5 text-xs font-semibold text-[#2E9E24]">
           Sent ✓
@@ -306,6 +311,80 @@ function ContactModal({
   );
 }
 
+// ─── PlayerDetailModal ───────────────────────────────────────────────────────
+// Fiche complète d'un autre joueur — tout ce qu'il a saisi (pas juste les
+// critères en commun affichés sur la card). Réutilise ProfileSummary, jamais
+// les contacts (email/Discord/etc.) : ça reste gated derrière l'acceptation
+// mutuelle, comme partout ailleurs dans l'app.
+function PlayerDetailModal({
+  match,
+  invitationSent,
+  onRequestMatch,
+  onClose,
+}: {
+  match: Match;
+  invitationSent: boolean;
+  onRequestMatch: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-xl font-bold">Full profile</h2>
+          <button
+            onClick={onClose}
+            className="text-muted hover:text-text text-xl leading-none"
+            aria-label="Close"
+          >
+            ×
+          </button>
+        </div>
+
+        <ProfileSummary
+          name={match.name}
+          age={match.age}
+          games={match.games ?? []}
+          platform={normalizeArray(match.platform)}
+          style={normalizeArray(match.profile?.style)}
+          language={normalizeArray(match.language)}
+          availability={normalizeArray(match.profile?.availability)}
+          city={match.city ?? ''}
+          openIRL={!!match.openIRL}
+          lookingFor={match.lookingFor}
+          footer={
+            invitationSent ? (
+              <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-4 py-3 text-sm font-semibold text-[#2E9E24] text-center">
+                Invitation sent ✓
+              </div>
+            ) : (
+              <button
+                onClick={onRequestMatch}
+                className="btn-primary-new w-full px-5 py-3 text-sm"
+              >
+                Let&apos;s play 🎮
+              </button>
+            )
+          }
+        />
+
+        <div className="mt-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+            {match.fitLabel} · {Math.round((match.score / 120) * 100)}%
+          </p>
+          <WhyYouMatch fitReasons={match.fitReasons} commonGames={match.commonGames} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── InvitationsPanel ────────────────────────────────────────────────────────
 type ReceivedRequest = {
   id: string;
@@ -561,7 +640,7 @@ function InvitationsPanel({
 }
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl';
+const PUBLIC_PROFILE_FIELDS = 'id, name, age, city, language, platform, games, style, availability, open_irl, looking_for';
 const PROFILE_FETCH_LIMIT = 200;
 
 // ─── Page ────────────────────────────────────────────────────────────────────
@@ -572,6 +651,7 @@ export default function MatchesPage() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState(false);
   const [situation, setSituation] = useState<ContactSituation | null>(null);
+  const [viewingProfile, setViewingProfile] = useState<Match | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
@@ -905,6 +985,18 @@ export default function MatchesPage() {
 
       {situation && <ContactModal situation={situation} onClose={() => setSituation(null)} />}
 
+      {viewingProfile && (
+        <PlayerDetailModal
+          match={viewingProfile}
+          invitationSent={!!sentInvitations[viewingProfile.id]}
+          onRequestMatch={() => {
+            handleLetsPlay(viewingProfile.id, viewingProfile.name);
+            setViewingProfile(null);
+          }}
+          onClose={() => setViewingProfile(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="mb-6 flex items-start justify-between">
         <div>
@@ -1143,6 +1235,7 @@ export default function MatchesPage() {
                               score={m.score}
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}
+                              onViewProfile={() => setViewingProfile(m)}
                             />
                           ))}
                         </div>
@@ -1167,6 +1260,7 @@ export default function MatchesPage() {
                               match={m}
                               invitationSent={!!sentInvitations[m.id]}
                               onRequestMatch={() => handleLetsPlay(m.id, m.name)}
+                              onViewProfile={() => setViewingProfile(m)}
                             />
                           ))}
                         </div>

@@ -16,6 +16,12 @@ export const AVAILABILITY_EMOJI: Record<string, string> = {
   'Weekday evenings': '🌙', 'Friday night': '🎉', 'Weekend day': '☀️', 'Weekend evening': '🌆',
 };
 
+export const LOOKING_FOR_META: Record<string, { icon: string; label: string }> = {
+  online: { icon: '🏠', label: 'Play online' },
+  irl:    { icon: '🍺', label: 'Meet IRL' },
+  both:   { icon: '⚡', label: 'Both' },
+};
+
 // Normalise language en string[] quelle que soit la source Supabase.
 export function normalizeLanguage(lang: string | string[] | null | undefined): string[] {
   if (!lang) return [];
@@ -47,6 +53,7 @@ export type Profile = {
   availability: string[];
   city?: string;
   age?: string | null;
+  looking_for?: string | null;
   open_irl?: boolean;
   email?: string | null;
   discord?: string | null;
@@ -73,6 +80,7 @@ export type MatchResult = {
   language: string[];
   city?: string;
   age?: string | null;
+  lookingFor?: string | null;
   openIRL?: boolean;
   email?: string | null;
   discord?: string | null;
@@ -264,6 +272,7 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
         language:    normalizedP.language,
         city:        normalizedP.city,
         age:         normalizedP.age ?? null,
+        lookingFor:  normalizedP.looking_for ?? null,
         openIRL:     normalizedP.open_irl ?? false,
         email:       normalizedP.email ?? null,
         discord:     normalizedP.discord ?? null,

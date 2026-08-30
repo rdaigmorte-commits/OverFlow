@@ -20,6 +20,7 @@ type MatchCardProps = {
   score: number;
   invitationSent?: boolean;
   onRequestMatch: () => void;
+  onViewProfile: () => void;
 };
 
 export function MatchCard({
@@ -33,6 +34,7 @@ export function MatchCard({
   score,
   invitationSent = false,
   onRequestMatch,
+  onViewProfile,
 }: MatchCardProps) {
   const percent  = Math.round((score / 120) * 100);
   const style_   = TIER_STYLE[tier];
@@ -72,6 +74,13 @@ export function MatchCard({
 
       <div className="px-5 py-3">
         <WhyYouMatch fitReasons={fitReasons} commonGames={commonGames} />
+        <button
+          type="button"
+          onClick={onViewProfile}
+          className="mt-2 text-xs font-semibold text-accent hover:underline"
+        >
+          See full profile →
+        </button>
       </div>
 
       {/* CTA — toujours calé en bas, même si peu de raisons au-dessus */}
