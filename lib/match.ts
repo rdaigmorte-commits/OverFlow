@@ -314,11 +314,13 @@ export function matchProfiles(current: Profile, others: Profile[]): MatchResult[
     })
     .filter((r) => r.score > 0)
     .sort((a, b) => {
-      // Tri à tier égal : les matchs mutuellement "down to meet" remontent en premier
-      // (objectif premier du POC), score en départage final.
+      // Tri à tier égal : score décroissant, sans tie-break sur isIRLNearby (retiré
+      // le 2026-08-30 — invisible tant que le score était tassé à 49 %/100 %, mais
+      // devenu une inversion visible et déroutante une fois le score granulaire :
+      // un match à 86 % pouvait apparaître sous un match à 63 %. Les IRL-compatibles
+      // restent trouvables via le filtre dédié "Down to meet", pas via ce tri.
       const tierRank = (t: FitTier) => (t === 'strong' ? 2 : t === 'good' ? 1 : 0);
       if (tierRank(b.tier) !== tierRank(a.tier)) return tierRank(b.tier) - tierRank(a.tier);
-      if (b.isIRLNearby !== a.isIRLNearby) return (b.isIRLNearby ? 1 : 0) - (a.isIRLNearby ? 1 : 0);
       return b.score - a.score;
     });
 }
