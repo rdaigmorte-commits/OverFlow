@@ -20,6 +20,8 @@ module.exports = {
         accent2SoftBorder: '#FBE9B8',
         accent3Soft:       '#E7F8E4',
         accent3SoftBorder: '#C9F0C1',
+        errorSoft:         '#FEF2F2',
+        errorSoftBorder:   '#FECACA',
       },
       boxShadow: {
         glow: '0 0 0 1px rgba(124,92,255,0.25), 0 0 30px rgba(124,92,255,0.10)',

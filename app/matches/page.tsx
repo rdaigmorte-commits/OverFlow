@@ -710,6 +710,10 @@ export default function MatchesPage() {
   const [situation, setSituation] = useState<ContactSituation | null>(null);
   const [viewingProfile, setViewingProfile] = useState<Match | null>(null);
   const [currentProfile, setCurrentProfile] = useState<typeof profile | null>(null);
+  // Calculé côté DB (colonne générée, jamais la valeur du contact) — seule source
+  // fiable pour un profil non authentifié, dont le client ne peut pas relire
+  // discord/psn/steam/other après un rechargement (RLS + get_my_contacts() exige auth.uid()).
+  const [hasShareableContactDb, setHasShareableContactDb] = useState<boolean | null>(null);
   const [retryCount, setRetryCount] = useState(0);
   const [signingOut, setSigningOut] = useState(false);
   const [downToMeetOnly, setDownToMeetOnly] = useState(false);
@@ -782,11 +786,12 @@ export default function MatchesPage() {
       // select=* interdit après SEC-02 (REVOKE table-level SELECT) — utiliser les champs publics
       const { data: me, error: meError } = await supabase
         .from('profiles')
-        .select(PUBLIC_PROFILE_FIELDS)
+        .select(`${PUBLIC_PROFILE_FIELDS}, has_shareable_contact`)
         .eq('id', profileId)
         .single();
 
       if (!meError && me) {
+        setHasShareableContactDb(me.has_shareable_contact ?? null);
         const updated = {
           ...profile,  // preserve email, discord, consent depuis le store (chargés séparément)
           profileId:    me.id,
@@ -809,7 +814,13 @@ export default function MatchesPage() {
       if (authSession?.user) {
         const { data: contacts } = await supabase.rpc('get_my_contacts');
         if (contacts?.[0]) {
-          const contactPatch = { email: contacts[0].email ?? '', discord: contacts[0].discord ?? '' };
+          const contactPatch = {
+            email:        contacts[0].email ?? '',
+            discord:      contacts[0].discord ?? '',
+            psnHandle:    contacts[0].psn_handle ?? '',
+            steamHandle:  contacts[0].steam_handle ?? '',
+            otherContact: contacts[0].other_contact ?? '',
+          };
           setProfile(contactPatch);
           hydratedProfile = { ...hydratedProfile, ...contactPatch };
           setOwnsProfile(true);
@@ -983,6 +994,7 @@ export default function MatchesPage() {
   const hasNoProfile = !loading && !profile.profileId;
   const hasEmail = !!displayProfile.email;
   const hasContact = !!displayProfile.email || !!displayProfile.discord;
+  const missingShareableContact = !loading && !!profile.profileId && hasShareableContactDb === false;
   const userCity = displayProfile.city || '';
 
   // Index par profil — permet à l'encart Invitations de retrouver les raisons de match
@@ -1093,6 +1105,28 @@ export default function MatchesPage() {
             className="shrink-0 rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
           >
             Add email
+          </Link>
+        </div>
+      )}
+
+      {/* Bandeau no-contact — même structure que le bandeau no-email, en rouge pour
+          bien la distinguer : ici personne ne peut te contacter, pas juste "au cas où". */}
+      {missingShareableContact && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-errorSoftBorder bg-errorSoft px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5">⚠️</span>
+            <div>
+              <p className="text-sm font-medium text-text">No one can contact you yet</p>
+              <p className="mt-1 text-xs text-muted">
+                Add a Discord, PSN, Steam, or other contact to your profile — until then, matches have no way to reach you.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/profile/edit"
+            className="shrink-0 text-xs font-semibold text-error underline underline-offset-2 hover:opacity-80 transition"
+          >
+            Add a contact
           </Link>
         </div>
       )}
