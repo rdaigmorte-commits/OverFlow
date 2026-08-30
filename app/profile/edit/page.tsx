@@ -304,9 +304,10 @@ export default function ProfileEditPage() {
     setShowSuggestions(false);
   };
 
-  // Liste complète des jeux déjà saisis par d'autres joueurs, triée par
-  // popularité — permet de retrouver "League of Legends" en parcourant la
-  // liste même si on tape "LOL" (un filtre par sous-chaîne seul ne le ferait pas).
+  // Liste complète des jeux déjà saisis par d'autres joueurs — permet de
+  // retrouver "League of Legends" en parcourant la liste même si on tape
+  // "LOL" (un filtre par sous-chaîne seul ne le ferait pas). Triée
+  // alphabétiquement pour rester facilement scannable.
   const dropdownSuggestions = Object.keys(gameCounts)
     .filter((g) => !profile.games.includes(g))
     .filter((g) =>
@@ -314,7 +315,7 @@ export default function ProfileEditPage() {
         ? true
         : g.toLowerCase().includes(gameInput.toLowerCase())
     )
-    .sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0));
+    .sort((a, b) => a.localeCompare(b));
 
   // ── Sauvegarde ───────────────────────────────────────────────────────────
   async function handleSave() {

@@ -181,14 +181,16 @@ export default function OnboardingPage() {
   // Liste complète des jeux déjà saisis par d'autres joueurs (pas seulement le
   // top 8 déjà affiché en chips) — permet de retrouver "League of Legends" en
   // parcourant la liste même si on a tapé "LOL", ce qu'un simple filtre par
-  // sous-chaîne ne peut pas faire.
+  // sous-chaîne ne peut pas faire. Triée alphabétiquement (pas par popularité)
+  // pour rester facilement scannable une fois qu'on tape des lettres.
   const dropdownSuggestions = allGamesSorted
     .filter((g) => !top8.includes(g) && !profile.games.includes(g))
     .filter((g) =>
       gameInput.trim().length === 0
         ? true
         : g.toLowerCase().includes(gameInput.toLowerCase())
-    );
+    )
+    .sort((a, b) => a.localeCompare(b));
 
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
