@@ -60,12 +60,21 @@ export function MatchCard({
               </span>
             )}
           </div>
-          <span
-            className="mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold"
-            style={{ background: style_.badgeBg, borderColor: style_.badgeBorder, color: style_.badgeText }}
-          >
-            {fitLabel}
-          </span>
+          <div className="mt-1 flex items-center gap-2">
+            <span
+              className="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-bold"
+              style={{ background: style_.badgeBg, borderColor: style_.badgeBorder, color: style_.badgeText }}
+            >
+              {fitLabel}
+            </span>
+            <button
+              type="button"
+              onClick={onViewProfile}
+              className="text-[11px] font-semibold text-muted hover:text-text hover:underline"
+            >
+              👤 Profile
+            </button>
+          </div>
         </div>
         <CompatibilityRing percent={percent} tier={tier} />
       </div>
@@ -74,13 +83,6 @@ export function MatchCard({
 
       <div className="px-5 py-3">
         <WhyYouMatch fitReasons={fitReasons} commonGames={commonGames} />
-        <button
-          type="button"
-          onClick={onViewProfile}
-          className="mt-2 text-xs font-semibold text-accent hover:underline"
-        >
-          See full profile →
-        </button>
       </div>
 
       {/* CTA — toujours calé en bas, même si peu de raisons au-dessus */}
