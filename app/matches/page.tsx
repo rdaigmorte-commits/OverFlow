@@ -584,6 +584,7 @@ export default function MatchesPage() {
   // false = authenticated, but as a different account (profile/login identity mismatch).
   const [ownsProfile, setOwnsProfile] = useState<boolean | null>(null);
   const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
+  const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
 
   // Matchs mutuels — union des demandes acceptées dans les deux sens, plus récent en premier.
   const matchedConnections: MatchedConnection[] = [
@@ -617,6 +618,17 @@ export default function MatchesPage() {
       setIsAuthenticated(!!session?.user);
       setAuthChecked(true);
     });
+  }, []);
+
+  // Total de joueurs inscrits (site-wide, pas juste les PROFILE_FETCH_LIMIT découvrables) —
+  // sert de dénominateur au "X players match your vibes out of Y players" ci-dessous.
+  useEffect(() => {
+    supabase
+      .from('profiles')
+      .select('id', { count: 'exact', head: true })
+      .then(({ count }) => {
+        if (typeof count === 'number') setTotalPlayers(count);
+      });
   }, []);
 
   useEffect(() => {
@@ -844,6 +856,11 @@ export default function MatchesPage() {
     ? discoverableMatches.filter((m) => m.isIRLNearby)
     : discoverableMatches;
 
+  // "X players match your vibes" — uniquement les tiers jaune (Good fit) et vert (Strong
+  // fit), pas le gris "Worth reaching out" ; indépendant du filtre "Down to meet" pour
+  // rester un chiffre stable quand on bascule le filtre.
+  const vibeMatchCount = discoverableMatches.filter((m) => m.tier === 'good' || m.tier === 'strong').length;
+
   const downToMeetCount = discoverableMatches.filter((m) => m.isIRLNearby).length;
 
   // Un simple bonus de ville suffit à générer un match "Worth reaching out" (tier
@@ -1044,7 +1061,8 @@ export default function MatchesPage() {
             <div id="matches-grid" className="grid gap-5">
               <div className="flex items-center justify-between gap-4 flex-wrap">
                 <p className="text-sm text-muted font-medium">
-                  {visibleMatches.length} player{visibleMatches.length !== 1 ? 's' : ''} match your vibe
+                  {vibeMatchCount} player{vibeMatchCount !== 1 ? 's' : ''} match your vibes
+                  {totalPlayers !== null ? ` out of ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}` : ''}
                   {downToMeetOnly ? ' · down to meet' : ''}
                 </p>
                 {userCity && (
