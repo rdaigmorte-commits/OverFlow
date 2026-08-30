@@ -19,7 +19,7 @@ export const AVAILABILITY_EMOJI: Record<string, string> = {
 export const LOOKING_FOR_META: Record<string, { icon: string; label: string }> = {
   online: { icon: '🏠', label: 'Play online' },
   irl:    { icon: '🍺', label: 'Meet IRL' },
-  both:   { icon: '⚡', label: 'Both' },
+  both:   { icon: '⚡', label: 'Online + IRL' },
 };
 
 // Normalise language en string[] quelle que soit la source Supabase.
