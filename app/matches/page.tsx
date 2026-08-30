@@ -332,14 +332,16 @@ function PlayerDetailModal({
 }) {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 py-8"
       onClick={onClose}
     >
+      {/* max-h + colonne flex : le header reste fixe (bouton fermer toujours atteignable),
+          seul le corps défile — un profil avec beaucoup de jeux ne doit pas déborder de l'écran. */}
       <div
-        className="w-full max-w-md rounded-2xl border border-border bg-panel p-6 shadow-xl"
+        className="flex w-full max-w-md max-h-full flex-col rounded-2xl border border-border bg-panel shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-5">
+        <div className="flex shrink-0 items-center justify-between px-6 pt-6 pb-5">
           <h2 className="text-xl font-bold">Full profile</h2>
           <button
             onClick={onClose}
@@ -350,38 +352,40 @@ function PlayerDetailModal({
           </button>
         </div>
 
-        <ProfileSummary
-          name={match.name}
-          age={match.age}
-          games={match.games ?? []}
-          platform={normalizeArray(match.platform)}
-          style={normalizeArray(match.profile?.style)}
-          language={normalizeArray(match.language)}
-          availability={normalizeArray(match.profile?.availability)}
-          city={match.city ?? ''}
-          openIRL={!!match.openIRL}
-          lookingFor={match.lookingFor}
-          footer={
-            footer ?? (invitationSent ? (
-              <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-4 py-3 text-sm font-semibold text-[#2E9E24] text-center">
-                Invitation sent ✓
-              </div>
-            ) : (
-              <button
-                onClick={onRequestMatch}
-                className="btn-primary-new w-full px-5 py-3 text-sm"
-              >
-                Let&apos;s play 🎮
-              </button>
-            ))
-          }
-        />
+        <div className="overflow-y-auto px-6 pb-6">
+          <ProfileSummary
+            name={match.name}
+            age={match.age}
+            games={match.games ?? []}
+            platform={normalizeArray(match.platform)}
+            style={normalizeArray(match.profile?.style)}
+            language={normalizeArray(match.language)}
+            availability={normalizeArray(match.profile?.availability)}
+            city={match.city ?? ''}
+            openIRL={!!match.openIRL}
+            lookingFor={match.lookingFor}
+            footer={
+              footer ?? (invitationSent ? (
+                <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-4 py-3 text-sm font-semibold text-[#2E9E24] text-center">
+                  Invitation sent ✓
+                </div>
+              ) : (
+                <button
+                  onClick={onRequestMatch}
+                  className="btn-primary-new w-full px-5 py-3 text-sm"
+                >
+                  Let&apos;s play 🎮
+                </button>
+              ))
+            }
+          />
 
-        <div className="mt-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
-            {match.fitLabel} · {Math.round((match.score / 120) * 100)}%
-          </p>
-          <WhyYouMatch fitReasons={match.fitReasons} commonGames={match.commonGames} />
+          <div className="mt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted mb-2">
+              {match.fitLabel} · {Math.round((match.score / 120) * 100)}%
+            </p>
+            <WhyYouMatch fitReasons={match.fitReasons} commonGames={match.commonGames} />
+          </div>
         </div>
       </div>
     </div>
