@@ -19,8 +19,11 @@ type MatchCardProps = {
   commonGames: string[];
   score: number;
   invitationSent?: boolean;
-  onRequestMatch: () => void;
+  onRequestMatch?: () => void;
   onViewProfile: () => void;
+  // Remplace le CTA "Let's play" par défaut — utilisé pour les cartes déjà
+  // matchées, où l'action pertinente est le contact, pas une nouvelle demande.
+  footer?: React.ReactNode;
 };
 
 export function MatchCard({
@@ -35,6 +38,7 @@ export function MatchCard({
   invitationSent = false,
   onRequestMatch,
   onViewProfile,
+  footer,
 }: MatchCardProps) {
   const percent  = Math.round((score / 120) * 100);
   const style_   = TIER_STYLE[tier];
@@ -87,7 +91,7 @@ export function MatchCard({
 
       {/* CTA — toujours calé en bas, même si peu de raisons au-dessus */}
       <div className="mt-auto px-5 pb-4">
-        {invitationSent ? (
+        {footer ?? (invitationSent ? (
           <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-3 text-sm font-semibold text-[#2E9E24] text-center">
             Invitation sent ✓
           </div>
@@ -98,7 +102,7 @@ export function MatchCard({
           >
             Let&apos;s play 🎮
           </button>
-        )}
+        ))}
       </div>
 
     </div>

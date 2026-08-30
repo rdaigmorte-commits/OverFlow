@@ -321,11 +321,14 @@ function PlayerDetailModal({
   invitationSent,
   onRequestMatch,
   onClose,
+  footer,
 }: {
   match: Match;
   invitationSent: boolean;
   onRequestMatch: () => void;
   onClose: () => void;
+  // Override pour une fiche déjà matchée — affiche le contact plutôt que "Let's play".
+  footer?: React.ReactNode;
 }) {
   return (
     <div
@@ -359,7 +362,7 @@ function PlayerDetailModal({
           openIRL={!!match.openIRL}
           lookingFor={match.lookingFor}
           footer={
-            invitationSent ? (
+            footer ?? (invitationSent ? (
               <div className="w-full rounded-xl border border-accent3SoftBorder bg-accent3Soft px-4 py-3 text-sm font-semibold text-[#2E9E24] text-center">
                 Invitation sent ✓
               </div>
@@ -370,7 +373,7 @@ function PlayerDetailModal({
               >
                 Let&apos;s play 🎮
               </button>
-            )
+            ))
           }
         />
 
@@ -380,6 +383,111 @@ function PlayerDetailModal({
           </p>
           <WhyYouMatch fitReasons={match.fitReasons} commonGames={match.commonGames} />
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── ContactChipsFooter ──────────────────────────────────────────────────────
+// Bloc contact réutilisé partout où une fiche est déjà matchée (grille "Your
+// matches" ET modal "Full profile") — remplace le CTA "Let's play" par les
+// coordonnées, copiables au clic.
+function ContactChipsFooter({ name, revealed }: { name: string; revealed: RevealedField[] | undefined }) {
+  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  const copy = (key: string, value: string) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopiedKey(key);
+      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
+    });
+  };
+
+  if (revealed === undefined) {
+    return <p className="text-xs text-muted text-center">Loading contact…</p>;
+  }
+  if (revealed.length === 0) {
+    return <p className="text-xs text-muted text-center">{name} hasn&apos;t shared any contact details yet — check back later.</p>;
+  }
+  return (
+    <div className="flex flex-wrap gap-2 justify-center">
+      {revealed.map((c) => {
+        const key = `${name}-${c.label}`;
+        return (
+          <button
+            key={key}
+            onClick={() => copy(key, c.value)}
+            className="rounded-full bg-panel2 border border-border px-3 py-1.5 text-xs font-medium text-text hover:border-accent transition"
+          >
+            {c.label}: {c.value} {copiedKey === key ? '· Copied ✓' : ''}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── MatchedSection ──────────────────────────────────────────────────────────
+// Sortie de l'onglet "Activity" (où elle avait le même poids visuel qu'une
+// simple demande en attente) — c'est pourtant l'aboutissement du parcours de
+// matching, donc sa propre section pleine largeur, avec la même carte riche
+// qu'en découverte plutôt qu'une ligne compacte.
+function MatchedSection({
+  matched,
+  matchesById,
+  revealedContacts,
+  onViewProfile,
+}: {
+  matched: MatchedConnection[];
+  matchesById: Record<string, Match>;
+  revealedContacts: Record<string, RevealedField[]>;
+  onViewProfile: (m: Match) => void;
+}) {
+  if (matched.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <h2 className="mb-3 text-sm font-bold text-muted uppercase tracking-wide">🤝 Your matches ({matched.length})</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {matched.map((m) => {
+          const match = matchesById[m.profileId];
+          const revealed = revealedContacts[m.profileId];
+
+          // Filet de sécurité : le profil matché est sorti du pool de découverte
+          // courant (ex. il a modifié son profil depuis) — carte minimale plutôt
+          // que de planter sur des champs de matching absents.
+          if (!match) {
+            return (
+              <div key={m.id} className="rounded-2xl border border-border bg-panel p-5 flex flex-col gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar name={m.name} size={48} />
+                  <p className="text-lg font-black text-text">{m.name}</p>
+                </div>
+                <ContactChipsFooter name={m.name} revealed={revealed} />
+              </div>
+            );
+          }
+
+          return (
+            <MatchCard
+              key={m.id}
+              name={match.name}
+              age={match.age}
+              games={match.games ?? []}
+              platform={normalizeArray(match.platform)}
+              style={normalizeArray(match.profile?.style)}
+              language={normalizeArray(match.language)}
+              city={match.city}
+              isIRLNearby={match.isIRLNearby}
+              fitLabel={match.fitLabel as 'Strong fit' | 'Good fit' | 'Worth reaching out'}
+              tier={match.tier}
+              fitReasons={match.fitReasons}
+              commonGames={match.commonGames}
+              score={match.score}
+              onViewProfile={() => onViewProfile(match)}
+              footer={<ContactChipsFooter name={match.name} revealed={revealed} />}
+            />
+          );
+        })}
       </div>
     </div>
   );
@@ -416,7 +524,6 @@ function InvitationsPanel({
   received,
   sent,
   matched,
-  revealedContacts,
   matchesById,
   onAccept,
   onDecline,
@@ -424,22 +531,13 @@ function InvitationsPanel({
   received: ReceivedRequest[];
   sent: SentRequest[];
   matched: MatchedConnection[];
-  revealedContacts: Record<string, RevealedField[]>;
   matchesById: Record<string, Match>;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
 }) {
-  const [tab, setTab] = useState<'received' | 'sent' | 'matched'>('received');
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [tab, setTab] = useState<'received' | 'sent'>('received');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const sentPending = sent.filter((r) => r.status !== 'accepted');
-
-  const copy = (key: string, value: string) => {
-    navigator.clipboard.writeText(value).then(() => {
-      setCopiedKey(key);
-      setTimeout(() => setCopiedKey((k) => (k === key ? null : k)), 2000);
-    });
-  };
 
   // Lien "Why we match" — déplie la même info que la card de découverte, réutilisée
   // depuis les matches déjà calculés en mémoire (pas de nouvelle requête).
@@ -499,14 +597,6 @@ function InvitationsPanel({
           }`}
         >
           Sent ({sentPending.length})
-        </button>
-        <button
-          onClick={() => setTab('matched')}
-          className={`rounded-lg px-4 py-1.5 text-xs font-semibold transition ${
-            tab === 'matched' ? 'bg-white text-text shadow-sm' : 'bg-transparent text-muted hover:text-text'
-          }`}
-        >
-          🤝 Matched ({matched.length})
         </button>
       </div>
 
@@ -586,54 +676,6 @@ function InvitationsPanel({
       ))}
       {tab === 'sent' && sentPending.length === 0 && (
         <p className="text-xs text-muted px-1">You haven&apos;t sent any invitations yet.</p>
-      )}
-
-      {/* Matched — connexions mutuelles, coordonnées toujours disponibles ici */}
-      {tab === 'matched' && matched.map((m) => {
-        const revealed = revealedContacts[m.profileId];
-        return (
-          <div
-            key={m.id}
-            className="flex flex-col gap-2 rounded-xl border border-accent3SoftBorder bg-accent3Soft px-5 py-4"
-          >
-            <div className="flex items-center justify-between gap-4">
-              <div className="flex items-center gap-3 min-w-0">
-                <Avatar name={m.name} tier={matchesById[m.profileId]?.tier} size={40} />
-                <p className="text-sm font-medium text-text truncate">{m.name}</p>
-              </div>
-              <span className="shrink-0 text-xs text-muted">{formatRequestDate(m.created_at)}</span>
-            </div>
-            {revealed === undefined ? (
-              <p className="text-xs text-muted">Loading contact…</p>
-            ) : revealed.length === 0 ? (
-              <p className="text-xs text-muted">{m.name} hasn&apos;t shared any contact details yet — check back later.</p>
-            ) : (
-              <div className="flex flex-wrap gap-2">
-                {revealed.map((c) => {
-                  const key = `${m.profileId}-${c.label}`;
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => copy(key, c.value)}
-                      className="rounded-full bg-panel2 border border-border px-3 py-1 text-xs font-medium text-text hover:border-accent transition"
-                    >
-                      {c.label}: {c.value} {copiedKey === key ? '· Copied ✓' : ''}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            <WhyMatchToggle rowId={m.id} profileId={m.profileId} />
-            {expandedId === m.id && matchesById[m.profileId] && (
-              <div className="rounded-lg bg-panel2/60 p-3">
-                <WhyYouMatch fitReasons={matchesById[m.profileId].fitReasons} commonGames={matchesById[m.profileId].commonGames} />
-              </div>
-            )}
-          </div>
-        );
-      })}
-      {tab === 'matched' && matched.length === 0 && (
-        <p className="text-xs text-muted px-1">No matches yet — accept or get an invitation accepted to connect.</p>
       )}
     </div>
   );
@@ -994,6 +1036,11 @@ export default function MatchesPage() {
             setViewingProfile(null);
           }}
           onClose={() => setViewingProfile(null)}
+          footer={
+            matchedConnections.some((m) => m.profileId === viewingProfile.id)
+              ? <ContactChipsFooter name={viewingProfile.name} revealed={revealedContacts[viewingProfile.id]} />
+              : undefined
+          }
         />
       )}
 
@@ -1059,6 +1106,15 @@ export default function MatchesPage() {
         </div>
       )}
 
+      {!loading && (
+        <MatchedSection
+          matched={matchedConnections}
+          matchesById={matchesById}
+          revealedContacts={revealedContacts}
+          onViewProfile={(m) => setViewingProfile(m)}
+        />
+      )}
+
       {/* Profil + activité (invitations/matchs) côte à côte — évite l'empilement vertical */}
       {!loading && (
         <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
@@ -1081,7 +1137,6 @@ export default function MatchesPage() {
               received={inboundRequests}
               sent={sentRequests}
               matched={matchedConnections}
-              revealedContacts={revealedContacts}
               matchesById={matchesById}
               onAccept={handleAcceptRequest}
               onDecline={handleDeclineRequest}
