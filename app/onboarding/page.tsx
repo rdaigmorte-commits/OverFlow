@@ -178,11 +178,15 @@ export default function OnboardingPage() {
       ].slice(0, 8)
     : FALLBACK_GAMES;
 
+  // Liste complète des jeux déjà saisis par d'autres joueurs (pas seulement le
+  // top 8 déjà affiché en chips) — permet de retrouver "League of Legends" en
+  // parcourant la liste même si on a tapé "LOL", ce qu'un simple filtre par
+  // sous-chaîne ne peut pas faire.
   const dropdownSuggestions = allGamesSorted
-    .filter((g) => !top8.includes(g))
+    .filter((g) => !top8.includes(g) && !profile.games.includes(g))
     .filter((g) =>
       gameInput.trim().length === 0
-        ? false
+        ? true
         : g.toLowerCase().includes(gameInput.toLowerCase())
     );
 
@@ -298,9 +302,10 @@ export default function OnboardingPage() {
       const baseQuery = supabase.from('profiles').select('id, name, games');
       const { data } = await (profile.profileId ? baseQuery.neq('id', profile.profileId) : baseQuery);
       if (!data) { setCompatCount(0); return; }
+      const myGames = new Set(profile.games.map((g) => g.trim().toLowerCase()));
       const matches = data.filter((p) => {
         const pGames = Array.isArray(p.games) ? p.games : [];
-        return pGames.some((g: string) => profile.games.includes(g));
+        return pGames.some((g: string) => myGames.has(g.trim().toLowerCase()));
       });
       setPreviewMatches(matches.slice(0, 5));
       setCompatCount(matches.length);
@@ -593,8 +598,8 @@ export default function OnboardingPage() {
                   >Add</button>
                 </div>
                 {showSuggestions && dropdownSuggestions.length > 0 && (
-                  <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border bg-panel shadow-lg overflow-hidden">
-                    {dropdownSuggestions.slice(0, 6).map((g) => (
+                  <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-panel shadow-lg">
+                    {dropdownSuggestions.map((g) => (
                       <button
                         key={g}
                         type="button"

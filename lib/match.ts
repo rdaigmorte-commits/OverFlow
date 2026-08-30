@@ -95,8 +95,16 @@ const CITY_BONUS = 10;
 // Jeux et plateforme en commun — les deux critères qui déterminent si on peut
 // concrètement jouer ensemble. Isolés pour l'affichage dédié ET pour le gate
 // de tier ci-dessous (un "Strong fit" sans ça n'a pas de sens en pratique).
+// Comparaison insensible à la casse/espaces — deux joueurs ayant saisi "Valorant"
+// et "valorant " doivent matcher. Ne résout pas les synonymes (LOL vs "League of
+// Legends"), traité côté UI (suggestions) dans les steps de saisie des jeux.
+function normalizeGame(g: string): string {
+  return g.trim().toLowerCase();
+}
+
 export function getCommonGames(a: Profile, b: Profile): string[] {
-  return a.games.filter((g) => b.games.includes(g));
+  const bNormalized = new Set(b.games.map(normalizeGame));
+  return a.games.filter((g) => bNormalized.has(normalizeGame(g)));
 }
 
 export function getCommonPlatforms(a: Profile, b: Profile): string[] {

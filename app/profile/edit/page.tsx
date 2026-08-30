@@ -178,7 +178,7 @@ export default function ProfileEditPage() {
   const [success, setSuccess]     = useState(false);
   const [gameInput, setGameInput] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-  const [allGamesInDB, setAllGamesInDB] = useState<string[]>([]);
+  const [gameCounts, setGameCounts] = useState<Record<string, number>>({});
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   // true = get_my_contacts() confirmed this session owns the loaded profile.
   const [ownsProfile, setOwnsProfile] = useState(false);
@@ -255,14 +255,17 @@ export default function ProfileEditPage() {
         }
       }
 
-      // Charge aussi la liste de tous les jeux en DB pour les suggestions
+      // Charge aussi la liste de tous les jeux en DB pour les suggestions,
+      // avec un compte par jeu pour trier les plus joués en premier.
       const { data: allProfiles } = await supabase.from('profiles').select('games');
       if (allProfiles) {
-        const gameSet = new Set<string>();
+        const counts: Record<string, number> = {};
         allProfiles.forEach((row) => {
-          (Array.isArray(row.games) ? row.games : []).forEach((g: string) => gameSet.add(g));
+          (Array.isArray(row.games) ? row.games : []).forEach((g: string) => {
+            counts[g] = (counts[g] ?? 0) + 1;
+          });
         });
-        setAllGamesInDB(Array.from(gameSet));
+        setGameCounts(counts);
       }
 
       setHydrating(false);
@@ -301,14 +304,17 @@ export default function ProfileEditPage() {
     setShowSuggestions(false);
   };
 
-  const dropdownSuggestions = allGamesInDB
+  // Liste complète des jeux déjà saisis par d'autres joueurs, triée par
+  // popularité — permet de retrouver "League of Legends" en parcourant la
+  // liste même si on tape "LOL" (un filtre par sous-chaîne seul ne le ferait pas).
+  const dropdownSuggestions = Object.keys(gameCounts)
     .filter((g) => !profile.games.includes(g))
     .filter((g) =>
       gameInput.trim().length === 0
         ? true
         : g.toLowerCase().includes(gameInput.toLowerCase())
     )
-    .slice(0, 6);
+    .sort((a, b) => (gameCounts[b] ?? 0) - (gameCounts[a] ?? 0));
 
   // ── Sauvegarde ───────────────────────────────────────────────────────────
   async function handleSave() {
@@ -544,7 +550,7 @@ export default function ProfileEditPage() {
               >Add</button>
             </div>
             {showSuggestions && dropdownSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full z-10 mt-1 rounded-xl border border-border bg-panel shadow-lg overflow-hidden">
+              <div className="absolute left-0 right-0 top-full z-10 mt-1 max-h-64 overflow-y-auto rounded-xl border border-border bg-panel shadow-lg">
                 {dropdownSuggestions.map((g) => (
                   <button
                     key={g}
