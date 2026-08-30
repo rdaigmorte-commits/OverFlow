@@ -8,6 +8,7 @@ import { MatchCard } from '@/components/MatchCard';
 import { WhyYouMatch } from '@/components/WhyYouMatch';
 import { Avatar } from '@/components/Avatar';
 import { ProfileSummary } from '@/components/ProfileSummary';
+import { DISCORD_URL, DiscordIcon } from '@/components/DiscordIcon';
 import { CompatibilityRing } from '@/components/CompatibilityRing';
 import { supabase } from '@/lib/supabase';
 import { useOverflowStore } from '@/lib/store';
@@ -1005,6 +1006,22 @@ export default function MatchesPage() {
           </div>
         </div>
       )}
+
+      <a
+        href={DISCORD_URL}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="mb-6 flex items-center gap-4 rounded-2xl border-2 p-4 hover:opacity-90 transition"
+        style={{ borderColor: 'var(--border)', background: 'var(--panel2)' }}
+      >
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-white" style={{ background: '#5865F2' }}>
+          <DiscordIcon size={20} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-text">Join the Discord</p>
+          <p className="text-xs text-muted">Found a bug or got an idea to improve OverFlow? Tell us there.</p>
+        </div>
+      </a>
 
       <h2 className="mb-2 text-sm font-bold text-muted uppercase tracking-wide">🎯 Matches</h2>
       <div className="grid gap-6">

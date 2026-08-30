@@ -320,6 +320,7 @@ export default function ProfileEditPage() {
   async function handleSave() {
     setError(null); setNeedsLogin(false); setSuccess(false);
     if (!profile.name.trim())          { setError('Please enter a nickname.'); return; }
+    if (profile.name.trim().length < 3) { setError('Your nickname must be at least 3 characters.'); return; }
     if (profile.games.length === 0)    { setError('Please select at least one game.'); return; }
     if (profile.platform.length === 0) { setError('Please select at least one platform.'); return; }
     if (profile.style.length === 0)    { setError('Please select at least one play style.'); return; }
