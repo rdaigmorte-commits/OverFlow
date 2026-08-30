@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, LANG_BADGE, LANG_FLAG } from '@/lib/match';
 import { STYLE_TO_CLASS, type RpgClass } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
-import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
+import { ContactFieldsEditor, hasShareableContact } from '@/components/ContactFieldsEditor';
 import { saveExistingProfile, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'League of Legends', 'Call of Duty', 'FIFA', 'Minecraft', 'Fortnite'];
@@ -441,12 +441,12 @@ export default function OnboardingPage() {
       setError('Please accept the profile sharing agreement to continue.');
       return;
     }
-    const hasShareableContact = !!(
-      profile.discord.trim() || profile.psnHandle.trim() ||
-      profile.steamHandle.trim() || profile.otherContact.trim()
-    );
-    if (hasShareableContact && !profile.contactShareConsent) {
-      setError('Please agree to share your contact details, or clear them to skip this step.');
+    if (!hasShareableContact(profile)) {
+      setError('Please add at least one shareable contact (Discord, PSN, Steam, or other) so matches can reach you.');
+      return;
+    }
+    if (!profile.contactShareConsent) {
+      setError('Please agree to share your contact details above.');
       return;
     }
     const ok = await saveProfile();
@@ -834,7 +834,7 @@ export default function OnboardingPage() {
 
             <Card className="p-5">
               <h2 className="text-base font-bold text-text mb-1">Stay reachable</h2>
-              <p className="text-xs text-muted mb-4">All optional — add your email for notifications, and at least one shareable contact so matches can reach you directly.</p>
+              <p className="text-xs text-muted mb-4">Your email is optional. At least one shareable contact below is required, so matches can actually reach you.</p>
               <ContactFieldsEditor
                 values={profile}
                 onChange={(patch) => { setProfile(patch); setError(null); }}

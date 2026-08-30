@@ -7,7 +7,7 @@ import { supabase } from '@/lib/supabase';
 import { normalizeLanguage, normalizeArray, PLATFORM_EMOJI, AVAILABILITY_EMOJI, LANG_BADGE, LANG_FLAG } from '@/lib/match';
 import { STYLE_TO_CLASS } from '@/lib/rpgClass';
 import { ShapeIcon } from '@/components/ShapeIcon';
-import { ContactFieldsEditor } from '@/components/ContactFieldsEditor';
+import { ContactFieldsEditor, hasShareableContact } from '@/components/ContactFieldsEditor';
 import { saveExistingProfile, deleteAccount, type NonSensitiveFields, type SensitiveFields } from '@/lib/profileSave';
 
 const FALLBACK_GAMES = ['Valorant', 'CS2', 'Rocket League', 'Smash Bros', 'League of Legends', 'FIFA', 'Minecraft', 'Animal Crossing'];
@@ -326,12 +326,12 @@ export default function ProfileEditPage() {
     if (profile.platform.length === 0) { setError('Please select at least one platform.'); return; }
     if (profile.style.length === 0)    { setError('Please select at least one play style.'); return; }
     if (profile.language.length === 0) { setError('Please select at least one language.'); return; }
-    const hasShareableContact = !!(
-      profile.discord.trim() || profile.psnHandle.trim() ||
-      profile.steamHandle.trim() || profile.otherContact.trim()
-    );
-    if (hasShareableContact && !profile.contactShareConsent) {
-      setError('Please agree to share your contact details, or clear them to skip this.');
+    if (!hasShareableContact(profile)) {
+      setError('Please add at least one shareable contact (Discord, PSN, Steam, or other) so matches can reach you.');
+      return;
+    }
+    if (!profile.contactShareConsent) {
+      setError('Please agree to share your contact details above.');
       return;
     }
 

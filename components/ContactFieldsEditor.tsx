@@ -22,11 +22,19 @@ type Props = {
   onRequestEmailChange?: () => void;
 };
 
-export function ContactFieldsEditor({ values, onChange, isLinkedAccount, onRequestEmailChange }: Props) {
-  const hasShareableContact = !!(
+// Un contact "partageable" (pas l'email, qui reste privé) — c'est la seule chose
+// qui rend un profil réellement joignable par un autre joueur après un match.
+// Utilisé aussi bien ici (afficher le consentement de partage) que dans les pages
+// onboarding/profile-edit (bloquer la sauvegarde si aucun n'est renseigné).
+export function hasShareableContact(values: ContactValues): boolean {
+  return !!(
     values.discord.trim() || values.psnHandle.trim() ||
     values.steamHandle.trim() || values.otherContact.trim()
   );
+}
+
+export function ContactFieldsEditor({ values, onChange, isLinkedAccount, onRequestEmailChange }: Props) {
+  const hasContact = hasShareableContact(values);
 
   return (
     <div className="flex flex-col gap-6">
@@ -71,8 +79,12 @@ export function ContactFieldsEditor({ values, onChange, isLinkedAccount, onReque
       {/* Coordonnées partageables — révélées sur match mutuel, sous consentement */}
       <div className="flex flex-col gap-4">
         <div>
-          <h3 className="text-sm font-medium text-text">🎮 Shareable contact details</h3>
-          <p className="text-xs text-muted mt-0.5">Revealed to a player only once you both click &quot;Let&apos;s play&quot;.</p>
+          <h3 className="text-sm font-medium text-text">
+            🎮 Shareable contact details <span className="text-accent">*</span>
+          </h3>
+          <p className="text-xs text-muted mt-0.5">
+            Revealed to a player only once you both click &quot;Let&apos;s play&quot;. At least one is required — otherwise matches have no way to reach you.
+          </p>
         </div>
 
         <div className="flex flex-col gap-1.5">
@@ -123,7 +135,7 @@ export function ContactFieldsEditor({ values, onChange, isLinkedAccount, onReque
           </div>
         </div>
 
-        {hasShareableContact && (
+        {hasContact && (
           <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
