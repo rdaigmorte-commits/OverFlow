@@ -29,6 +29,7 @@ type Profile = {
   lookingFor: 'online' | 'irl' | 'both';
   notifyOnMatchRequest: boolean;
   interestedInIrlEvent: boolean;
+  weeklyDigestOptIn: boolean;
 };
 
 type State = {
@@ -84,6 +85,7 @@ const initialProfile: Profile = {
   lookingFor: 'both',
   notifyOnMatchRequest: true,
   interestedInIrlEvent: false,
+  weeklyDigestOptIn: false,
 };
 
 export const useOverflowStore = create<State>((set) => ({

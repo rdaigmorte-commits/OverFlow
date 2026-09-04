@@ -16,6 +16,7 @@ export type NonSensitiveFields = {
   consent: boolean;
   notify_on_match_request: boolean;
   interested_in_irl_event: boolean;
+  weekly_digest_opt_in: boolean;
 };
 
 export type SensitiveFields = {

@@ -730,6 +730,11 @@ export default function MatchesPage() {
   const [ownsProfile, setOwnsProfile] = useState<boolean | null>(null);
   const [inboundRequests, setInboundRequests] = useState<ReceivedRequest[]>([]);
   const [totalPlayers, setTotalPlayers] = useState<number | null>(null);
+  // Relance ponctuelle pour l'opt-in du digest hebdo — pas d'étape d'onboarding dédiée
+  // (décision PM), donc c'est ici qu'on la propose. Dismiss persisté par profil, pas
+  // de re-sollicitation après un choix explicite.
+  const [digestBannerDismissed, setDigestBannerDismissed] = useState(true);
+  const [digestOptingIn, setDigestOptingIn] = useState(false);
 
   // Matchs mutuels — union des demandes acceptées dans les deux sens, plus récent en premier.
   const matchedConnections: MatchedConnection[] = [
@@ -777,6 +782,36 @@ export default function MatchesPage() {
   }, []);
 
   useEffect(() => {
+    if (!profile.profileId) return;
+    try {
+      const dismissed = localStorage.getItem(`overflow_digest_banner_dismissed_${profile.profileId}`);
+      setDigestBannerDismissed(dismissed === 'true');
+    } catch { /* silencieux */ }
+  }, [profile.profileId]);
+
+  async function handleEnableDigest() {
+    if (!profile.profileId) return;
+    setDigestOptingIn(true);
+    const { error } = await supabase
+      .from('profiles')
+      .update({ weekly_digest_opt_in: true })
+      .eq('id', profile.profileId);
+    setDigestOptingIn(false);
+    if (!error) {
+      setProfile({ weeklyDigestOptIn: true });
+      handleDismissDigestBanner();
+    }
+  }
+
+  function handleDismissDigestBanner() {
+    setDigestBannerDismissed(true);
+    if (!profile.profileId) return;
+    try {
+      localStorage.setItem(`overflow_digest_banner_dismissed_${profile.profileId}`, 'true');
+    } catch { /* silencieux */ }
+  }
+
+  useEffect(() => {
     async function fetchMatches() {
       const profileId = profile.profileId;
       if (!profileId) { setLoading(false); return; }
@@ -786,7 +821,7 @@ export default function MatchesPage() {
       // select=* interdit après SEC-02 (REVOKE table-level SELECT) — utiliser les champs publics
       const { data: me, error: meError } = await supabase
         .from('profiles')
-        .select(`${PUBLIC_PROFILE_FIELDS}, has_shareable_contact`)
+        .select(`${PUBLIC_PROFILE_FIELDS}, has_shareable_contact, weekly_digest_opt_in`)
         .eq('id', profileId)
         .single();
 
@@ -804,6 +839,7 @@ export default function MatchesPage() {
           style:        normalizeArray(me.style),
           availability: Array.isArray(me.availability) ? me.availability : [],
           openIRL:      me.open_irl ?? false,
+          weeklyDigestOptIn: me.weekly_digest_opt_in ?? false,
         };
         setProfile(updated);
         hydratedProfile = updated as typeof profile;
@@ -995,6 +1031,7 @@ export default function MatchesPage() {
   const hasEmail = !!displayProfile.email;
   const hasContact = !!displayProfile.email || !!displayProfile.discord;
   const missingShareableContact = !loading && !!profile.profileId && hasShareableContactDb === false;
+  const showDigestBanner = !loading && !!profile.profileId && !profile.weeklyDigestOptIn && !digestBannerDismissed;
   const userCity = displayProfile.city || '';
 
   // Index par profil — permet à l'encart Invitations de retrouver les raisons de match
@@ -1128,6 +1165,36 @@ export default function MatchesPage() {
           >
             Add a contact
           </Link>
+        </div>
+      )}
+
+      {/* Relance opt-in digest hebdo — dismissible, jamais réaffichée après un choix explicite. */}
+      {showDigestBanner && (
+        <div className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-accentSoftBorder bg-accentSoft px-5 py-4">
+          <div className="flex items-start gap-3">
+            <span className="text-lg leading-none mt-0.5">✉️</span>
+            <div>
+              <p className="text-sm font-medium text-text">Get your Strong fits by email?</p>
+              <p className="mt-1 text-xs text-muted">
+                A weekly digest with your best new matches and any invites waiting on your reply. Off by default — one click to enable, one click to stop anytime.
+              </p>
+            </div>
+          </div>
+          <div className="flex shrink-0 items-center gap-3">
+            <button
+              onClick={handleDismissDigestBanner}
+              className="text-xs text-muted hover:text-text transition"
+            >
+              Not now
+            </button>
+            <button
+              onClick={handleEnableDigest}
+              disabled={digestOptingIn}
+              className="rounded-lg bg-accent px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition disabled:opacity-50"
+            >
+              {digestOptingIn ? 'Enabling…' : 'Enable'}
+            </button>
+          </div>
         </div>
       )}
 

@@ -357,6 +357,9 @@ export default function OnboardingPage() {
       looking_for:  profile.lookingFor,
       notify_on_match_request: profile.notifyOnMatchRequest,
       interested_in_irl_event: profile.interestedInIrlEvent,
+      // Pas de case dédiée dans l'onboarding (décision PM) — proposé plus tard,
+      // ponctuellement, sur /matches. Jamais activé par défaut.
+      weekly_digest_opt_in: false,
     };
     const sensitive: SensitiveFields = {
       discord:              profile.discord || null,

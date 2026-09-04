@@ -205,7 +205,7 @@ export default function ProfileEditPage() {
 
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, notify_on_match_request, interested_in_irl_event')
+        .select('id, name, age, city, language, platform, games, style, availability, open_irl, consent, looking_for, notify_on_match_request, interested_in_irl_event, weekly_digest_opt_in')
         .eq('id', profileId)
         .single();
 
@@ -225,6 +225,7 @@ export default function ProfileEditPage() {
           lookingFor:   (data.looking_for ?? 'both') as 'online' | 'irl' | 'both',
           notifyOnMatchRequest: data.notify_on_match_request ?? true,
           interestedInIrlEvent: data.interested_in_irl_event ?? false,
+          weeklyDigestOptIn: data.weekly_digest_opt_in ?? false,
           email:        '',
           discord:      '',
           psnHandle:    '',
@@ -353,6 +354,7 @@ export default function ProfileEditPage() {
       looking_for:  profile.lookingFor,
       notify_on_match_request: profile.notifyOnMatchRequest,
       interested_in_irl_event: profile.interestedInIrlEvent,
+      weekly_digest_opt_in: profile.weeklyDigestOptIn,
     };
     const sensitive: SensitiveFields = {
       email:                profile.email || null,
@@ -689,6 +691,18 @@ export default function ProfileEditPage() {
             <span className="text-sm text-text leading-relaxed">
               Email me when someone wants to play with me
               <span className="block text-xs text-muted mt-0.5">On by default — turn off anytime if you&apos;d rather just check the app.</span>
+            </span>
+          </label>
+          <label className="flex items-start gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={profile.weeklyDigestOptIn}
+              onChange={(e) => setProfile({ weeklyDigestOptIn: e.target.checked })}
+              className="mt-0.5 accent-[var(--accent)]"
+            />
+            <span className="text-sm text-text leading-relaxed">
+              Weekly Strong Fit digest
+              <span className="block text-xs text-muted mt-0.5">Off by default — a weekly email with your best new matches and any invites waiting on your reply. Different from the setting above.</span>
             </span>
           </label>
         </section>
