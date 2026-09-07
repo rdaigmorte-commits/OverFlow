@@ -139,8 +139,6 @@ function MatchOpportunitiesBlock({ data, loading }: { data: MatchOpportunities; 
 }
 
 function MatchRequestsBlock({ data, loading }: { data: MatchRequests; loading: boolean }) {
-  const responded = data.accepted + data.declined;
-  const acceptanceRate = responded > 0 ? Math.round((data.accepted / responded) * 100) : null;
   const max = Math.max(data.pending, data.accepted, data.declined, 1);
 
   const rows = [
@@ -184,11 +182,11 @@ function MatchRequestsBlock({ data, loading }: { data: MatchRequests; loading: b
                 </div>
               </div>
             ))}
-            {acceptanceRate !== null && (
-              <p className="pt-2 text-sm text-muted">
-                Acceptance rate: <span className="font-semibold text-text">{acceptanceRate}%</span> ({data.accepted}/{responded} answered requests)
-              </p>
-            )}
+            <p className="pt-2 text-sm text-muted">
+              <span className="font-semibold text-text">{data.pending} pending</span> vs{' '}
+              <span className="font-semibold text-text">{data.accepted} accepted</span>
+              {data.pending > data.accepted && ' — most sent requests are still waiting on a reply.'}
+            </p>
           </>
         )}
       </div>

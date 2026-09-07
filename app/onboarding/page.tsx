@@ -195,8 +195,13 @@ export default function OnboardingPage() {
   const extraSelectedGames = profile.games.filter((g) => !top8.includes(g));
 
   // ── Tracking funnel ─────────────────────────────────────────────────────
+  // supabase-js .insert() is a lazy "thenable" — the request is only actually
+  // sent once something calls .then()/await on it. A bare fire-and-forget call
+  // with neither silently never hits the network (found via live debugging on
+  // overflowsquad.gg: zero rows in onboarding_events since this shipped).
   function track(step: number, action: 'start' | 'complete' | 'abandon') {
-    supabase.from('onboarding_events').insert({ session_id: sessionId.current, step, action });
+    supabase.from('onboarding_events').insert({ session_id: sessionId.current, step, action })
+      .then(({ error }) => { if (error) console.error('[track] onboarding_events insert failed:', error); });
   }
 
   useEffect(() => { currentStepRef.current = currentStep; }, [currentStep]);
